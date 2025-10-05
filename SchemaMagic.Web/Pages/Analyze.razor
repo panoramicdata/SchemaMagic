@@ -10,7 +10,7 @@
 	<div class="container">
 		<div class="row">
 			<div class="col-12">
-				<h1><i class="bi bi-search"></i> Analyze Repository Schema</h1>
+				<h1><i class="fas fa-search"></i> Analyze Repository Schema</h1>
 				<p class="lead">Enter a GitHub repository URL to discover and analyze DbContext files.</p>
 			</div>
 		</div>
@@ -26,7 +26,7 @@
 			<div class="col-md-8">
 				<div class="card">
 					<div class="card-header">
-						<h4 class="mb-0"><i class="bi bi-github"></i> Repository Information</h4>
+						<h4 class="mb-0"><i class="fab fa-github"></i> Repository Information</h4>
 					</div>
 					<div class="card-body">
 						<div class="mb-3">
@@ -49,7 +49,7 @@
 									}
 									else
 									{
-										<i class="bi bi-search"></i>
+										<i class="fas fa-search"></i>
 										<span>Discover</span>
 									}
 								</button>
@@ -82,13 +82,13 @@
 									}
 									else
 									{
-										<i class="bi bi-shield-check"></i>
+										<i class="fas fa-shield-alt"></i>
 									}
 								</button>
 							</div>
 							<div class="form-text">
 								<small>
-									<i class="bi bi-info-circle"></i>
+									<i class="fas fa-info-circle"></i>
 									<strong>For private repositories:</strong> Create a 
 									<a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">
 										Personal Access Token
@@ -98,13 +98,13 @@
 										@if (tokenValidationResult.Value)
 										{
 											<span class="text-success">
-												<i class="bi bi-check-circle-fill"></i> Token is valid
+												<i class="fas fa-check-circle"></i> Token is valid
 											</span>
 										}
 										else
 										{
 											<span class="text-danger">
-												<i class="bi bi-x-circle-fill"></i> Token is invalid
+												<i class="fas fa-times-circle"></i> Token is invalid
 											</span>
 										}
 									}
@@ -139,7 +139,7 @@
 								}
 								else
 								{
-									<i class="bi bi-diagram-3"></i>
+									<i class="fas fa-project-diagram"></i>
 									<span>Analyze Schema</span>
 								}
 							</button>
@@ -151,7 +151,7 @@
 			<div class="col-md-4">
 				<div class="card">
 					<div class="card-header">
-						<h5 class="mb-0"><i class="bi bi-list-check"></i> Results</h5>
+						<h5 class="mb-0"><i class="fas fa-list-check"></i> Results</h5>
 					</div>
 					<div class="card-body">
 						@if (dbContextFiles.Any())
@@ -161,7 +161,7 @@
 								<ul class="list-unstyled mt-2">
 									@foreach (var file in dbContextFiles)
 									{
-										<li class="text-muted"><i class="bi bi-file-code"></i> @file.FileName</li>
+										<li class="text-muted"><i class="fas fa-file-code"></i> @file.FileName</li>
 									}
 								</ul>
 							</div>
@@ -172,18 +172,18 @@
 							<div class="analysis-results">
 								<strong>Analysis Complete!</strong>
 								<ul class="list-unstyled mt-2">
-									<li><i class="bi bi-table"></i> Entities Found: @analysisResult.EntitiesFound</li>
-									<li><i class="bi bi-fingerprint"></i> Document ID: @analysisResult.DocumentGuid.Substring(0, 8)...</li>
+									<li><i class="fas fa-table"></i> Entities Found: @analysisResult.EntitiesFound</li>
+									<li><i class="fas fa-fingerprint"></i> Document ID: @analysisResult.DocumentGuid.Substring(0, 8)...</li>
 								</ul>
 
 								<div class="mt-3">
 									<button class="btn btn-primary btn-sm w-100 mb-2"
 											@onclick="ViewSchemaAsync">
-										<i class="bi bi-eye"></i> View Schema
+										<i class="fas fa-eye"></i> View Schema
 									</button>
 									<button class="btn btn-outline-secondary btn-sm w-100"
 											@onclick="DownloadSchemaAsync">
-										<i class="bi bi-download"></i> Download HTML
+										<i class="fas fa-download"></i> Download HTML
 									</button>
 								</div>
 							</div>
@@ -193,15 +193,15 @@
 
 				<div class="card mt-3">
 					<div class="card-header">
-						<h6 class="mb-0"><i class="bi bi-lightbulb"></i> Tips</h6>
+						<h6 class="mb-0"><i class="fas fa-lightbulb"></i> Tips</h6>
 					</div>
 					<div class="card-body">
 						<ul class="list-unstyled">
-							<li><i class="bi bi-unlock text-success"></i> Public repositories work without authentication</li>
-							<li><i class="bi bi-lock text-warning"></i> Private repositories require Personal Access Token</li>
-							<li><i class="bi bi-magic text-primary"></i> DbContext files are automatically detected</li>
-							<li><i class="bi bi-browser-chrome text-info"></i> Analysis happens in your browser</li>
-							<li><i class="bi bi-wifi-off text-secondary"></i> Generated schemas work offline</li>
+							<li><i class="fas fa-unlock text-success"></i> Public repositories work without authentication</li>
+							<li><i class="fas fa-lock text-warning"></i> Private repositories require Personal Access Token</li>
+							<li><i class="fas fa-magic text-primary"></i> DbContext files are automatically detected</li>
+							<li><i class="fas fa-browser text-info"></i> Analysis happens in your browser</li>
+							<li><i class="fas fa-wifi text-secondary"></i> Generated schemas work offline</li>
 						</ul>
 					</div>
 				</div>
@@ -214,7 +214,7 @@
 				<div class="col-12">
 					<div class="card">
 						<div class="card-header">
-							<h4 class="mb-0"><i class="bi bi-eye"></i> Entity Preview</h4>
+							<h4 class="mb-0"><i class="fas fa-eye"></i> Entity Preview</h4>
 						</div>
 						<div class="card-body">
 							<div class="row">
