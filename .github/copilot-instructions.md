@@ -22,7 +22,7 @@ SchemaMagic is a .NET 9 command-line tool that analyzes Entity Framework Core Db
    - ? Successfully exported default CSS: `Output/custom-styles.css` (7.7KB)
    - ? Ready for customization and reuse
 
-## Magic Suite Production Test Results ?
+## Magic Suite Production Test Results ??
 
 **Status**: Successfully tested against Magic Suite production DbContext files on 2025-01-05
 
@@ -52,14 +52,14 @@ Output/
 ??? custom-styles.css             # Exportable default CSS (7.7KB)
 ```
 
-### Git Integration ?
+### Git Integration ??
 - ? **Output/ folder properly ignored** by .gitignore
 - ? **HTML files excluded** from version control
 - ? **Generated files safely stored** without polluting repository
 
 ## Key Features (Verified Working)
 
-### ? Schema Processing
+### ?? Schema Processing
 - **Entity Discovery**: Automatically finds DbSet properties in DbContext classes
 - **Property Analysis**: Extracts all entity properties with type information
 - **Relationship Detection**: Identifies primary keys, foreign keys, and navigation properties
@@ -67,21 +67,21 @@ Output/
 - **EF Migration Support**: Uses EF snapshot files for accurate foreign key relationships
 - **Large Schema Handling**: Successfully processes 100+ entity schemas
 
-### ? Output Generation
+### ?? Output Generation
 - **Interactive HTML**: Creates fully interactive schema diagrams
 - **Default Output Location**: `{DbContextDirectory}/Output/{DbContextName}-Schema.html`
 - **GUID-based State**: Each document has unique GUID for localStorage persistence
 - **Custom CSS Support**: Allows custom styling with `--css-file` option
 - **Scalable Output**: Handles complex schemas up to 246KB HTML files
 
-### ? Interactive Features
+### ?? Interactive Features
 - **Drag & Drop**: Tables can be repositioned and layouts saved
 - **Zoom & Pan**: Mouse wheel zoom, background dragging for navigation
 - **Table Selection**: Click tables to highlight relationships
 - **Property Navigation**: Click foreign keys to jump to related entities
 - **Layout Persistence**: Customizations saved in browser localStorage
 
-### ? Production-Scale Capabilities
+### ?? Production-Scale Capabilities
 - **Complex Relationships**: Handles extensive foreign key networks
 - **Inheritance Hierarchies**: Visualizes entity inheritance with base classes
 - **Navigation Properties**: Displays collection and reference properties
@@ -218,6 +218,20 @@ Successfully tested against Magic Suite production schemas:
 - **EF Migration Integration**: Leveraged existing migration snapshots for FK accuracy
 - **Multi-Project Discovery**: Found entities across multiple solution projects
 
+## Web Application Features ??
+
+### GitHub Integration
+- **Public Repository Support**: Automatically discover DbContext files in public repos
+- **Private Repository Support**: Use Personal Access Token for private repository access
+- **Token Validation**: Verify GitHub tokens before attempting access
+- **Comprehensive Error Handling**: Clear messages for authentication and access issues
+
+### Authentication Support
+- **Personal Access Tokens**: Support for GitHub PAT authentication
+- **Rate Limit Handling**: Graceful handling of GitHub API rate limits
+- **Access Validation**: Real-time token validation with visual feedback
+- **Security**: Tokens processed client-side, not stored on servers
+
 ## Future Enhancement Areas
 
 ### Potential Improvements
@@ -249,6 +263,7 @@ Successfully tested against Magic Suite production schemas:
 - **Layout issues**: Export and customize CSS for better presentation
 - **Browser not opening**: Manually open the generated HTML file
 - **Entity classes not found**: Tool creates fallback entities with FK info from migrations
+- **Private repo access denied**: Create GitHub Personal Access Token with repository read permissions
 
 ## Integration Possibilities
 

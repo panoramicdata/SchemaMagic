@@ -5,20 +5,51 @@ namespace SchemaMagic.Web.Services;
 
 public class GitHubService(HttpClient httpClient)
 {
-	private readonly GitHubClient _gitHubClient = new(new ProductHeaderValue("SchemaMagic-Web"));
+	private readonly GitHubClient _gitHubClient = new GitHubClient(new ProductHeaderValue("SchemaMagic-Web"));
+	private readonly HttpClient _httpClient = httpClient;
 
-	public async Task<List<DbContextInfo>> FindDbContextFilesAsync(string repoUrl)
+	// GitHub Personal Access Token for private repositories
+	public void SetAccessToken(string accessToken)
+	{
+		if (!string.IsNullOrEmpty(accessToken))
+		{
+			_gitHubClient.Credentials = new Credentials(accessToken);
+		}
+	}
+
+	public async Task<List<DbContextInfo>> FindDbContextFilesAsync(string repoUrl, string? accessToken = null)
 	{
 		var (Owner, Name) = ParseGitHubUrl(repoUrl) ?? throw new ArgumentException("Invalid GitHub repository URL");
 		var dbContextFiles = new List<DbContextInfo>();
 
+		// Set access token if provided
+		if (!string.IsNullOrEmpty(accessToken))
+		{
+			SetAccessToken(accessToken);
+		}
+
 		try
 		{
+			// First, check if we can access the repository
+			Repository repository;
+			try
+			{
+				repository = await _gitHubClient.Repository.Get(Owner, Name);
+			}
+			catch (NotFoundException)
+			{
+				throw new InvalidOperationException($"Repository '{Owner}/{Name}' not found or not accessible. For private repositories, please provide a Personal Access Token.");
+			}
+			catch (RateLimitExceededException)
+			{
+				throw new InvalidOperationException("GitHub API rate limit exceeded. Please try again later or provide a Personal Access Token for higher limits.");
+			}
+
 			// Search for files containing "DbContext" in the repository
 			var searchRequest = new SearchCodeRequest("DbContext")
 			{
-				Repos = [$"{Owner}/{Name}"],
-				Extensions = ["cs"]
+				Repos = new RepositoryCollection { $"{Owner}/{Name}" },
+				Extensions = new[] { "cs" }
 			};
 
 			var searchResult = await _gitHubClient.Search.SearchCode(searchRequest);
@@ -42,7 +73,15 @@ public class GitHubService(HttpClient httpClient)
 		}
 		catch (RateLimitExceededException)
 		{
-			throw new InvalidOperationException("GitHub API rate limit exceeded. Please try again later.");
+			throw new InvalidOperationException("GitHub API rate limit exceeded. Please try again later or provide a Personal Access Token for higher limits.");
+		}
+		catch (AuthorizationException)
+		{
+			throw new InvalidOperationException("Access denied. This appears to be a private repository. Please provide a valid Personal Access Token with repository access.");
+		}
+		catch (Exception ex) when (ex.Message.Contains("API rate limit exceeded"))
+		{
+			throw new InvalidOperationException("GitHub API rate limit exceeded. Please try again later or provide a Personal Access Token for higher limits.");
 		}
 		catch (Exception ex)
 		{
@@ -101,6 +140,25 @@ public class GitHubService(HttpClient httpClient)
 		return content.Contains("DbContext") &&
 			   (content.Contains("class") || content.Contains("public")) &&
 			   content.Contains("DbSet");
+	}
+
+	// Method to validate access token
+	public async Task<bool> ValidateAccessTokenAsync(string accessToken)
+	{
+		try
+		{
+			var tempClient = new GitHubClient(new ProductHeaderValue("SchemaMagic-Web"))
+			{
+				Credentials = new Credentials(accessToken)
+			};
+
+			var user = await tempClient.User.Current();
+			return user != null;
+		}
+		catch
+		{
+			return false;
+		}
 	}
 }
 

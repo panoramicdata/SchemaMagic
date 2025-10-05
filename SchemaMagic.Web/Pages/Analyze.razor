@@ -10,7 +10,7 @@
 	<div class="container">
 		<div class="row">
 			<div class="col-12">
-				<h1>?? Analyze Repository Schema</h1>
+				<h1><i class="bi bi-search"></i> Analyze Repository Schema</h1>
 				<p class="lead">Enter a GitHub repository URL to discover and analyze DbContext files.</p>
 			</div>
 		</div>
@@ -26,7 +26,7 @@
 			<div class="col-md-8">
 				<div class="card">
 					<div class="card-header">
-						<h4 class="mb-0">?? Repository Information</h4>
+						<h4 class="mb-0"><i class="bi bi-github"></i> Repository Information</h4>
 					</div>
 					<div class="card-body">
 						<div class="mb-3">
@@ -49,13 +49,66 @@
 									}
 									else
 									{
-										<span class="oi oi-magnifying-glass"></span>
+										<i class="bi bi-search"></i>
 										<span>Discover</span>
 									}
 								</button>
 							</div>
 							<div class="form-text">
 								Example: https://github.com/panoramicdata/SchemaMagic
+							</div>
+						</div>
+
+						<!-- GitHub Personal Access Token for Private Repositories -->
+						<div class="mb-3">
+							<label for="accessToken" class="form-label">
+								Personal Access Token 
+								<small class="text-muted">(Optional - for private repositories)</small>
+							</label>
+							<div class="input-group">
+								<input type="password"
+									   class="form-control"
+									   id="accessToken"
+									   @bind="accessToken"
+									   placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+									   disabled="@isLoading" />
+								<button class="btn btn-outline-secondary"
+										type="button"
+										@onclick="ValidateTokenAsync"
+										disabled="@(isValidatingToken || string.IsNullOrWhiteSpace(accessToken))">
+									@if (isValidatingToken)
+									{
+										<span class="spinner-border spinner-border-sm" role="status"></span>
+									}
+									else
+									{
+										<i class="bi bi-shield-check"></i>
+									}
+								</button>
+							</div>
+							<div class="form-text">
+								<small>
+									<i class="bi bi-info-circle"></i>
+									<strong>For private repositories:</strong> Create a 
+									<a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">
+										Personal Access Token
+									</a> with 'Contents' read permission.
+									@if (tokenValidationResult.HasValue)
+									{
+										@if (tokenValidationResult.Value)
+										{
+											<span class="text-success">
+												<i class="bi bi-check-circle-fill"></i> Token is valid
+											</span>
+										}
+										else
+										{
+											<span class="text-danger">
+												<i class="bi bi-x-circle-fill"></i> Token is invalid
+											</span>
+										}
+									}
+								</small>
 							</div>
 						</div>
 
@@ -86,7 +139,7 @@
 								}
 								else
 								{
-									<span class="oi oi-graph"></span>
+									<i class="bi bi-diagram-3"></i>
 									<span>Analyze Schema</span>
 								}
 							</button>
@@ -98,7 +151,7 @@
 			<div class="col-md-4">
 				<div class="card">
 					<div class="card-header">
-						<h5 class="mb-0">?? Results</h5>
+						<h5 class="mb-0"><i class="bi bi-list-check"></i> Results</h5>
 					</div>
 					<div class="card-body">
 						@if (dbContextFiles.Any())
@@ -108,7 +161,7 @@
 								<ul class="list-unstyled mt-2">
 									@foreach (var file in dbContextFiles)
 									{
-										<li class="text-muted">?? @file.FileName</li>
+										<li class="text-muted"><i class="bi bi-file-code"></i> @file.FileName</li>
 									}
 								</ul>
 							</div>
@@ -119,18 +172,18 @@
 							<div class="analysis-results">
 								<strong>Analysis Complete!</strong>
 								<ul class="list-unstyled mt-2">
-									<li>?? Entities Found: @analysisResult.EntitiesFound</li>
-									<li>?? Document ID: @analysisResult.DocumentGuid.Substring(0, 8)...</li>
+									<li><i class="bi bi-table"></i> Entities Found: @analysisResult.EntitiesFound</li>
+									<li><i class="bi bi-fingerprint"></i> Document ID: @analysisResult.DocumentGuid.Substring(0, 8)...</li>
 								</ul>
 
 								<div class="mt-3">
 									<button class="btn btn-primary btn-sm w-100 mb-2"
 											@onclick="ViewSchemaAsync">
-										<span class="oi oi-eye"></span> View Schema
+										<i class="bi bi-eye"></i> View Schema
 									</button>
 									<button class="btn btn-outline-secondary btn-sm w-100"
 											@onclick="DownloadSchemaAsync">
-										<span class="oi oi-data-transfer-download"></span> Download HTML
+										<i class="bi bi-download"></i> Download HTML
 									</button>
 								</div>
 							</div>
@@ -140,14 +193,15 @@
 
 				<div class="card mt-3">
 					<div class="card-header">
-						<h6 class="mb-0">?? Tips</h6>
+						<h6 class="mb-0"><i class="bi bi-lightbulb"></i> Tips</h6>
 					</div>
 					<div class="card-body">
 						<ul class="list-unstyled">
-							<li>? Only public repositories are supported</li>
-							<li>?? DbContext files are automatically detected</li>
-							<li>? Analysis happens in your browser</li>
-							<li>?? Generated schemas work offline</li>
+							<li><i class="bi bi-unlock text-success"></i> Public repositories work without authentication</li>
+							<li><i class="bi bi-lock text-warning"></i> Private repositories require Personal Access Token</li>
+							<li><i class="bi bi-magic text-primary"></i> DbContext files are automatically detected</li>
+							<li><i class="bi bi-browser-chrome text-info"></i> Analysis happens in your browser</li>
+							<li><i class="bi bi-wifi-off text-secondary"></i> Generated schemas work offline</li>
 						</ul>
 					</div>
 				</div>
@@ -160,7 +214,7 @@
 				<div class="col-12">
 					<div class="card">
 						<div class="card-header">
-							<h4 class="mb-0">?? Entity Preview</h4>
+							<h4 class="mb-0"><i class="bi bi-eye"></i> Entity Preview</h4>
 						</div>
 						<div class="card-body">
 							<div class="row">
@@ -223,11 +277,37 @@
 @code {
 	private string repositoryUrl = "";
 	private string selectedDbContextPath = "";
+	private string accessToken = "";
 	private string errorMessage = "";
 	private bool isLoading = false;
 	private bool isAnalyzing = false;
+	private bool isValidatingToken = false;
+	private bool? tokenValidationResult = null;
 	private List<DbContextInfo> dbContextFiles = new();
 	private SchemaAnalysisResult? analysisResult;
+
+	private async Task ValidateTokenAsync()
+	{
+		if (string.IsNullOrWhiteSpace(accessToken))
+			return;
+
+		isValidatingToken = true;
+		StateHasChanged();
+
+		try
+		{
+			tokenValidationResult = await GitHubService.ValidateAccessTokenAsync(accessToken);
+		}
+		catch (Exception)
+		{
+			tokenValidationResult = false;
+		}
+		finally
+		{
+			isValidatingToken = false;
+			StateHasChanged();
+		}
+	}
 
 	private async Task DiscoverDbContextsAsync()
 	{
@@ -241,7 +321,9 @@
 
 		try
 		{
-			dbContextFiles = await GitHubService.FindDbContextFilesAsync(repositoryUrl);
+			// Pass the access token if provided
+			var token = string.IsNullOrWhiteSpace(accessToken) ? null : accessToken;
+			dbContextFiles = await GitHubService.FindDbContextFilesAsync(repositoryUrl, token);
 
 			if (!dbContextFiles.Any())
 			{
