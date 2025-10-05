@@ -103,7 +103,7 @@ public static class ModularHtmlTemplate
 		var jsFiles = new[]
 		{
 			"variables.js",
-			"event-listeners.js", 
+			"event-listeners.js",
 			"pan-zoom.js",
 			"settings.js",
 			"force-directed-layout.js",
@@ -176,7 +176,7 @@ public static class ModularHtmlTemplate
 		// First try to load from Templates directory (capital T) relative to current location
 		var currentDir = Directory.GetCurrentDirectory();
 		var templatesPath = Path.Combine(currentDir, "Templates", fileName);
-		
+
 		if (File.Exists(templatesPath))
 		{
 			var content = File.ReadAllText(templatesPath);
@@ -186,7 +186,7 @@ public static class ModularHtmlTemplate
 
 		// Try lowercase templates directory
 		var templatesPath2 = Path.Combine(currentDir, "templates", fileName);
-		
+
 		if (File.Exists(templatesPath2))
 		{
 			var content = File.ReadAllText(templatesPath2);
@@ -197,7 +197,7 @@ public static class ModularHtmlTemplate
 		// Try relative to the assembly location
 		var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
 		var templatesPath3 = Path.Combine(assemblyDir, "..", "..", "..", "..", "Templates", fileName);
-		
+
 		if (File.Exists(templatesPath3))
 		{
 			var content = File.ReadAllText(templatesPath3);

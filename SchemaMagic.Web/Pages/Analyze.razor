@@ -173,9 +173,9 @@
 												@entity.Value.Properties.Count properties
 												@if (!string.IsNullOrEmpty(entity.Value.BaseType))
 												{
-												<br />
-												Inherits: @entity.Value.BaseType
-																						}
+													<br />
+													<span>Inherits: @entity.Value.BaseType</span>
+												}
 											</small>
 										</div>
 									</div>
@@ -274,7 +274,7 @@
 			if (selectedFile != null)
 			{
 				analysisResult = await SchemaAnalysisService.AnalyzeDbContextAsync(
-					selectedFile.Content);
+					selectedFile.Content, selectedFile.FileName);
 
 				if (!analysisResult.Success)
 				{
