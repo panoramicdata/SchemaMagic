@@ -1,0 +1,64 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net9.0</TargetFramework>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<AssemblyName>schemamagic</AssemblyName>
+		<RootNamespace>SchemaMagic</RootNamespace>
+
+		<!-- Global Tool Configuration -->
+		<PackAsTool>true</PackAsTool>
+		<ToolCommandName>schemamagic</ToolCommandName>
+		<PackageId>SchemaMagic</PackageId>
+		<PackageVersion>1.0.0</PackageVersion>
+		<Authors>Panoramic Data Limited</Authors>
+		<Company>Panoramic Data Limited</Company>
+		<Product>SchemaMagic</Product>
+		<Description>?? Interactive HTML+SVG Database Schema Visualizer for Entity Framework Core. Generate beautiful, interactive schema diagrams with drag-and-drop tables, relationship visualization, and click-to-navigate functionality.</Description>
+		<Copyright>© 2024 Panoramic Data Limited</Copyright>
+		<PackageTags>entityframework;efcore;database;schema;visualization;html;svg;interactive;diagram;erdiagram;dbcontext;dotnet-tool;cli</PackageTags>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/panoramicdata/SchemaMagic</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/panoramicdata/SchemaMagic.git</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>icon.png</PackageIcon>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<PackageReleaseNotes>
+			? Initial release of SchemaMagic
+			?? Interactive Entity Framework Core schema visualization
+			?? Drag tables, pan/zoom, and click to navigate relationships
+			?? Beautiful SVG rendering with professional styling
+			? Physics-based auto-layout for optimal table positioning
+			?? Click-to-select tables and filter relationships
+			?? Persistent layout customization with localStorage
+			?? Self-contained HTML files - no external dependencies
+		</PackageReleaseNotes>
+
+		<!-- Assembly Information -->
+		<AssemblyTitle>SchemaMagic</AssemblyTitle>
+		<AssemblyProduct>SchemaMagic</AssemblyProduct>
+		<AssemblyDescription>Interactive HTML+SVG Database Schema Visualizer for Entity Framework Core</AssemblyDescription>
+		<AssemblyCompany>Panoramic Data Limited</AssemblyCompany>
+		<AssemblyCopyright>© 2024 Panoramic Data Limited</AssemblyCopyright>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.11.0" />
+		<PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="..\README.md" Pack="true" PackagePath="" Link="README.md" />
+		<None Include="icon.png" Pack="true" PackagePath="" Condition="Exists('icon.png')" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="..\..\Templates\*.html" LinkBase="Templates\" />
+		<EmbeddedResource Include="..\..\Templates\*.css" LinkBase="Templates\" />
+		<EmbeddedResource Include="..\..\Templates\*.js" LinkBase="Templates\" />
+	</ItemGroup>
+
+</Project>

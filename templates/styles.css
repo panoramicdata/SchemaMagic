@@ -1,0 +1,429 @@
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+}
+
+body {
+	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	height: 100vh;
+	overflow: hidden;
+}
+
+.container {
+	width: 100vw;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+}
+
+.toolbar {
+	background: rgba(255, 255, 255, 0.95);
+	padding: 15px 20px;
+	display: flex;
+	align-items: center;
+	gap: 15px;
+	box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+	z-index: 1000;
+	border-bottom: 1px solid #ddd;
+	flex-shrink: 0;
+}
+
+.toolbar h1 {
+	color: #333;
+	font-size: 24px;
+	margin-right: 20px;
+	background: linear-gradient(45deg, #667eea, #764ba2);
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+	background-clip: text;
+}
+
+.toolbar button {
+	background: #667eea;
+	color: white;
+	border: none;
+	padding: 10px 16px;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+	transition: all 0.3s ease;
+	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.toolbar button:hover {
+	background: #5a67d8;
+	transform: translateY(-2px);
+	box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+}
+
+.toolbar button.active {
+	background: #764ba2;
+	box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.toolbar button.download {
+	background: #059669;
+}
+
+.toolbar button.download:hover {
+	background: #047857;
+}
+
+.legend {
+	background: rgba(255, 255, 255, 0.9);
+	padding: 15px;
+	border-radius: 8px;
+	font-size: 12px;
+	line-height: 1.6;
+	box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+	margin-left: auto;
+}
+
+.schema-container {
+	flex: 1;
+	position: relative;
+	overflow: hidden;
+	cursor: grab;
+	background: #f8fafc;
+	user-select: none;
+}
+
+.schema-container:active {
+	cursor: grabbing;
+}
+
+#schema-svg {
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	top: 0;
+	left: 0;
+}
+
+/* All tables now use the same light blue inherited style */
+.table-box {
+	fill: #f0f9ff; /* Light blue background like inherited style */
+	stroke: #0ea5e9; /* Blue border like inherited style */
+	stroke-width: 5;
+	filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+	cursor: move;
+	transition: all 0.3s ease;
+}
+
+.table-box:hover {
+	fill: #e0f2fe; /* Slightly darker blue on hover */
+	stroke: #0284c7; /* Darker blue border on hover */
+	stroke-width: 8;
+}
+
+.table-box.selected {
+	/* Remove selection styling from table-box itself */
+}
+
+/* Remove .inherited class distinctions since all tables now use this style */
+
+.selection-overlay {
+	fill: none;
+	stroke: #764ba2;
+	stroke-width: 10;
+	pointer-events: none;
+	filter: drop-shadow(0 0 8px rgba(118, 75, 162, 0.3));
+	z-index: 1000;
+	animation: pulse-selection 2s ease-in-out infinite;
+}
+
+/* Pulse animation for selected tables */
+@keyframes pulse-selection {
+	0%, 100% {
+		stroke-width: 10;
+		opacity: 1;
+	}
+	50% {
+		stroke-width: 14;
+		opacity: 0.8;
+	}
+}
+
+/* Additional styling for selected tables to make them stand out */
+.table-group.selected .table-box {
+	fill: #f0f4ff; /* Slightly lighter background when selected */
+	stroke: #764ba2; /* Purple border to match selection */
+	stroke-width: 8;
+	filter: drop-shadow(0 6px 12px rgba(118, 75, 162, 0.2));
+}
+
+.table-group.selected .table-header {
+	fill: #764ba2; /* Purple header when selected */
+}
+
+/* All headers now use blue style */
+.table-header {
+	fill: #0ea5e9; /* Blue header like inherited style */
+}
+
+.table-title {
+	fill: white;
+	font-weight: bold;
+	font-size: 40px;
+	font-family: 'Segoe UI', sans-serif;
+}
+
+.inheritance-text {
+	fill: #64748b;
+	font-size: 28px;
+	font-style: italic;
+	font-family: 'Segoe UI', sans-serif;
+}
+
+.property-text {
+	font-size: 33px;
+	font-family: 'Consolas', 'Monaco', monospace;
+	fill: #2d3748;
+}
+
+.property-key {
+	fill: #d69e2e;
+	font-weight: bold;
+}
+
+.property-foreign-key {
+	fill: #9f7aea;
+	font-weight: bold;
+	cursor: pointer;
+}
+
+.property-foreign-key:hover {
+	fill: #805ad5;
+}
+
+.property-navigation {
+	fill: #059669;
+	cursor: pointer;
+}
+
+.property-navigation:hover {
+	fill: #047857;
+}
+
+.navigation-underline {
+	cursor: pointer;
+	transition: stroke 0.2s ease;
+}
+
+.navigation-underline:hover {
+	stroke: #047857;
+	stroke-width: 4;
+}
+
+.property-inherited {
+	fill: #0369a1;
+	font-style: italic;
+}
+
+/* Type-specific colors for property text labels */
+.property-type-string {
+	fill: #1e40af;
+}
+
+.property-type-int,
+.property-type-long,
+.property-type-short,
+.property-type-byte {
+	fill: #7c3aed;
+}
+
+.property-type-double,
+.property-type-float,
+.property-type-decimal {
+	fill: #7c3aed;
+}
+
+.property-type-bool {
+	fill: #7c3aed;
+}
+
+.property-type-guid {
+	fill: #b91c1c;
+}
+
+.property-type-datetime,
+.property-type-datetimeoffset,
+.property-type-timespan {
+	fill: #4b5563;
+}
+
+.property-type-jsondocument {
+	fill: #4b5563;
+}
+
+.property-type-collection {
+	fill: #4b5563;
+}
+
+.property-type-enum {
+	fill: #4b5563;
+}
+
+.property-type-navigation {
+	fill: #059669;
+}
+
+.property-type-unknown {
+	fill: #4b5563;
+}
+
+.property-type {
+	text-anchor: end;
+	font-size: 30px;
+}
+
+.property-icon {
+	fill: #9ca3af;
+	font-size: 35px;
+}
+
+/* Property-level icon styles (PK, FK, N, INH) - these have circles */
+.property-icon-text {
+	font-size: 15px;
+	font-weight: bold;
+	font-family: 'Segoe UI', sans-serif;
+	fill: white;
+	dominant-baseline: central;
+	text-anchor: middle;
+}
+
+.property-icon-circle {
+	stroke-width: 2.5;
+}
+
+.icon-pk {
+	fill: #d69e2e;
+	stroke: #b7791f;
+}
+
+.icon-fk {
+	fill: #9f7aea;
+	stroke: #805ad5;
+}
+
+.icon-nav {
+	fill: #059669;
+	stroke: #047857;
+}
+
+.icon-inh {
+	fill: #0369a1;
+	stroke: #0284c7;
+}
+
+.icon-default {
+	fill: #9ca3af;
+	stroke: #6b7280;
+}
+
+/* Type icon styles - no circles, direct styling, larger size like capital M */
+.type-icon-symbol {
+	font-size: 20px;
+	font-weight: bold;
+	font-family: 'Segoe UI', sans-serif;
+	dominant-baseline: central;
+	text-anchor: middle;
+}
+
+.type-icon-symbol-large {
+	font-size: 30px;
+	font-weight: bold;
+	font-family: 'Segoe UI', sans-serif;
+	dominant-baseline: central;
+	text-anchor: middle;
+}
+
+.type-icon-shape {
+	stroke-width: 1.25;
+}
+
+.type-icon-shape-large {
+	stroke-width: 2.0;
+}
+
+/* FK-NAV connector line */
+.fk-nav-connector {
+	stroke: #374151;
+	stroke-width: 5;
+	opacity: 0.6;
+}
+
+.property-group {
+	fill: #f1f5f9;
+	stroke: #cbd5e1;
+	stroke-width: 2.5;
+	stroke-dasharray: 5,5;
+}
+
+.inherited-section {
+	fill: #e0f2fe;
+	stroke: #0284c7;
+	stroke-width: 2.5;
+}
+
+.section-divider {
+	stroke: #cbd5e1;
+	stroke-width: 2.5;
+}
+
+.relationship-line {
+	stroke: #2563eb;
+	stroke-width: 8;
+	fill: none;
+	opacity: 0.8;
+	transition: all 0.3s ease;
+}
+
+/* Consistent stroke-width - no thickness changes on highlight, changed to purple */
+.relationship-line.highlighted {
+	stroke: #764ba2; /* Purple to match selection overlay */
+	stroke-width: 8; /* Same thickness as normal - no change */
+	opacity: 1.0;
+	filter: drop-shadow(0 2px 4px rgba(118, 75, 162, 0.3));
+}
+
+.relationship-line.dimmed {
+	stroke: #d1d5db;
+	stroke-width: 8; /* Consistent thickness even when dimmed */
+	opacity: 0.3;
+	transition: all 0.3s ease;
+}
+
+.relationship-line.hidden {
+	display: none;
+}
+
+.grid-pattern {
+	fill: none;
+	stroke: #e2e8f0;
+	stroke-width: 1;
+	opacity: 0.3;
+}
+
+.boundary-indicator {
+	fill: none;
+	stroke: #ef4444;
+	stroke-width: 3;
+	stroke-dasharray: 10,5;
+	opacity: 0.7;
+}
+
+.table-group {
+	cursor: move;
+}
+
+.table-group.dragging .table-box {
+	transition: none !important;
+}
+
+.table-group.dragging * {
+	transition: none !important;
+}

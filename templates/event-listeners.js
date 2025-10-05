@@ -1,0 +1,73 @@
+// Event listeners and initialization
+document.addEventListener('DOMContentLoaded', function () {
+	console.log('?? SchemaMagic: DOM loaded, initializing...');
+	console.log('?? Entities found:', typeof entities !== 'undefined' ? Object.keys(entities).length : 'UNDEFINED');
+	console.log('?? Document GUID:', typeof DOCUMENT_GUID !== 'undefined' ? DOCUMENT_GUID : 'UNDEFINED');
+	
+	try {
+		loadSettings();
+		console.log('?? Settings loaded successfully');
+	} catch (e) {
+		console.error('? Failed to load settings:', e);
+	}
+	
+	try {
+		generateSchema();
+		console.log('? Schema generated successfully');
+	} catch (e) {
+		console.error('? Failed to generate schema:', e);
+	}
+	
+	try {
+		setupEventListeners();
+		console.log('?? Event listeners set up successfully');
+	} catch (e) {
+		console.error('? Failed to set up event listeners:', e);
+	}
+});
+
+function setupEventListeners() {
+	const container = document.getElementById('schema-container');
+	const svg = document.getElementById('schema-svg');
+	const backgroundArea = document.getElementById('background-pan-area');
+
+	backgroundArea.addEventListener('mousedown', startBackgroundPan);
+	container.addEventListener('mousemove', handlePan);
+	container.addEventListener('mouseup', endPan);
+	container.addEventListener('mouseleave', endPan);
+
+	svg.addEventListener('wheel', handleWheel);
+	svg.addEventListener('contextmenu', e => e.preventDefault());
+	
+	// Add keyboard shortcuts
+	document.addEventListener('keydown', function(e) {
+		if (e.key === 'Escape' && selectedTable) {
+			clearSelection();
+			e.preventDefault();
+		}
+	});
+}
+
+function clearSelection() {
+	// Use the new deselectTable function for consistency
+	deselectTable();
+}
+
+// Enhanced background pan handling with selection clearing
+function startBackgroundPan(e) {
+	// Only pan if clicking on background, not on table elements
+	if (e.target.closest('.table-group')) return;
+
+	// Clear selection when clicking on background
+	if (selectedTable) {
+		clearSelection();
+	}
+
+	isPanning = true;
+	panStart = {
+		x: e.clientX - svgViewBox.x,
+		y: e.clientY - svgViewBox.y
+	};
+	document.getElementById('schema-container').style.cursor = 'grabbing';
+	e.preventDefault();
+}
