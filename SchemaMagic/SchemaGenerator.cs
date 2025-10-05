@@ -1,9 +1,16 @@
 using SchemaMagic.Core;
+using System.Text.Json;
 
 namespace SchemaMagic;
 
 public partial class SchemaGenerator(FileInfo dbContextFile, string? outputPath = null, string? documentGuid = null, string? customCssPath = null)
 {
+	private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
+	{
+		WriteIndented = true,
+		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+	};
+
 	private readonly string _dbContextPath = dbContextFile.FullName;
 	private readonly string? _documentGuid = documentGuid;
 	private readonly string? _customCssPath = customCssPath;
@@ -75,9 +82,10 @@ public partial class SchemaGenerator(FileInfo dbContextFile, string? outputPath 
 
 		// Read DbContext content
 		var sourceCode = File.ReadAllText(_dbContextPath);
+		var fileName = Path.GetFileName(_dbContextPath);
 
-		// Use the Core library for analysis
-		var result = CoreSchemaAnalysisService.AnalyzeDbContextContent(sourceCode);
+		// Use the Core library for analysis with the sophisticated engine
+		var result = CoreSchemaAnalysisService.AnalyzeDbContextContent(sourceCode, fileName);
 
 		if (!result.Success)
 		{
@@ -111,17 +119,22 @@ public partial class SchemaGenerator(FileInfo dbContextFile, string? outputPath 
 		if (!string.IsNullOrEmpty(_customCssPath))
 		{
 			var customCss = File.ReadAllText(_customCssPath);
-			var entitiesJson = System.Text.Json.JsonSerializer.Serialize(result.Entities, new System.Text.Json.JsonSerializerOptions
-			{
-				WriteIndented = true,
-				PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
-			});
+			var entitiesJson = JsonSerializer.Serialize(result.Entities, _jsonSerializerOptions);
 			var documentGuid = _documentGuid ?? Guid.NewGuid().ToString();
 			htmlContent = ModularHtmlTemplate.Generate(entitiesJson, documentGuid, customCss);
 		}
 		else
 		{
-			htmlContent = result.HtmlContent;
+			// Use the provided GUID if specified, otherwise use the one from the result
+			if (!string.IsNullOrEmpty(_documentGuid))
+			{
+				var entitiesJson = JsonSerializer.Serialize(result.Entities, _jsonSerializerOptions);
+				htmlContent = ModularHtmlTemplate.Generate(entitiesJson, _documentGuid, null);
+			}
+			else
+			{
+				htmlContent = result.HtmlContent;
+			}
 		}
 
 		// Write the HTML file
@@ -129,7 +142,10 @@ public partial class SchemaGenerator(FileInfo dbContextFile, string? outputPath 
 
 		Console.WriteLine("✅ Interactive schema visualization generated!");
 		Console.WriteLine($"📄 Output file: {fullOutputPath}");
-		Console.WriteLine($"🆔 Document GUID: {result.DocumentGuid}");
+		
+		var displayGuid = _documentGuid ?? result.DocumentGuid;
+		Console.WriteLine($"🆔 Document GUID: {displayGuid}");
+		
 		if (!string.IsNullOrEmpty(_documentGuid))
 		{
 			Console.WriteLine("🔄 Using provided GUID - will preserve existing localStorage state");
