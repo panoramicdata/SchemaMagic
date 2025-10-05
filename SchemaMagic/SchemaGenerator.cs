@@ -121,7 +121,7 @@ public partial class SchemaGenerator(FileInfo dbContextFile, string? outputPath 
 			var customCss = File.ReadAllText(_customCssPath);
 			var entitiesJson = JsonSerializer.Serialize(result.Entities, _jsonSerializerOptions);
 			var documentGuid = _documentGuid ?? Guid.NewGuid().ToString();
-			htmlContent = ModularHtmlTemplate.Generate(entitiesJson, documentGuid, customCss);
+			htmlContent = ModularHtmlTemplate.GenerateWithCustomCss(entitiesJson, documentGuid, customCss);
 		}
 		else
 		{

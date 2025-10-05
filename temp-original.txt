@@ -1,7 +1,7 @@
 ﻿using System.Reflection;
 using System.Text;
 
-namespace SchemaMagic.Core;
+namespace SchemaMagic.Tool;
 
 public static class ModularHtmlTemplate
 {
@@ -23,12 +23,14 @@ public static class ModularHtmlTemplate
 		return html;
 	}
 
-	// Static method to generate HTML content with custom CSS string
-	public static string GenerateWithCustomCss(string entitiesJson, string documentGuid, string? customCss)
+	public static string GenerateForDownload(string entitiesJson, Dictionary<string, object> currentState, string? customCssPath = null)
 	{
+		// Generate a new GUID for the downloaded document
+		var newGuid = Guid.NewGuid().ToString();
+
 		var html = LoadTemplate("template.html");
-		var css = string.IsNullOrEmpty(customCss) ? GetDefaultCss() : GetMergedCssFromString(customCss);
-		var javascript = CombineJavaScriptFiles(entitiesJson, documentGuid);
+		var css = GetMergedCss(customCssPath);
+		var javascript = CombineJavaScriptFiles(entitiesJson, newGuid, currentState);
 
 		// Replace placeholders
 		html = html.Replace("<!-- CSS STYLES -->", $"<style>\n{css}\n</style>");
@@ -44,8 +46,9 @@ public static class ModularHtmlTemplate
 
 	private static string GetMergedCss(string? customCssPath)
 	{
-		var defaultCss = GetDefaultCss();
+		var defaultCss = LoadTemplate("styles.css");
 
+		// If no custom CSS provided, return default
 		if (string.IsNullOrEmpty(customCssPath) || !File.Exists(customCssPath))
 		{
 			return defaultCss;
@@ -54,9 +57,16 @@ public static class ModularHtmlTemplate
 		try
 		{
 			var customCss = File.ReadAllText(customCssPath);
+
+			// Create merged CSS with proper comments and organization
 			var mergedCss = new StringBuilder();
 
-			// Start with default styles
+			// Add header comment
+			mergedCss.AppendLine("/* SchemaMagic Generated Styles */");
+			mergedCss.AppendLine("/* Default styles with custom overrides applied */");
+			mergedCss.AppendLine();
+
+			// Add default styles first
 			mergedCss.AppendLine("/* ========== DEFAULT STYLES ========== */");
 			mergedCss.AppendLine(defaultCss);
 			mergedCss.AppendLine();
@@ -81,32 +91,15 @@ public static class ModularHtmlTemplate
 		}
 	}
 
-	private static string GetMergedCssFromString(string customCss)
-	{
-		var defaultCss = GetDefaultCss();
-		var mergedCss = new StringBuilder();
-
-		// Start with default styles
-		mergedCss.AppendLine("/* ========== DEFAULT STYLES ========== */");
-		mergedCss.AppendLine(defaultCss);
-		mergedCss.AppendLine();
-
-		// Add custom overrides
-		mergedCss.AppendLine("/* ========== CUSTOM OVERRIDES ========== */");
-		mergedCss.AppendLine(customCss);
-
-		return mergedCss.ToString();
-	}
-
 	private static string CombineJavaScriptFiles(string entitiesJson, string documentGuid, Dictionary<string, object>? embeddedState = null)
 	{
 		var jsFiles = new[]
 		{
 			"variables.js",
-			"event-listeners.js", 
+			"event-listeners.js",
 			"pan-zoom.js",
 			"settings.js",
-			"force-directed-layout.js",
+			"force-directed-layout.js",  // Add force-directed layout before schema-generation
 			"schema-generation.js",
 			"table-generation.js",
 			"property-utilities.js",
@@ -120,7 +113,7 @@ public static class ModularHtmlTemplate
 		// Replace the entities JSON placeholder
 		combinedJs = combinedJs.Replace("ENTITIES_JSON_PLACEHOLDER", entitiesJson);
 
-		// Replace the document GUID placeholder  
+		// Replace the document GUID placeholder
 		combinedJs = combinedJs.Replace("DOCUMENT_GUID_PLACEHOLDER", documentGuid);
 
 		// If we have embedded state (for download), inject it
@@ -173,47 +166,27 @@ public static class ModularHtmlTemplate
 			return cached;
 		}
 
-		// First try to load from Templates directory (capital T) relative to current location
-		var currentDir = Directory.GetCurrentDirectory();
-		var templatesPath = Path.Combine(currentDir, "Templates", fileName);
-		
-		if (File.Exists(templatesPath))
+		var assembly = Assembly.GetExecutingAssembly();
+		var resourceName = $"SchemaMagic.Tool.Templates.{fileName}";
+
+		using var stream = assembly.GetManifestResourceStream(resourceName);
+		if (stream == null)
 		{
-			var content = File.ReadAllText(templatesPath);
-			_templateCache[fileName] = content;
-			return content;
+			// Fallback to file system if embedded resource not found
+			var filePath = Path.Combine("Templates", fileName);
+			if (File.Exists(filePath))
+			{
+				var content = File.ReadAllText(filePath);
+				_templateCache[fileName] = content;
+				return content;
+			}
+
+			throw new FileNotFoundException($"Template file not found: {fileName}");
 		}
 
-		// Try lowercase templates directory
-		var templatesPath2 = Path.Combine(currentDir, "templates", fileName);
-		
-		if (File.Exists(templatesPath2))
-		{
-			var content = File.ReadAllText(templatesPath2);
-			_templateCache[fileName] = content;
-			return content;
-		}
-
-		// Try relative to the assembly location
-		var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-		var templatesPath3 = Path.Combine(assemblyDir, "..", "..", "..", "..", "Templates", fileName);
-		
-		if (File.Exists(templatesPath3))
-		{
-			var content = File.ReadAllText(templatesPath3);
-			_templateCache[fileName] = content;
-			return content;
-		}
-
-		// Fallback: look up from current directory
-		var templatesPath4 = Path.Combine("..", "Templates", fileName);
-		if (File.Exists(templatesPath4))
-		{
-			var content = File.ReadAllText(templatesPath4);
-			_templateCache[fileName] = content;
-			return content;
-		}
-
-		throw new FileNotFoundException($"Template file not found: {fileName} (searched in Templates/, templates/, and assembly-relative paths)");
+		using var reader = new StreamReader(stream);
+		var template = reader.ReadToEnd();
+		_templateCache[fileName] = template;
+		return template;
 	}
 }
