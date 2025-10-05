@@ -131,6 +131,7 @@ dotnet run -- "C:\Path\To\MagicSuite.Data\Repositories.EfCore\CodeContext.cs"
 - **Program.cs**: Command-line interface using System.CommandLine
 - **ModularHtmlTemplate**: HTML/CSS/JS template system for output generation
 - **EntityInfo/PropertyInfo**: Data models for entity representation
+- **SchemaMagic.Core**: Shared library containing sophisticated analysis engine and template system
 
 ### Key Processing Steps
 1. **Parse DbContext**: Uses Roslyn to analyze C# syntax trees
@@ -138,19 +139,52 @@ dotnet run -- "C:\Path\To\MagicSuite.Data\Repositories.EfCore\CodeContext.cs"
 3. **Property Extraction**: Analyzes entity classes for properties and relationships
 4. **Foreign Key Detection**: Uses EF snapshots or heuristic analysis
 5. **JSON Serialization**: Converts entities to JSON for JavaScript consumption
-6. **HTML Generation**: Embeds JSON data in interactive HTML template
+6. **HTML Generation**: Embeds JSON data in sophisticated interactive HTML template
+
+### Template System Architecture
+- **Templates/ Directory**: Contains modular JavaScript/CSS files for sophisticated rendering
+- **ModularHtmlTemplate.cs**: Combines templates and injects entity data
+- **11 JavaScript Modules**: variables.js, event-listeners.js, pan-zoom.js, settings.js, force-directed-layout.js, schema-generation.js, table-generation.js, property-utilities.js, table-interaction.js, relationships.js, controls.js
+- **Sophisticated CSS**: Property type colors, relationship lines, interactive styling
 
 ### Output Behavior
 - **Output Directory**: Always creates `Output/` subdirectory relative to DbContext
 - **File Naming**: Follows pattern `{DbContextName}-Schema.html`
 - **State Persistence**: Each file has unique GUID for localStorage isolation
 - **Browser Integration**: Automatically opens generated HTML in default browser
+- **File Size**: Complex schemas generate 140-250KB HTML files with embedded templates
 
 ### Error Handling
 - **Missing DbContext**: Clear error message with usage suggestions
 - **No Entities Found**: Detailed logging shows discovery process
 - **File Not Found**: Validates all input files before processing
 - **Parse Errors**: Gracefully handles malformed C# files with warnings
+- **Template Loading**: Multiple fallback paths for template file discovery
+
+### GitHub Copilot Terminal Guidelines
+**IMPORTANT**: Avoid interactive commands that require user input in terminal:
+- ? **Don't use**: `git show`, `less`, `more`, `cat` (for large files)
+- ? **Don't use**: Commands that trigger pagination or require pressing space/enter
+- ? **Use instead**: `git show --no-pager`, `Get-Content | Select-Object -First N`, `head -N`
+- ? **Use**: `git log --oneline`, `git diff --name-only`, `dir`, `Get-ChildItem`
+- ? **For large output**: Use `| Select-Object -First 20` or `| head -20` to limit output
+
+### Git Command Examples
+```bash
+# ? Avoid (requires interaction)
+git show 33f12cb:SchemaMagic/HtmlTemplateModular.cs
+
+# ? Use instead  
+git show --no-pager 33f12cb:SchemaMagic/HtmlTemplateModular.cs | head -50
+git log --oneline --no-pager | head -10
+Get-Content file.txt | Select-Object -First 20
+
+# ? Safe commands
+git log --oneline
+git status
+git diff --name-only
+git show --name-only 33f12cb
+```
 
 ## Testing & Quality Assurance
 
