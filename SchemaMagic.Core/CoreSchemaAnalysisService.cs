@@ -461,15 +461,15 @@ public static partial class CoreSchemaAnalysisService
             // Clean up the type string
             propertyType = propertyType.Replace("?", "").Trim();
 
-            // Check if this property is a foreign key
-            var isForeignKey = entityForeignKeys.Contains(propertyName);
+            // Check if this property is a foreign key (from EF snapshot OR heuristic detection)
+            var isForeignKey = entityForeignKeys.Contains(propertyName) || IsHeuristicForeignKey(propertyName, propertyType);
 
             var propertyInfo = new PropertyInfo
             {
                 Name = propertyName,
                 Type = propertyType,
                 IsKey = IsKeyProperty(propertyName, entityName),
-                IsForeignKey = isForeignKey // Use the FK data from EF snapshot
+                IsForeignKey = isForeignKey
             };
 
             Console.WriteLine($"   Property: {propertyName} ({propertyType}) - Key: {propertyInfo.IsKey}, FK: {propertyInfo.IsForeignKey}");
@@ -478,6 +478,14 @@ public static partial class CoreSchemaAnalysisService
 
         Console.WriteLine($"? Extracted {properties.Count} properties for {entityName}");
         return properties;
+    }
+
+    private static bool IsHeuristicForeignKey(string propertyName, string propertyType)
+    {
+        // Heuristic FK detection for when no EF snapshot is available
+        return propertyName.EndsWith("Id", StringComparison.OrdinalIgnoreCase) &&
+               !propertyName.Equals("Id", StringComparison.OrdinalIgnoreCase) && // Not the primary key "Id"
+               (propertyType.Contains("int") || propertyType.Contains("Guid")); // FK types
     }
 
     private static bool IsKeyProperty(string propertyName, string entityName) =>
