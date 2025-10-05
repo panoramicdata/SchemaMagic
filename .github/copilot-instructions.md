@@ -202,12 +202,14 @@ git show --name-only 33f12cb
 - ? **Git integration with proper ignore rules**
 
 ### Sample Test DbContext
-The project includes test capability with sample entities:
-- 4 related entities (User, Company, Post, Comment)
-- Foreign key relationships
-- Navigation properties
-- Collection properties
-- Proper EF Core configuration
+The project includes a comprehensive test example with enterprise-level complexity:
+- **12 related entities**: Company, Department, User, Project, Task, Document, Comment, Attachment, Tag, TaskTag, UserProject, AuditLog
+- **Extensive properties**: User entity has 40+ properties (perfect for Full Height feature)
+- **Complex foreign key relationships**: Multiple FK chains and navigation properties
+- **Many-to-many relationships**: TaskTag and UserProject junction tables with composite keys
+- **Real-world scenarios**: Project management system with users, projects, tasks, documents, comments, and audit trails
+- **Navigation properties**: Comprehensive collection and reference properties throughout
+- **Large property lists**: Entities like User, Project, and Task have 20-40 properties to showcase Full Height toggle
 
 ### Production Validation
 Successfully tested against Magic Suite production schemas:
