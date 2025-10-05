@@ -1,12 +1,15 @@
+using Octokit;
+using System.Text;
+
 namespace SchemaMagic.Web.Services;
 
 public class GitHubService(HttpClient httpClient)
 {
-	private readonly GitHubClient _gitHubClient = new GitHubClient(new ProductHeaderValue("SchemaMagic-Web"));
+	private readonly GitHubClient _gitHubClient = new(new ProductHeaderValue("SchemaMagic-Web"));
 
 	public async Task<List<DbContextInfo>> FindDbContextFilesAsync(string repoUrl)
 	{
-		var repoInfo = ParseGitHubUrl(repoUrl) ?? throw new ArgumentException("Invalid GitHub repository URL");
+		var (Owner, Name) = ParseGitHubUrl(repoUrl) ?? throw new ArgumentException("Invalid GitHub repository URL");
 		var dbContextFiles = new List<DbContextInfo>();
 
 		try
@@ -14,8 +17,8 @@ public class GitHubService(HttpClient httpClient)
 			// Search for files containing "DbContext" in the repository
 			var searchRequest = new SearchCodeRequest("DbContext")
 			{
-				Repos = new RepositoryCollection { $"{repoInfo.Owner}/{repoInfo.Name}" },
-				Extensions = new[] { "cs" }
+				Repos = [$"{Owner}/{Name}"],
+				Extensions = ["cs"]
 			};
 
 			var searchResult = await _gitHubClient.Search.SearchCode(searchRequest);
@@ -23,7 +26,7 @@ public class GitHubService(HttpClient httpClient)
 			foreach (var file in searchResult.Items)
 			{
 				// Get file content to verify it's actually a DbContext
-				var fileContent = await GetFileContentAsync(repoInfo.Owner, repoInfo.Name, file.Path);
+				var fileContent = await GetFileContentAsync(Owner, Name, file.Path);
 
 				if (IsDbContextFile(fileContent))
 				{
@@ -32,7 +35,7 @@ public class GitHubService(HttpClient httpClient)
 						FileName = Path.GetFileName(file.Path),
 						FilePath = file.Path,
 						Content = fileContent,
-						Repository = $"{repoInfo.Owner}/{repoInfo.Name}"
+						Repository = $"{Owner}/{Name}"
 					});
 				}
 			}

@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>net9.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+
+		<!-- Library Configuration -->
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<PackageId>SchemaMagic.Core</PackageId>
+		<Version>1.0.0</Version>
+		<Authors>Panoramic Data Limited</Authors>
+		<Company>Panoramic Data Limited</Company>
+		<Product>SchemaMagic Core</Product>
+		<Description>Core library for SchemaMagic - Entity Framework Core Schema Analysis Engine</Description>
+		<Copyright>© 2025 Panoramic Data Limited</Copyright>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
+	</ItemGroup>
+
+</Project>

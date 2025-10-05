@@ -7,306 +7,306 @@
 <PageTitle>Analyze Schema - SchemaMagic Web</PageTitle>
 
 <div class="analyze-page">
-    <div class="container">
-        <div class="row">
-            <div class="col-12">
-                <h1>?? Analyze Repository Schema</h1>
-                <p class="lead">Enter a GitHub repository URL to discover and analyze DbContext files.</p>
-            </div>
-        </div>
+	<div class="container">
+		<div class="row">
+			<div class="col-12">
+				<h1>?? Analyze Repository Schema</h1>
+				<p class="lead">Enter a GitHub repository URL to discover and analyze DbContext files.</p>
+			</div>
+		</div>
 
-        @if (!string.IsNullOrEmpty(errorMessage))
-        {
-            <div class="alert alert-danger" role="alert">
-                <strong>Error:</strong> @errorMessage
-            </div>
-        }
+		@if (!string.IsNullOrEmpty(errorMessage))
+		{
+			<div class="alert alert-danger" role="alert">
+				<strong>Error:</strong> @errorMessage
+			</div>
+		}
 
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="mb-0">?? Repository Information</h4>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <label for="repoUrl" class="form-label">GitHub Repository URL</label>
-                            <div class="input-group">
-                                <input type="url" 
-                                       class="form-control" 
-                                       id="repoUrl" 
-                                       @bind="repositoryUrl" 
-                                       placeholder="https://github.com/owner/repository"
-                                       disabled="@isLoading" />
-                                <button class="btn btn-primary" 
-                                        type="button" 
-                                        @onclick="DiscoverDbContextsAsync"
-                                        disabled="@(isLoading || string.IsNullOrWhiteSpace(repositoryUrl))">
-                                    @if (isLoading)
-                                    {
-                                        <span class="spinner-border spinner-border-sm" role="status"></span>
-                                        <span>Discovering...</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="oi oi-magnifying-glass"></span>
-                                        <span>Discover</span>
-                                    }
-                                </button>
-                            </div>
-                            <div class="form-text">
-                                Example: https://github.com/panoramicdata/SchemaMagic
-                            </div>
-                        </div>
+		<div class="row">
+			<div class="col-md-8">
+				<div class="card">
+					<div class="card-header">
+						<h4 class="mb-0">?? Repository Information</h4>
+					</div>
+					<div class="card-body">
+						<div class="mb-3">
+							<label for="repoUrl" class="form-label">GitHub Repository URL</label>
+							<div class="input-group">
+								<input type="url"
+									   class="form-control"
+									   id="repoUrl"
+									   @bind="repositoryUrl"
+									   placeholder="https://github.com/owner/repository"
+									   disabled="@isLoading" />
+								<button class="btn btn-primary"
+										type="button"
+										@onclick="DiscoverDbContextsAsync"
+										disabled="@(isLoading || string.IsNullOrWhiteSpace(repositoryUrl))">
+									@if (isLoading)
+									{
+										<span class="spinner-border spinner-border-sm" role="status"></span>
+										<span>Discovering...</span>
+									}
+									else
+									{
+										<span class="oi oi-magnifying-glass"></span>
+										<span>Discover</span>
+									}
+								</button>
+							</div>
+							<div class="form-text">
+								Example: https://github.com/panoramicdata/SchemaMagic
+							</div>
+						</div>
 
-                        @if (dbContextFiles.Any())
-                        {
-                            <div class="mb-3">
-                                <label for="dbContextSelect" class="form-label">Select DbContext File</label>
-                                <select class="form-select" 
-                                        id="dbContextSelect" 
-                                        @bind="selectedDbContextPath"
-                                        disabled="@isAnalyzing">
-                                    <option value="">Choose a DbContext file...</option>
-                                    @foreach (var file in dbContextFiles)
-                                    {
-                                        <option value="@file.FilePath">@file.FileName (@file.FilePath)</option>
-                                    }
-                                </select>
-                            </div>
+						@if (dbContextFiles.Any())
+						{
+							<div class="mb-3">
+								<label for="dbContextSelect" class="form-label">Select DbContext File</label>
+								<select class="form-select"
+										id="dbContextSelect"
+										@bind="selectedDbContextPath"
+										disabled="@isAnalyzing">
+									<option value="">Choose a DbContext file...</option>
+									@foreach (var file in dbContextFiles)
+									{
+										<option value="@file.FilePath">@file.FileName (@file.FilePath)</option>
+									}
+								</select>
+							</div>
 
-                            <button class="btn btn-success" 
-                                    type="button" 
-                                    @onclick="AnalyzeSchemaAsync"
-                                    disabled="@(isAnalyzing || string.IsNullOrEmpty(selectedDbContextPath))">
-                                @if (isAnalyzing)
-                                {
-                                    <span class="spinner-border spinner-border-sm" role="status"></span>
-                                    <span>Analyzing...</span>
-                                }
-                                else
-                                {
-                                    <span class="oi oi-graph"></span>
-                                    <span>Analyze Schema</span>
-                                }
-                            </button>
-                        }
-                    </div>
-                </div>
-            </div>
+							<button class="btn btn-success"
+									type="button"
+									@onclick="AnalyzeSchemaAsync"
+									disabled="@(isAnalyzing || string.IsNullOrEmpty(selectedDbContextPath))">
+								@if (isAnalyzing)
+								{
+									<span class="spinner-border spinner-border-sm" role="status"></span>
+									<span>Analyzing...</span>
+								}
+								else
+								{
+									<span class="oi oi-graph"></span>
+									<span>Analyze Schema</span>
+								}
+							</button>
+						}
+					</div>
+				</div>
+			</div>
 
-            <div class="col-md-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0">?? Results</h5>
-                    </div>
-                    <div class="card-body">
-                        @if (dbContextFiles.Any())
-                        {
-                            <div class="mb-3">
-                                <strong>DbContext Files Found:</strong> @dbContextFiles.Count
-                                <ul class="list-unstyled mt-2">
-                                    @foreach (var file in dbContextFiles)
-                                    {
-                                        <li class="text-muted">?? @file.FileName</li>
-                                    }
-                                </ul>
-                            </div>
-                        }
+			<div class="col-md-4">
+				<div class="card">
+					<div class="card-header">
+						<h5 class="mb-0">?? Results</h5>
+					</div>
+					<div class="card-body">
+						@if (dbContextFiles.Any())
+						{
+							<div class="mb-3">
+								<strong>DbContext Files Found:</strong> @dbContextFiles.Count
+								<ul class="list-unstyled mt-2">
+									@foreach (var file in dbContextFiles)
+									{
+										<li class="text-muted">?? @file.FileName</li>
+									}
+								</ul>
+							</div>
+						}
 
-                        @if (analysisResult != null && analysisResult.Success)
-                        {
-                            <div class="analysis-results">
-                                <strong>Analysis Complete!</strong>
-                                <ul class="list-unstyled mt-2">
-                                    <li>?? Entities Found: @analysisResult.EntitiesFound</li>
-                                    <li>?? Document ID: @analysisResult.DocumentGuid.Substring(0, 8)...</li>
-                                </ul>
-                                
-                                <div class="mt-3">
-                                    <button class="btn btn-primary btn-sm w-100 mb-2" 
-                                            @onclick="ViewSchemaAsync">
-                                        <span class="oi oi-eye"></span> View Schema
-                                    </button>
-                                    <button class="btn btn-outline-secondary btn-sm w-100" 
-                                            @onclick="DownloadSchemaAsync">
-                                        <span class="oi oi-data-transfer-download"></span> Download HTML
-                                    </button>
-                                </div>
-                            </div>
-                        }
-                    </div>
-                </div>
+						@if (analysisResult != null && analysisResult.Success)
+						{
+							<div class="analysis-results">
+								<strong>Analysis Complete!</strong>
+								<ul class="list-unstyled mt-2">
+									<li>?? Entities Found: @analysisResult.EntitiesFound</li>
+									<li>?? Document ID: @analysisResult.DocumentGuid.Substring(0, 8)...</li>
+								</ul>
 
-                <div class="card mt-3">
-                    <div class="card-header">
-                        <h6 class="mb-0">?? Tips</h6>
-                    </div>
-                    <div class="card-body">
-                        <ul class="list-unstyled">
-                            <li>? Only public repositories are supported</li>
-                            <li>?? DbContext files are automatically detected</li>
-                            <li>? Analysis happens in your browser</li>
-                            <li>?? Generated schemas work offline</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
+								<div class="mt-3">
+									<button class="btn btn-primary btn-sm w-100 mb-2"
+											@onclick="ViewSchemaAsync">
+										<span class="oi oi-eye"></span> View Schema
+									</button>
+									<button class="btn btn-outline-secondary btn-sm w-100"
+											@onclick="DownloadSchemaAsync">
+										<span class="oi oi-data-transfer-download"></span> Download HTML
+									</button>
+								</div>
+							</div>
+						}
+					</div>
+				</div>
 
-        @if (analysisResult != null && analysisResult.Success)
-        {
-            <div class="row mt-4">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-header">
-                            <h4 class="mb-0">?? Entity Preview</h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                @foreach (var entity in analysisResult.Entities.Take(6))
-                                {
-                                    <div class="col-md-4 mb-3">
-                                        <div class="entity-preview">
-                                            <h6>@entity.Key</h6>
-                                            <small class="text-muted">
-                                                @entity.Value.Properties.Count properties
-                                                @if (!string.IsNullOrEmpty(entity.Value.BaseType))
-                                                {
-                                                    <br />Inherits: @entity.Value.BaseType
-                                                }
-                                            </small>
-                                        </div>
-                                    </div>
-                                }
-                            </div>
-                            @if (analysisResult.Entities.Count > 6)
-                            {
-                                <p class="text-muted mt-2">
-                                    And @(analysisResult.Entities.Count - 6) more entities...
-                                </p>
-                            }
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-    </div>
+				<div class="card mt-3">
+					<div class="card-header">
+						<h6 class="mb-0">?? Tips</h6>
+					</div>
+					<div class="card-body">
+						<ul class="list-unstyled">
+							<li>? Only public repositories are supported</li>
+							<li>?? DbContext files are automatically detected</li>
+							<li>? Analysis happens in your browser</li>
+							<li>?? Generated schemas work offline</li>
+						</ul>
+					</div>
+				</div>
+			</div>
+		</div>
+
+		@if (analysisResult != null && analysisResult.Success)
+		{
+			<div class="row mt-4">
+				<div class="col-12">
+					<div class="card">
+						<div class="card-header">
+							<h4 class="mb-0">?? Entity Preview</h4>
+						</div>
+						<div class="card-body">
+							<div class="row">
+								@foreach (var entity in analysisResult.Entities.Take(6))
+								{
+									<div class="col-md-4 mb-3">
+										<div class="entity-preview">
+											<h6>@entity.Key</h6>
+											<small class="text-muted">
+												@entity.Value.Properties.Count properties
+												@if (!string.IsNullOrEmpty(entity.Value.BaseType))
+												{
+												<br />
+												Inherits: @entity.Value.BaseType
+																						}
+											</small>
+										</div>
+									</div>
+								}
+							</div>
+							@if (analysisResult.Entities.Count > 6)
+							{
+								<p class="text-muted mt-2">
+									And @(analysisResult.Entities.Count - 6) more entities...
+								</p>
+							}
+						</div>
+					</div>
+				</div>
+			</div>
+		}
+	</div>
 </div>
 
 <style>
-    .analyze-page {
-        padding: 40px 0;
-    }
+	.analyze-page {
+		padding: 40px 0;
+	}
 
-    .entity-preview {
-        padding: 15px;
-        border: 1px solid #dee2e6;
-        border-radius: 8px;
-        background: #f8f9fa;
-    }
+	.entity-preview {
+		padding: 15px;
+		border: 1px solid #dee2e6;
+		border-radius: 8px;
+		background: #f8f9fa;
+	}
 
-    .analysis-results {
-        background: #d4edda;
-        border: 1px solid #c3e6cb;
-        border-radius: 8px;
-        padding: 15px;
-    }
+	.analysis-results {
+		background: #d4edda;
+		border: 1px solid #c3e6cb;
+		border-radius: 8px;
+		padding: 15px;
+	}
 
-    .spinner-border-sm {
-        width: 0.875rem;
-        height: 0.875rem;
-    }
+	.spinner-border-sm {
+		width: 0.875rem;
+		height: 0.875rem;
+	}
 </style>
 
 @code {
-    private string repositoryUrl = "";
-    private string selectedDbContextPath = "";
-    private string errorMessage = "";
-    private bool isLoading = false;
-    private bool isAnalyzing = false;
-    private List<DbContextInfo> dbContextFiles = new();
-    private SchemaAnalysisResult? analysisResult;
+	private string repositoryUrl = "";
+	private string selectedDbContextPath = "";
+	private string errorMessage = "";
+	private bool isLoading = false;
+	private bool isAnalyzing = false;
+	private List<DbContextInfo> dbContextFiles = new();
+	private SchemaAnalysisResult? analysisResult;
 
-    private async Task DiscoverDbContextsAsync()
-    {
-        if (string.IsNullOrWhiteSpace(repositoryUrl))
-            return;
+	private async Task DiscoverDbContextsAsync()
+	{
+		if (string.IsNullOrWhiteSpace(repositoryUrl))
+			return;
 
-        isLoading = true;
-        errorMessage = "";
-        dbContextFiles.Clear();
-        StateHasChanged();
+		isLoading = true;
+		errorMessage = "";
+		dbContextFiles.Clear();
+		StateHasChanged();
 
-        try
-        {
-            dbContextFiles = await GitHubService.FindDbContextFilesAsync(repositoryUrl);
-            
-            if (!dbContextFiles.Any())
-            {
-                errorMessage = "No DbContext files found in the repository.";
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = ex.Message;
-        }
-        finally
-        {
-            isLoading = false;
-            StateHasChanged();
-        }
-    }
+		try
+		{
+			dbContextFiles = await GitHubService.FindDbContextFilesAsync(repositoryUrl);
 
-    private async Task AnalyzeSchemaAsync()
-    {
-        if (string.IsNullOrEmpty(selectedDbContextPath))
-            return;
+			if (!dbContextFiles.Any())
+			{
+				errorMessage = "No DbContext files found in the repository.";
+			}
+		}
+		catch (Exception ex)
+		{
+			errorMessage = ex.Message;
+		}
+		finally
+		{
+			isLoading = false;
+			StateHasChanged();
+		}
+	}
 
-        isAnalyzing = true;
-        errorMessage = "";
-        StateHasChanged();
+	private async Task AnalyzeSchemaAsync()
+	{
+		if (string.IsNullOrEmpty(selectedDbContextPath))
+			return;
 
-        try
-        {
-            var selectedFile = dbContextFiles.FirstOrDefault(f => f.FilePath == selectedDbContextPath);
-            if (selectedFile != null)
-            {
-                analysisResult = await SchemaAnalysisService.AnalyzeDbContextAsync(
-                    selectedFile.Content, 
-                    selectedFile.FileName);
+		isAnalyzing = true;
+		errorMessage = "";
+		StateHasChanged();
 
-                if (!analysisResult.Success)
-                {
-                    errorMessage = analysisResult.ErrorMessage ?? "Analysis failed.";
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            errorMessage = ex.Message;
-        }
-        finally
-        {
-            isAnalyzing = false;
-            StateHasChanged();
-        }
-    }
+		try
+		{
+			var selectedFile = dbContextFiles.FirstOrDefault(f => f.FilePath == selectedDbContextPath);
+			if (selectedFile != null)
+			{
+				analysisResult = await SchemaAnalysisService.AnalyzeDbContextAsync(
+					selectedFile.Content);
 
-    private async Task ViewSchemaAsync()
-    {
-        if (analysisResult?.Success == true)
-        {
-            await JSRuntime.InvokeVoidAsync("openSchemaInNewTab", analysisResult.HtmlContent);
-        }
-    }
+				if (!analysisResult.Success)
+				{
+					errorMessage = analysisResult.ErrorMessage ?? "Analysis failed.";
+				}
+			}
+		}
+		catch (Exception ex)
+		{
+			errorMessage = ex.Message;
+		}
+		finally
+		{
+			isAnalyzing = false;
+			StateHasChanged();
+		}
+	}
 
-    private async Task DownloadSchemaAsync()
-    {
-        if (analysisResult?.Success == true)
-        {
-            var fileName = $"Schema-{DateTime.Now:yyyyMMdd-HHmmss}.html";
-            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, analysisResult.HtmlContent, "text/html");
-        }
-    }
+	private async Task ViewSchemaAsync()
+	{
+		if (analysisResult?.Success == true)
+		{
+			await JSRuntime.InvokeVoidAsync("openSchemaInNewTab", analysisResult.HtmlContent);
+		}
+	}
+
+	private async Task DownloadSchemaAsync()
+	{
+		if (analysisResult?.Success == true)
+		{
+			var fileName = $"Schema-{DateTime.Now:yyyyMMdd-HHmmss}.html";
+			await JSRuntime.InvokeVoidAsync("downloadFile", fileName, analysisResult.HtmlContent, "text/html");
+		}
+	}
 }
