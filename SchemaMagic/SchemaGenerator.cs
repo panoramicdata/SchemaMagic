@@ -330,9 +330,9 @@ public partial class SchemaGenerator(FileInfo dbContextFile, string? outputPath 
 			Console.WriteLine($"🔍 Processing entity: {entityName}");
 
 			// Check if we have FK data for this entity
-			if (foreignKeyRelationships.ContainsKey(entityName))
+			if (foreignKeyRelationships.TryGetValue(entityName, out List<string>? value))
 			{
-				Console.WriteLine($"   ✅ Found FK data: {string.Join(", ", foreignKeyRelationships[entityName])}");
+				Console.WriteLine($"   ✅ Found FK data: {string.Join(", ", value)}");
 			}
 
 			var entityClass = allClasses.FirstOrDefault(c => c.Identifier.Text == entityName);
@@ -545,10 +545,10 @@ public partial class SchemaGenerator(FileInfo dbContextFile, string? outputPath 
 					}
 
 					// Look for HasForeignKey within the relationship chain
-					if (currentEntity != null && line.Contains(".HasForeignKey(") && line.Contains("\""))
+					if (currentEntity != null && line.Contains(".HasForeignKey(") && line.Contains('\"'))
 					{
 						// Extract foreign key property name
-						var fkMatch = Regex.Match(line, @"\.HasForeignKey\(""([^""]+)""\)");
+						var fkMatch = HasForeignKeyRegex().Match(line);
 						if (fkMatch.Success)
 						{
 							var foreignKeyProperty = fkMatch.Groups[1].Value;
@@ -635,4 +635,7 @@ public partial class SchemaGenerator(FileInfo dbContextFile, string? outputPath 
 		var match = Regex.Match(dbSetType, @"DbSet<(.+?)>");
 		return match.Success ? match.Groups[1].Value : null;
 	}
+
+	[GeneratedRegex(@"\.HasForeignKey\(""([^""]+)""\)")]
+	private static partial Regex HasForeignKeyRegex();
 }

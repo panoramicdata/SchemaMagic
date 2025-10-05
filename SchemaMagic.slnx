@@ -6,6 +6,8 @@
     <File Path="global.json" />
     <File Path="LICENSE" />
     <File Path="README.md" />
+    <File Path="SchemaMagic.dic" />
   </Folder>
+  <Project Path="SchemaMagic.Web/SchemaMagic.Web.csproj" />
   <Project Path="SchemaMagic/SchemaMagic.csproj" />
 </Solution>

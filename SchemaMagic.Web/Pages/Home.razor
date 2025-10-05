@@ -1,0 +1,171 @@
+@page "/"
+@inject IJSRuntime JSRuntime
+
+<PageTitle>SchemaMagic Web - Interactive Schema Visualizer</PageTitle>
+
+<div class="hero-section">
+    <div class="hero-content">
+        <h1 class="display-4">? SchemaMagic Web</h1>
+        <p class="lead">Interactive Entity Framework Core Schema Visualizer</p>
+        <p class="mb-4">
+            Analyze GitHub repositories to find DbContext files and generate beautiful, 
+            interactive schema diagrams directly in your browser.
+        </p>
+        <div class="hero-buttons">
+            <a href="/analyze" class="btn btn-primary btn-lg me-3">
+                <span class="oi oi-graph" aria-hidden="true"></span>
+                Analyze Repository
+            </a>
+            <a href="https://github.com/panoramicdata/SchemaMagic" target="_blank" class="btn btn-outline-secondary btn-lg">
+                <span class="oi oi-external-link" aria-hidden="true"></span>
+                View on GitHub
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="features-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2>?? Key Features</h2>
+                <p class="text-muted">Everything you need for database schema visualization</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">??</div>
+                    <h4>GitHub Integration</h4>
+                    <p>Connect to any public GitHub repository and automatically discover DbContext files.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">???</div>
+                    <h4>Interactive Diagrams</h4>
+                    <p>Drag tables, zoom, pan, and explore relationships in beautiful SVG-rendered schemas.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">?</div>
+                    <h4>Real-time Analysis</h4>
+                    <p>Instant schema generation using Roslyn parsing - no compilation required.</p>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">??</div>
+                    <h4>Professional Styling</h4>
+                    <p>Beautiful, responsive designs with hover effects and modern UI components.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">??</div>
+                    <h4>Mobile Friendly</h4>
+                    <p>Works seamlessly on desktop, tablet, and mobile devices.</p>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="feature-card">
+                    <div class="feature-icon">??</div>
+                    <h4>Export & Share</h4>
+                    <p>Download interactive HTML files or share links to generated schemas.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="getting-started-section">
+    <div class="container">
+        <div class="row">
+            <div class="col-12 text-center mb-5">
+                <h2>?? Getting Started</h2>
+                <p class="text-muted">Three simple steps to visualize your database schema</p>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4 text-center mb-4">
+                <div class="step-number">1</div>
+                <h4>Enter Repository URL</h4>
+                <p>Paste the GitHub repository URL containing your Entity Framework DbContext files.</p>
+            </div>
+            <div class="col-md-4 text-center mb-4">
+                <div class="step-number">2</div>
+                <h4>Select DbContext</h4>
+                <p>Choose from automatically discovered DbContext files in the repository.</p>
+            </div>
+            <div class="col-md-4 text-center mb-4">
+                <div class="step-number">3</div>
+                <h4>Explore Schema</h4>
+                <p>Interact with your generated schema diagram and export the results.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 80px 0;
+        text-align: center;
+    }
+
+    .hero-content {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 0 20px;
+    }
+
+    .hero-buttons {
+        margin-top: 30px;
+    }
+
+    .features-section {
+        padding: 80px 0;
+        background: #f8f9fa;
+    }
+
+    .feature-card {
+        text-align: center;
+        padding: 30px 20px;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        height: 100%;
+        transition: transform 0.3s ease;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .feature-icon {
+        font-size: 3rem;
+        margin-bottom: 20px;
+    }
+
+    .getting-started-section {
+        padding: 80px 0;
+    }
+
+    .step-number {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #667eea;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        font-weight: bold;
+        margin: 0 auto 20px;
+    }
+</style>

@@ -1,0 +1,19 @@
+@inherits LayoutView
+
+<div class="page">
+    <div class="sidebar">
+        <NavMenu />
+    </div>
+
+    <main>
+        <div class="top-row px-4">
+            <a href="https://github.com/panoramicdata/SchemaMagic" target="_blank" class="ml-md-auto">
+                <span class="oi oi-external-link" aria-hidden="true"></span> GitHub
+            </a>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>

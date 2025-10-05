@@ -1,4 +1,4 @@
-# SchemaMagic ?
+﻿# SchemaMagic ✨
 
 **Interactive HTML+SVG Database Schema Visualizer for Entity Framework Core**
 
@@ -8,32 +8,43 @@ Transform your Entity Framework DbContexts into beautiful, interactive schema di
 [![Downloads](https://img.shields.io/nuget/dt/SchemaMagic.svg)](https://www.nuget.org/packages/SchemaMagic)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![.NET](https://img.shields.io/badge/.NET-9.0-purple.svg)](https://dotnet.microsoft.com/)
+[![Web App](https://img.shields.io/badge/Web-App-blue.svg)](https://panoramicdata.github.io/SchemaMagic)
 
-## ?? Features
+## 🌐 Try Online
 
-- ??? **Interactive Tables**: Drag tables around, pan and zoom the canvas
-- ?? **Smart Relationships**: Automatic detection of foreign keys and navigation properties
-- ?? **Professional Styling**: Beautiful SVG rendering with hover effects and animations
-- ?? **Physics-Based Layout**: Intelligent auto-positioning of tables for optimal readability
-- ?? **Click to Navigate**: Click FK/Navigation properties to jump between related entities
-- ?? **Table Selection**: Click tables to highlight and filter their relationships
-- ?? **Persistent Customization**: Your layout changes are saved and restored automatically
-- ?? **Self-Contained**: Generated HTML files work offline with no external dependencies
-- ? **Fast Generation**: Parses C# code directly using Roslyn - no compilation needed
+**[🚀 SchemaMagic Web](https://panoramicdata.github.io/SchemaMagic)** - Analyze GitHub repositories online without installing anything!
+
+## 🎯 Features
+
+- 🖱️ **Interactive Tables**: Drag tables around, pan and zoom the canvas
+- 🔗 **Smart Relationships**: Automatic detection of foreign keys and navigation properties
+- 🎨 **Professional Styling**: Beautiful SVG rendering with hover effects and animations
+- 🧲 **Physics-Based Layout**: Intelligent auto-positioning of tables for optimal readability
+- 🔍 **Click to Navigate**: Click FK/Navigation properties to jump between related entities
+- 📋 **Table Selection**: Click tables to highlight and filter their relationships
+- 💾 **Persistent Customization**: Your layout changes are saved and restored automatically
+- 📦 **Self-Contained**: Generated HTML files work offline with no external dependencies
+- ⚡ **Fast Generation**: Parses C# code directly using Roslyn - no compilation needed
 
 ![SchemaMagic Demo](https://github.com/panoramicdata/SchemaMagic/raw/main/docs/demo.gif)
 
-## ?? Quick Start
+## 🚀 Quick Start
 
-### Installation
+### Option 1: Web Application (No Installation)
+
+Visit **[SchemaMagic Web](https://panoramicdata.github.io/SchemaMagic)** to:
+- 📁 Analyze any public GitHub repository
+- 🔍 Automatically discover DbContext files
+- ⚡ Generate schemas instantly in your browser
+- 💾 Download interactive HTML files
+
+### Option 2: Command-Line Tool
 
 Install as a global .NET tool:
 
 ```bash
 dotnet tool install -g SchemaMagic
 ```
-
-### Basic Usage
 
 Generate an interactive schema from your DbContext:
 
@@ -58,7 +69,7 @@ The generated HTML file creates an interactive diagram where you can:
 - **Zoom and pan** to explore large schemas
 - **Toggle** inheritance and navigation property visibility
 
-## ?? Usage Guide
+## 📖 Usage Guide
 
 ### Command Line Options
 
@@ -81,14 +92,14 @@ Options:
 
 Once you open the generated HTML file:
 
-- **??? Drag Tables**: Click and drag any table to reposition it
-- **?? Pan & Zoom**: Use mouse wheel to zoom, drag background to pan
-- **?? Select Tables**: Click a table to select it and highlight its relationships
-- **? Deselect Tables**: Click a selected table again to deselect it
-- **?? Navigate**: Click foreign key or navigation properties to jump to related entities
-- **?? Toggle Options**: Use toolbar buttons to show/hide different elements
-- **?? Save Layout**: Your customizations are automatically saved in browser storage
-- **?? Keyboard**: Press `Escape` to deselect any selected table
+- **🖱️ Drag Tables**: Click and drag any table to reposition it
+- **🔍 Pan & Zoom**: Use mouse wheel to zoom, drag background to pan
+- **🎯 Select Tables**: Click a table to select it and highlight its relationships
+- **❌ Deselect Tables**: Click a selected table again to deselect it
+- **🧭 Navigate**: Click foreign key or navigation properties to jump to related entities
+- **⚙️ Toggle Options**: Use toolbar buttons to show/hide different elements
+- **💾 Save Layout**: Your customizations are automatically saved in browser storage
+- **⌨️ Keyboard**: Press `Escape` to deselect any selected table
 
 ### Relationship Visualization
 
@@ -101,13 +112,13 @@ SchemaMagic automatically detects and visualizes:
 
 ### Property Icons and Colors
 
-- **?? PK**: Primary Key (yellow)
-- **?? FK**: Foreign Key (purple) 
-- **?? N**: Navigation Property (green)
-- **?? INH**: Inherited Property (blue)
+- **🔑 PK**: Primary Key (yellow)
+- **🔗 FK**: Foreign Key (purple) 
+- **🧭 N**: Navigation Property (green)
+- **📊 INH**: Inherited Property (blue)
 - **Type Colors**: Different colors for strings, numbers, dates, etc.
 
-## ?? Customization
+## 🎨 Customization
 
 ### Custom Styling
 
@@ -131,7 +142,7 @@ Each generated schema has a unique GUID for localStorage. To maintain layouts ac
 schemamagic MyDbContext.cs --guid "your-custom-guid-here"
 ```
 
-## ??? Development
+## 🛠️ Development
 
 ### Building from Source
 
@@ -141,6 +152,15 @@ cd SchemaMagic
 dotnet build
 dotnet run -- path/to/YourDbContext.cs
 ```
+
+### Running the Web Application Locally
+
+```bash
+cd SchemaMagic.Web
+dotnet run
+```
+
+The web application will be available at `https://localhost:5001`
 
 ### Running Tests
 
@@ -152,22 +172,32 @@ dotnet test
 
 ```
 SchemaMagic/
-??? src/
-?   ??? SchemaMagic/            # Main tool project
-??? templates/                  # Modular HTML/CSS/JS templates
-??? samples/                    # Example DbContexts for testing
-??? tests/                      # Unit and integration tests
-??? docs/                       # Documentation and examples
-??? .github/workflows/          # CI/CD automation
+├── SchemaMagic/                # Main CLI tool project
+├── SchemaMagic.Web/           # Blazor WebAssembly web application
+├── templates/                  # Modular HTML/CSS/JS templates
+├── samples/                    # Example DbContexts for testing
+├── docs/                       # Documentation and examples
+└── .github/workflows/          # CI/CD automation
 ```
 
-## ?? Requirements
+## 📋 Requirements
 
-- .NET 9.0 or later
+- .NET 9.0 or later (for CLI tool)
 - Entity Framework Core DbContext files (any version)
 - Modern web browser for viewing generated HTML
 
-## ?? Contributing
+## 🌐 Web Application Features
+
+The **[SchemaMagic Web](https://panoramicdata.github.io/SchemaMagic)** application offers:
+
+- 🔗 **GitHub Integration**: Connect to public repositories
+- 🔍 **Auto-Discovery**: Find DbContext files automatically  
+- ⚡ **Real-time Analysis**: Generate schemas without downloads
+- 📱 **Mobile Friendly**: Works on all devices
+- 💾 **Export Options**: Download interactive HTML files
+- 🚀 **No Installation**: Works entirely in your browser
+
+## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
@@ -185,27 +215,21 @@ Contributions are welcome! Please feel free to submit a Pull Request. For major 
 - **Schema Analysis**: Extend the Roslyn-based C# parsing in `SchemaGenerator.cs`
 - **Styling**: Modify `templates/styles.css` for visual enhancements
 - **Interactive Features**: Add JavaScript functions to appropriate template files
+- **Web Application**: Enhance the Blazor WebAssembly app in `SchemaMagic.Web/`
 
-## ?? License
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## ?? Acknowledgments
+## 🙏 Acknowledgments
 
-- Built with ?? by [Panoramic Data Limited](https://panoramicdata.com)
+- Built with ❤️ by [Panoramic Data Limited](https://panoramicdata.com)
 - Uses [Microsoft.CodeAnalysis](https://github.com/dotnet/roslyn) for C# parsing
+- Uses [Octokit](https://github.com/octokit/octokit.net) for GitHub API integration
 - Inspired by traditional ERD tools but designed for modern web browsers
 
-## ?? Issues and Support
+## 🐛 Issues and Support
 
 Found a bug or have a feature request? Please [open an issue](https://github.com/panoramicdata/SchemaMagic/issues) on GitHub.
 
 For questions and discussions, visit our [GitHub Discussions](https://github.com/panoramicdata/SchemaMagic/discussions).
-
-## ?? Migration from Magic Suite
-
-If you were using SchemaMagic as part of the Magic Suite, the functionality is identical. Simply install the standalone tool and use the same command-line interface.
-
----
-
-Made with ?? by developers, for developers.

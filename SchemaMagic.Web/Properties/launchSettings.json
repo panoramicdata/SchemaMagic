@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "SchemaMagic.Web": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      },
+      "applicationUrl": "https://localhost:55057;http://localhost:55058"
+    }
+  }
+}

@@ -1,0 +1,229 @@
+@page "/about"
+
+<PageTitle>About - SchemaMagic Web</PageTitle>
+
+<div class="about-page">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <h1>?? About SchemaMagic Web</h1>
+                <p class="lead">
+                    SchemaMagic Web is an online tool for analyzing Entity Framework Core DbContext files 
+                    and generating interactive schema visualizations directly in your browser.
+                </p>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>?? What It Does</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>
+                            SchemaMagic Web connects to GitHub repositories, discovers DbContext files, 
+                            and generates beautiful, interactive database schema diagrams that you can:
+                        </p>
+                        <ul>
+                            <li>??? <strong>Interact with</strong> - Drag tables, zoom, pan, and explore relationships</li>
+                            <li>?? <strong>Navigate</strong> - Click on foreign keys to jump between related entities</li>
+                            <li>?? <strong>Select</strong> - Click tables to highlight their relationships</li>
+                            <li>?? <strong>Export</strong> - Download as self-contained HTML files</li>
+                            <li>?? <strong>Customize</strong> - Professional styling with hover effects</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>?? How It Works</h3>
+                    </div>
+                    <div class="card-body">
+                        <ol>
+                            <li><strong>GitHub Integration:</strong> Connect to any public GitHub repository</li>
+                            <li><strong>Automatic Discovery:</strong> Find all DbContext files in the repository</li>
+                            <li><strong>Roslyn Analysis:</strong> Parse C# code to extract entity relationships</li>
+                            <li><strong>Interactive Generation:</strong> Create SVG-based schema diagrams</li>
+                            <li><strong>Browser Rendering:</strong> Display and interact with schemas in real-time</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>? Key Features</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>?? Smart Analysis</h5>
+                                <ul>
+                                    <li>Automatic entity discovery</li>
+                                    <li>Foreign key detection</li>
+                                    <li>Navigation property mapping</li>
+                                    <li>Inheritance hierarchy visualization</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>?? Interactive UI</h5>
+                                <ul>
+                                    <li>Drag and drop tables</li>
+                                    <li>Zoom and pan controls</li>
+                                    <li>Table selection and highlighting</li>
+                                    <li>Responsive design</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>??? Technology Stack</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Frontend</h6>
+                                <ul>
+                                    <li>Blazor WebAssembly (.NET 9)</li>
+                                    <li>Bootstrap 5</li>
+                                    <li>JavaScript interop</li>
+                                    <li>SVG rendering</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Analysis Engine</h6>
+                                <ul>
+                                    <li>Microsoft Roslyn</li>
+                                    <li>C# syntax tree parsing</li>
+                                    <li>Octokit (GitHub API)</li>
+                                    <li>JSON serialization</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>?? Requirements & Limitations</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Requirements</h6>
+                                <ul>
+                                    <li>Modern web browser</li>
+                                    <li>Internet connection</li>
+                                    <li>Public GitHub repository</li>
+                                    <li>Entity Framework DbContext files</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Current Limitations</h6>
+                                <ul>
+                                    <li>Public repositories only</li>
+                                    <li>GitHub API rate limits apply</li>
+                                    <li>Single DbContext analysis</li>
+                                    <li>Client-side processing only</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>?? Related Projects</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>SchemaMagic is also available as:</p>
+                        <ul>
+                            <li>
+                                <strong>Command-line tool:</strong> 
+                                <code>dotnet tool install -g SchemaMagic</code>
+                            </li>
+                            <li>
+                                <strong>GitHub Repository:</strong> 
+                                <a href="https://github.com/panoramicdata/SchemaMagic" target="_blank">
+                                    panoramicdata/SchemaMagic
+                                </a>
+                            </li>
+                            <li>
+                                <strong>NuGet Package:</strong> 
+                                <a href="https://www.nuget.org/packages/SchemaMagic" target="_blank">
+                                    SchemaMagic
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h3>?? Support & Contributing</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>
+                            SchemaMagic is an open-source project built with ?? by 
+                            <a href="https://panoramicdata.com" target="_blank">Panoramic Data Limited</a>.
+                        </p>
+                        <ul>
+                            <li>
+                                <strong>Issues & Bug Reports:</strong> 
+                                <a href="https://github.com/panoramicdata/SchemaMagic/issues" target="_blank">
+                                    GitHub Issues
+                                </a>
+                            </li>
+                            <li>
+                                <strong>Feature Requests:</strong> 
+                                <a href="https://github.com/panoramicdata/SchemaMagic/discussions" target="_blank">
+                                    GitHub Discussions
+                                </a>
+                            </li>
+                            <li>
+                                <strong>Contributing:</strong> 
+                                Pull requests are welcome! See our contribution guidelines.
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="text-center mt-5">
+                    <a href="/analyze" class="btn btn-primary btn-lg">
+                        <span class="oi oi-graph"></span>
+                        Try SchemaMagic Web
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .about-page {
+        padding: 40px 0;
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+    }
+
+    .card-header h3,
+    .card-header h5 {
+        margin: 0;
+    }
+
+    code {
+        background: #f8f9fa;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-family: 'Monaco', 'Consolas', monospace;
+    }
+</style>

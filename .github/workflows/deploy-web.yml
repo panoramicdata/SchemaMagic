@@ -1,0 +1,72 @@
+name: Deploy SchemaMagic Web to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'SchemaMagic.Web/**'
+      - '.github/workflows/deploy-web.yml'
+  release:
+    types: [ published ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+        
+    - name: Setup Pages
+      uses: actions/configure-pages@v4
+      
+    - name: Restore dependencies
+      run: dotnet restore SchemaMagic.Web/SchemaMagic.Web.csproj
+      
+    - name: Build
+      run: dotnet build SchemaMagic.Web/SchemaMagic.Web.csproj --no-restore --configuration Release
+      
+    - name: Publish
+      run: dotnet publish SchemaMagic.Web/SchemaMagic.Web.csproj --no-build --configuration Release --output dist/
+      
+    - name: Fix base path for GitHub Pages
+      run: |
+        # Update base href for GitHub Pages subdirectory
+        sed -i 's|<base href="/" />|<base href="/SchemaMagic/" />|g' dist/wwwroot/index.html
+        
+        # Add .nojekyll file to prevent GitHub Pages from processing as Jekyll site
+        touch dist/wwwroot/.nojekyll
+        
+        # Copy 404.html for SPA routing
+        cp dist/wwwroot/index.html dist/wwwroot/404.html
+        
+    - name: Upload artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: dist/wwwroot/
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
