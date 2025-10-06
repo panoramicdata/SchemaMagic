@@ -84,8 +84,8 @@ public partial class SchemaGenerator(FileInfo dbContextFile, string? outputPath 
 		var sourceCode = File.ReadAllText(_dbContextPath);
 		var fileName = Path.GetFileName(_dbContextPath);
 
-		// Use the Core library for analysis with the sophisticated engine
-		var result = CoreSchemaAnalysisService.AnalyzeDbContextContent(sourceCode, fileName);
+		// Use the Core library for analysis with the actual file path for better entity discovery
+		var result = CoreSchemaAnalysisService.AnalyzeDbContextFile(_dbContextPath);
 
 		if (!result.Success)
 		{

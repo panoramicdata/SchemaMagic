@@ -16,16 +16,24 @@ public static partial class CoreSchemaAnalysisService
 
 	public static SchemaAnalysisResult AnalyzeDbContextContent(string dbContextContent, string fileName)
 	{
+		// For backward compatibility, extract the file path from filename if it's a full path
+		var filePath = Path.IsPathRooted(fileName) ? fileName : Path.GetTempFileName();
+		
+		// If it's not a full path, we'll create a temp file but this won't have proper directory structure
+		if (!Path.IsPathRooted(fileName))
+		{
+			File.WriteAllText(filePath, dbContextContent);
+		}
+
 		try
 		{
-			// Create a temporary file to preserve the original sophisticated analysis logic
-			var tempFile = Path.GetTempFileName();
-			File.WriteAllText(tempFile, dbContextContent);
+			var entities = ExtractEntitiesFromFile(filePath, dbContextContent);
 
-			var entities = ExtractEntitiesFromFile(tempFile, dbContextContent);
-
-			// Clean up temp file
-			File.Delete(tempFile);
+			// Clean up temp file if we created one
+			if (!Path.IsPathRooted(fileName) && File.Exists(filePath))
+			{
+				File.Delete(filePath);
+			}
 
 			var entitiesJson = JsonSerializer.Serialize(entities, _jsonSerializerOptions);
 			var documentGuid = Guid.NewGuid().ToString();
@@ -51,7 +59,44 @@ public static partial class CoreSchemaAnalysisService
 		}
 	}
 
-	private static Dictionary<string, EntityInfo> ExtractEntitiesFromFile(string tempFilePath, string sourceCode)
+	// Add new overload that accepts the actual file path
+	public static SchemaAnalysisResult AnalyzeDbContextFile(string dbContextFilePath)
+	{
+		try
+		{
+			if (!File.Exists(dbContextFilePath))
+			{
+				throw new FileNotFoundException($"DbContext file not found: {dbContextFilePath}");
+			}
+
+			var sourceCode = File.ReadAllText(dbContextFilePath);
+			var entities = ExtractEntitiesFromFile(dbContextFilePath, sourceCode);
+
+			var entitiesJson = JsonSerializer.Serialize(entities, _jsonSerializerOptions);
+			var documentGuid = Guid.NewGuid().ToString();
+			var htmlContent = ModularHtmlTemplate.Generate(entitiesJson, documentGuid, null);
+
+			return new SchemaAnalysisResult
+			{
+				Success = true,
+				HtmlContent = htmlContent,
+				EntitiesFound = entities.Count,
+				DocumentGuid = documentGuid,
+				Entities = entities
+			};
+		}
+		catch (Exception ex)
+		{
+			return new SchemaAnalysisResult
+			{
+				Success = false,
+				ErrorMessage = ex.Message,
+				EntitiesFound = 0
+			};
+		}
+	}
+
+	private static Dictionary<string, EntityInfo> ExtractEntitiesFromFile(string dbContextFilePath, string sourceCode)
 	{
 		var entities = new Dictionary<string, EntityInfo>();
 
@@ -59,12 +104,13 @@ public static partial class CoreSchemaAnalysisService
 		var tree = CSharpSyntaxTree.ParseText(sourceCode);
 		var root = tree.GetCompilationUnitRoot();
 
+		// Use the actual DbContext file directory for finding related files
+		var contextDirectory = Path.GetDirectoryName(dbContextFilePath);
+		Console.WriteLine($"🔍 Context directory: {contextDirectory}");
+
 		// Try to find the EF model snapshot first for accurate FK relationships
-		var contextDirectory = Path.GetDirectoryName(tempFilePath);
 		var migrationDirectory = Path.Combine(contextDirectory ?? "", "Migrations");
-		var snapshotPath = Directory.Exists(migrationDirectory)
-			? Directory.GetFiles(migrationDirectory, "*ModelSnapshot.cs").FirstOrDefault()
-			: null;
+		var snapshotPath = FindBestModelSnapshot(migrationDirectory);
 
 		var foreignKeyRelationships = new Dictionary<string, List<string>>();
 
@@ -498,6 +544,38 @@ public static partial class CoreSchemaAnalysisService
 		// Extract entity type from DbSet<EntityType>
 		var match = Regex.Match(dbSetType, @"DbSet<(.+?)>");
 		return match.Success ? match.Groups[1].Value : null;
+	}
+
+	// Add helper method to find the best EF model snapshot
+	private static string? FindBestModelSnapshot(string migrationDirectory)
+	{
+		if (!Directory.Exists(migrationDirectory))
+		{
+			Console.WriteLine($"📁 Migration directory not found: {migrationDirectory}");
+			return null;
+		}
+
+		// Look for snapshots in subdirectories first (preferred for provider-specific migrations)
+		var subDirectories = Directory.GetDirectories(migrationDirectory);
+		foreach (var subDir in subDirectories)
+		{
+			var snapshots = Directory.GetFiles(subDir, "*ModelSnapshot.cs");
+			if (snapshots.Length > 0)
+			{
+				Console.WriteLine($"📋 Found snapshot in subdirectory: {Path.GetFileName(subDir)}");
+				return snapshots[0]; // Use the first one found
+			}
+		}
+
+		// Fallback to root migration directory
+		var rootSnapshots = Directory.GetFiles(migrationDirectory, "*ModelSnapshot.cs");
+		if (rootSnapshots.Length > 0)
+		{
+			Console.WriteLine($"📋 Found snapshot in root migration directory");
+			return rootSnapshots[0];
+		}
+
+		return null;
 	}
 
 	[GeneratedRegex(@"\.HasForeignKey\(""([^""]+)""\)")]
