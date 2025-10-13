@@ -12,6 +12,7 @@
     <File Path="version.json" />
   </Folder>
   <Project Path="SchemaMagic.Core/SchemaMagic.Core.csproj" />
+  <Project Path="SchemaMagic.Tests/SchemaMagic.Tests.csproj" />
   <Project Path="SchemaMagic.Web/SchemaMagic.Web.csproj" />
   <Project Path="SchemaMagic/SchemaMagic.csproj" />
 </Solution>
