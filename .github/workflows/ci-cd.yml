@@ -184,9 +184,15 @@ jobs:
         if [ -d "dist/wwwroot" ]; then
           echo "[INFO] wwwroot exists, listing contents..."
           ls -la dist/wwwroot/
+          echo "[INFO] Looking for index.html in wwwroot..."
+          find dist/wwwroot -name "index.html" -type f || echo "[INFO] No index.html found in wwwroot"
         else
           echo "[INFO] No wwwroot directory found"
         fi
+        echo "[INFO] Searching for ALL index.html files in dist/..."
+        find dist/ -name "index.html" -type f || echo "[INFO] No index.html found anywhere in dist/"
+        echo "[INFO] Listing ALL files in dist/ recursively (first 50)..."
+        find dist/ -type f | head -50
       
     - name: Fix base path for GitHub Pages
       run: |
