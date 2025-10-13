@@ -1,246 +1,166 @@
 @page "/"
 
-<PageTitle>SchemaMagic Web - Interactive Schema Visualizer</PageTitle>
+<PageTitle>SchemaMagic - Interactive EF Core Schema Visualizer</PageTitle>
 
-<div class="hero-section">
-	<div class="container">
-		<div class="row align-items-center">
-			<div class="col-lg-6">
-				<h1 class="display-4 fw-bold mb-4">
-					<i class="bi bi-magic"></i> SchemaMagic Web
-				</h1>
-				<p class="lead mb-4">Interactive Entity Framework Core Schema Visualizer</p>
-				<p class="mb-4">
-					Analyze GitHub repositories to find DbContext files and generate beautiful, interactive schema diagrams
-					directly in your browser.
-				</p>
-				<a href="/analyze" class="btn btn-primary btn-lg">
-					<i class="bi bi-search"></i> Analyze Repository
-				</a>
-			</div>
-			<div class="col-lg-6">
-				<div class="schema-preview">
-					<!-- Placeholder for schema preview image -->
-					<div class="preview-placeholder">
-						<i class="bi bi-diagram-3" style="font-size: 4rem; color: #667eea;"></i>
-						<p class="mt-3 text-muted">Interactive Schema Diagrams</p>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
+<!-- Hero Section -->
+<section class="hero-section py-5">
+    <div class="container py-5">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <h1 class="display-3 fw-bold mb-4 text-white">
+                    <i class="bi bi-magic"></i> SchemaMagic
+                </h1>
+                <p class="lead text-white mb-4">
+                    Interactive Entity Framework Core Schema Visualizer
+                </p>
+                <p class="text-white-50 mb-4">
+                    Analyze GitHub repositories to find DbContext files and generate beautiful, 
+                    interactive schema diagrams directly in your browser.
+                </p>
+                <a href="/analyze" class="btn btn-light btn-lg">
+                    <i class="bi bi-search me-2"></i>Analyze Repository
+                </a>
+            </div>
+            <div class="col-lg-6 text-center">
+                <div class="schema-preview p-5">
+                    <i class="bi bi-diagram-3 display-1 text-white opacity-75"></i>
+                    <p class="mt-4 text-white-50 mb-0 fs-5">Interactive Schema Diagrams</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-<div class="features-section py-5">
-	<div class="container">
-		<div class="row">
-			<div class="col-12 text-center mb-5">
-				<h2 class="display-6">
-					<i class="bi bi-rocket"></i> Key Features
-				</h2>
-				<p class="lead text-muted">Everything you need for database schema visualization</p>
-			</div>
-		</div>
+<!-- Features Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-3">
+                <i class="bi bi-rocket-takeoff"></i> Key Features
+            </h2>
+            <p class="lead text-muted">Everything you need for database schema visualization</p>
+        </div>
 
-		<div class="row g-4">
-			<div class="col-md-4">
-				<div class="feature-card text-center">
-					<div class="feature-icon">
-						<i class="bi bi-github"></i>
-					</div>
-					<h4>GitHub Integration</h4>
-					<p class="text-muted">
-						Connect to any public GitHub repository and
-						automatically discover DbContext files.
-					</p>
-				</div>
-			</div>
+        <div class="row g-4">
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-4">
+                            <i class="bi bi-github"></i>
+                        </div>
+                        <h5 class="card-title fw-bold mb-3">GitHub Integration</h5>
+                        <p class="card-text text-muted">
+                            Connect to any public GitHub repository and automatically discover DbContext files.
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-			<div class="col-md-4">
-				<div class="feature-card text-center">
-					<div class="feature-icon">
-						<i class="bi bi-diagram-2"></i>
-					</div>
-					<h4>Interactive Diagrams</h4>
-					<p class="text-muted">
-						Drag tables, zoom, pan, and explore relationships in
-						beautiful SVG-rendered schemas.
-					</p>
-				</div>
-			</div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-4">
+                            <i class="bi bi-diagram-2"></i>
+                        </div>
+                        <h5 class="card-title fw-bold mb-3">Interactive Diagrams</h5>
+                        <p class="card-text text-muted">
+                            Drag tables, zoom, pan, and explore relationships in beautiful SVG-rendered schemas.
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-			<div class="col-md-4">
-				<div class="feature-card text-center">
-					<div class="feature-icon">
-						<i class="bi bi-lightning"></i>
-					</div>
-					<h4>Real-time Analysis</h4>
-					<p class="text-muted">
-						Instant schema generation using Roslyn parsing - no
-						compilation required.
-					</p>
-				</div>
-			</div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-4">
+                            <i class="bi bi-lightning-charge"></i>
+                        </div>
+                        <h5 class="card-title fw-bold mb-3">Real-time Analysis</h5>
+                        <p class="card-text text-muted">
+                            Instant schema generation using Roslyn parsing - no compilation required.
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-			<div class="col-md-4">
-				<div class="feature-card text-center">
-					<div class="feature-icon">
-						<i class="bi bi-palette"></i>
-					</div>
-					<h4>Professional Styling</h4>
-					<p class="text-muted">
-						Beautiful, responsive designs with hover effects and
-						modern UI components.
-					</p>
-				</div>
-			</div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-4">
+                            <i class="bi bi-palette"></i>
+                        </div>
+                        <h5 class="card-title fw-bold mb-3">Professional Styling</h5>
+                        <p class="card-text text-muted">
+                            Beautiful, responsive designs with hover effects and modern UI components.
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-			<div class="col-md-4">
-				<div class="feature-card text-center">
-					<div class="feature-icon">
-						<i class="bi bi-phone"></i>
-					</div>
-					<h4>Mobile Friendly</h4>
-					<p class="text-muted">
-						Works seamlessly on desktop, tablet, and mobile
-						devices.
-					</p>
-				</div>
-			</div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-4">
+                            <i class="bi bi-phone"></i>
+                        </div>
+                        <h5 class="card-title fw-bold mb-3">Mobile Friendly</h5>
+                        <p class="card-text text-muted">
+                            Works seamlessly on desktop, tablet, and mobile devices.
+                        </p>
+                    </div>
+                </div>
+            </div>
 
-			<div class="col-md-4">
-				<div class="feature-card text-center">
-					<div class="feature-icon">
-						<i class="bi bi-share"></i>
-					</div>
-					<h4>Export & Share</h4>
-					<p class="text-muted">
-						Download interactive HTML files or share links to
-						generated schemas.
-					</p>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <div class="feature-icon mb-4">
+                            <i class="bi bi-download"></i>
+                        </div>
+                        <h5 class="card-title fw-bold mb-3">Export & Share</h5>
+                        <p class="card-text text-muted">
+                            Download interactive HTML files or share links to generated schemas.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
 
-<div class="getting-started-section py-5 bg-light">
-	<div class="container">
-		<div class="row">
-			<div class="col-lg-8 mx-auto text-center">
-				<h2 class="display-6 mb-4">
-					<i class="bi bi-lightbulb"></i> How It Works
-				</h2>
-				<div class="row g-4">
-					<div class="col-md-4">
-						<div class="step">
-							<div class="step-number">1</div>
-							<h5>Enter Repository URL</h5>
-							<p class="text-muted">Paste any public GitHub repository URL</p>
-						</div>
-					</div>
-					<div class="col-md-4">
-						<div class="step">
-							<div class="step-number">2</div>
-							<h5>Discover DbContext</h5>
-							<p class="text-muted">Automatically find Entity Framework files</p>
-						</div>
-					</div>
-					<div class="col-md-4">
-						<div class="step">
-							<div class="step-number">3</div>
-							<h5>Generate Schema</h5>
-							<p class="text-muted">Create beautiful interactive diagrams</p>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-</div>
-
-<style>
-	.hero-section {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		padding: 80px 0;
-		min-height: 60vh;
-		display: flex;
-		align-items: center;
-	}
-
-	.schema-preview {
-		background: rgba(255, 255, 255, 0.1);
-		border-radius: 15px;
-		padding: 40px;
-		backdrop-filter: blur(10px);
-	}
-
-	.preview-placeholder {
-		text-align: center;
-		padding: 40px 20px;
-	}
-
-	.features-section {
-		background: #f8f9fa;
-	}
-
-	.feature-card {
-		background: white;
-		padding: 30px 20px;
-		border-radius: 10px;
-		box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
-		transition: transform 0.3s ease, box-shadow 0.3s ease;
-		height: 100%;
-	}
-
-	.feature-card:hover {
-		transform: translateY(-5px);
-		box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
-	}
-
-	.feature-icon {
-		width: 70px;
-		height: 70px;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		margin: 0 auto 20px auto;
-		font-size: 1.5rem;
-		color: white;
-	}
-
-	.step {
-		text-align: center;
-	}
-
-	.step-number {
-		width: 50px;
-		height: 50px;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		color: white;
-		border-radius: 50%;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-weight: bold;
-		font-size: 1.2rem;
-		margin: 0 auto 15px auto;
-	}
-
-	.btn-primary {
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-		border: none;
-		padding: 12px 30px;
-		font-weight: 600;
-		border-radius: 8px;
-		transition: all 0.3s ease;
-	}
-
-	.btn-primary:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
-	}
-</style>
+<!-- How It Works Section -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="display-5 fw-bold mb-3">
+                <i class="bi bi-lightbulb"></i> How It Works
+            </h2>
+            <p class="lead text-muted">Get started in three simple steps</p>
+        </div>
+        
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="step-number mx-auto mb-3">1</div>
+                    <h5 class="fw-bold mb-2">Enter Repository URL</h5>
+                    <p class="text-muted">Paste any public GitHub repository URL</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="step-number mx-auto mb-3">2</div>
+                    <h5 class="fw-bold mb-2">Discover DbContext</h5>
+                    <p class="text-muted">Automatically find Entity Framework files</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="text-center">
+                    <div class="step-number mx-auto mb-3">3</div>
+                    <h5 class="fw-bold mb-2">Generate Schema</h5>
+                    <p class="text-muted">Create beautiful interactive diagrams</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

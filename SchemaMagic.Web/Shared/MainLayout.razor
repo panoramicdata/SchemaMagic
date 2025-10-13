@@ -1,20 +1,21 @@
 @inherits LayoutComponentBase
 
-<div class="d-flex flex-column min-vh-100">
-    <NavMenu />
-    
-    <main class="flex-grow-1">
-        @Body
-    </main>
-    
-    <footer class="bg-light py-3 mt-auto">
-        <div class="container text-center">
-            <small class="text-muted">
-                © 2025 SchemaMagic - 
-                <a href="https://github.com/panoramicdata/SchemaMagic" target="_blank" class="text-decoration-none">
-                    <i class="bi bi-github"></i> GitHub
-                </a>
-            </small>
-        </div>
-    </footer>
+<div class="page">
+	<NavMenu />
+
+	<main>
+		@Body
+	</main>
+
+	<footer class="footer mt-auto py-3 bg-light border-top">
+		<div class="container text-center">
+			<small class="text-muted">
+				&copy; 2025 <a href="https://panoramicdata.com" target="_blank" class="text-decoration-none">Panoramic Data</a>
+				-
+				<a href="https://github.com/panoramicdata/SchemaMagic" target="_blank" class="text-decoration-none">
+					<i class="bi bi-github"></i> GitHub
+				</a>
+			</small>
+		</div>
+	</footer>
 </div>
