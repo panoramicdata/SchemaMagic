@@ -19,7 +19,8 @@ function saveSettings() {
 		showNavigationProperties,
 		showInheritedProperties,
 		fullHeightMode,
-		snapToGrid
+		snapToGrid,
+		legendVisible
 	};
 	localStorage.setItem(STORAGE_KEYS.viewSettings, JSON.stringify(settings));
 }
@@ -43,7 +44,14 @@ function loadSettings() {
 			showNavigationProperties = settings.showNavigationProperties ?? false;
 			showInheritedProperties = settings.showInheritedProperties ?? true;
 			fullHeightMode = settings.fullHeightMode ?? false;
-			snapToGrid = settings.snapToGrid ?? true; // Default to true to match variables.js
+			snapToGrid = settings.snapToGrid ?? true;
+			legendVisible = settings.legendVisible ?? true;
+
+			// Apply legend visibility
+			const legend = document.getElementById('legend');
+			if (legend) {
+				legend.style.display = legendVisible ? 'block' : 'none';
+			}
 		}
 	} catch (e) {
 		console.warn('Failed to load settings:', e);

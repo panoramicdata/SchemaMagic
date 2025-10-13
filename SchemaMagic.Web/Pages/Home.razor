@@ -13,8 +13,11 @@
     <div class="container py-5">
         <div class="row g-5">
             <div class="col-12 text-center">
+                <div class="mb-4">
+                    <img src="images/SchemaMagic Logo.svg" alt="SchemaMagic Logo" style="height: 120px; width: auto; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));" />
+                </div>
                 <h1 class="display-3 fw-bold mb-4 text-white">
-                    <i class="bi bi-magic"></i> SchemaMagic
+                    SchemaMagic
                 </h1>
                 <p class="lead text-white mb-4">
                     Interactive Entity Framework Core Schema Visualizer
@@ -67,8 +70,17 @@
                                     }
                                 </button>
                             </div>
-                            <div class="form-text">
-                                <i class="bi bi-info-circle"></i> Example: https://github.com/panoramicdata/SchemaMagic
+                            <div class="form-text d-flex justify-content-between align-items-center">
+                                <span>
+                                    <i class="bi bi-info-circle"></i> Example: https://github.com/panoramicdata/SchemaMagic
+                                </span>
+                                <button class="btn btn-sm btn-outline-light"
+                                        type="button"
+                                        @onclick="LoadDemoRepository"
+                                        disabled="@isLoading">
+                                    <i class="bi bi-play-circle me-1"></i>
+                                    Try Demo with This Project
+                                </button>
                             </div>
                         </div>
 
@@ -326,6 +338,8 @@
 </section>
 
 @code {
+    private const string DemoRepositoryUrl = "https://github.com/panoramicdata/SchemaMagic";
+    
     private string repositoryUrl = "";
     private string selectedDbContextPath = "";
     private string accessToken = "";
@@ -336,6 +350,16 @@
     private bool? tokenValidationResult = null;
     private List<DbContextInfo> dbContextFiles = new();
     private SchemaAnalysisResult? analysisResult;
+
+    private void LoadDemoRepository()
+    {
+        repositoryUrl = DemoRepositoryUrl;
+        errorMessage = "";
+        dbContextFiles.Clear();
+        analysisResult = null;
+        selectedDbContextPath = "";
+        StateHasChanged();
+    }
 
     private async Task ValidateTokenAsync()
     {

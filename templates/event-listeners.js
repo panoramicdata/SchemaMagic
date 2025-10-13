@@ -39,10 +39,23 @@ function setupEventListeners() {
 	svg.addEventListener('wheel', handleWheel);
 	svg.addEventListener('contextmenu', e => e.preventDefault());
 	
+	// Add click anywhere to show toolbar
+	container.addEventListener('click', function(e) {
+		// If toolbar is hidden and user clicks anywhere, show it
+		if (!toolbarVisible) {
+			toggleToolbar();
+		}
+	});
+	
 	// Add keyboard shortcuts
 	document.addEventListener('keydown', function(e) {
 		if (e.key === 'Escape' && selectedTable) {
 			clearSelection();
+			e.preventDefault();
+		}
+		// Add Ctrl+H to toggle toolbar
+		if (e.ctrlKey && e.key === 'h') {
+			toggleToolbar();
 			e.preventDefault();
 		}
 	});

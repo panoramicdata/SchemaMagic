@@ -4,7 +4,6 @@
 	box-sizing: border-box;
 }
 
-/* Light mode (default) */
 body {
 	font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -36,6 +35,7 @@ body {
 	z-index: 1000;
 	border-bottom: 1px solid #ddd;
 	flex-shrink: 0;
+	transition: transform 0.3s ease;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -46,10 +46,29 @@ body {
 	}
 }
 
+.toolbar-brand {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-right: 20px;
+}
+
+.toolbar-logo {
+	width: 32px;
+	height: 32px;
+	filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+}
+
+@media (prefers-color-scheme: dark) {
+	.toolbar-logo {
+		filter: drop-shadow(0 2px 4px rgba(255,255,255,0.2));
+	}
+}
+
 .toolbar h1 {
 	color: #333;
 	font-size: 24px;
-	margin-right: 20px;
+	margin: 0;
 	background: linear-gradient(45deg, #667eea, #764ba2);
 	-webkit-background-clip: text;
 	-webkit-text-fill-color: transparent;
@@ -77,6 +96,9 @@ body {
 	font-weight: 500;
 	transition: all 0.3s ease;
 	box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+	display: flex;
+	align-items: center;
+	gap: 6px;
 }
 
 .toolbar button:hover {
@@ -123,20 +145,33 @@ body {
 	}
 }
 
+/* Toggle indicator */
+.toggle-indicator {
+	font-weight: bold;
+	transition: opacity 0.2s ease;
+}
+
+.toolbar button:not(.active) .toggle-indicator {
+	opacity: 0;
+}
+
 .legend {
-	background: rgba(255, 255, 255, 0.9);
+	position: fixed;
+	bottom: 20px;
+	left: 20px;
+	background: rgba(255, 255, 255, 0.95);
 	padding: 15px;
 	border-radius: 8px;
 	font-size: 12px;
 	line-height: 1.6;
 	box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-	margin-left: auto;
-	color: #333;
+	z-index: 999;
+	transition: all 0.3s ease;
 }
 
 @media (prefers-color-scheme: dark) {
 	.legend {
-		background: rgba(45, 55, 72, 0.9);
+		background: rgba(45, 55, 72, 0.95);
 		color: #e2e8f0;
 		box-shadow: 0 4px 12px rgba(0,0,0,0.4);
 	}
@@ -169,10 +204,10 @@ body {
 	left: 0;
 }
 
-/* Table styles - light mode */
+/* All tables now use the same light blue inherited style */
 .table-box {
-	fill: #f0f9ff;
-	stroke: #0ea5e9;
+	fill: #f0f9ff; /* Light blue background like inherited style */
+	stroke: #0ea5e9; /* Blue border like inherited style */
 	stroke-width: 5;
 	filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
 	cursor: move;
@@ -180,12 +215,11 @@ body {
 }
 
 .table-box:hover {
-	fill: #e0f2fe;
-	stroke: #0284c7;
+	fill: #e0f2fe; /* Slightly darker blue on hover */
+	stroke: #0284c7; /* Darker blue border on hover */
 	stroke-width: 8;
 }
 
-/* Table styles - dark mode */
 @media (prefers-color-scheme: dark) {
 	.table-box {
 		fill: #1e3a5f;
@@ -200,6 +234,12 @@ body {
 		stroke-width: 8;
 	}
 }
+
+.table-box.selected {
+	/* Remove selection styling from table-box itself */
+}
+
+/* Remove .inherited class distinctions since all tables now use this style */
 
 .selection-overlay {
 	fill: none;
@@ -218,6 +258,7 @@ body {
 	}
 }
 
+/* Pulse animation for selected tables */
 @keyframes pulse-selection {
 	0%, 100% {
 		stroke-width: 10;
@@ -229,9 +270,10 @@ body {
 	}
 }
 
+/* Additional styling for selected tables to make them stand out */
 .table-group.selected .table-box {
-	fill: #f0f4ff;
-	stroke: #764ba2;
+	fill: #f0f4ff; /* Slightly lighter background when selected */
+	stroke: #764ba2; /* Purple border to match selection */
 	stroke-width: 8;
 	filter: drop-shadow(0 6px 12px rgba(118, 75, 162, 0.2));
 }
@@ -246,7 +288,7 @@ body {
 }
 
 .table-group.selected .table-header {
-	fill: #764ba2;
+	fill: #764ba2; /* Purple header when selected */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -255,8 +297,9 @@ body {
 	}
 }
 
+/* All headers now use blue style */
 .table-header {
-	fill: #0ea5e9;
+	fill: #0ea5e9; /* Blue header like inherited style */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -468,6 +511,7 @@ body {
 	}
 }
 
+/* Property-level icon styles (PK, FK, N, INH) - these have circles */
 .property-icon-text {
 	font-size: 15px;
 	font-weight: bold;
@@ -541,6 +585,7 @@ body {
 	}
 }
 
+/* Type icon styles - no circles, direct styling, larger size like capital M */
 .type-icon-symbol {
 	font-size: 20px;
 	font-weight: bold;
@@ -565,6 +610,7 @@ body {
 	stroke-width: 2.0;
 }
 
+/* FK-NAV connector line */
 .fk-nav-connector {
 	stroke: #374151;
 	stroke-width: 5;
@@ -630,9 +676,10 @@ body {
 	}
 }
 
+/* Consistent stroke-width - no thickness changes on highlight, changed to purple */
 .relationship-line.highlighted {
-	stroke: #764ba2;
-	stroke-width: 8;
+	stroke: #764ba2; /* Purple to match selection overlay */
+	stroke-width: 8; /* Same thickness as normal - no change */
 	opacity: 1.0;
 	filter: drop-shadow(0 2px 4px rgba(118, 75, 162, 0.3));
 }
@@ -646,7 +693,7 @@ body {
 
 .relationship-line.dimmed {
 	stroke: #d1d5db;
-	stroke-width: 8;
+	stroke-width: 8; /* Consistent thickness even when dimmed */
 	opacity: 0.3;
 	transition: all 0.3s ease;
 }

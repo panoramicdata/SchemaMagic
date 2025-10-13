@@ -1,5 +1,9 @@
 ﻿// Toggle functions and UI controls
 
+// Track toolbar and legend visibility
+let toolbarVisible = true;
+let legendVisible = true;
+
 function updateButtonStates() {
 	// Update all button states to reflect current settings
 	const relationshipsBtn = document.getElementById('relationships-btn');
@@ -7,37 +11,41 @@ function updateButtonStates() {
 	const inheritedPropsBtn = document.getElementById('inherited-props-btn');
 	const fullHeightBtn = document.getElementById('full-height-btn');
 	const snapGridBtn = document.getElementById('snap-grid-btn');
+	const legendToggleBtn = document.getElementById('legend-toggle-btn');
+
+	// Helper function to update toggle indicator
+	const updateToggleIndicator = (button, isActive) => {
+		if (button) {
+			const indicator = button.querySelector('.toggle-indicator');
+			if (indicator) {
+				indicator.style.opacity = isActive ? '1' : '0';
+			}
+			button.classList.toggle('active', isActive);
+		}
+	};
 
 	// Relationships button
-	if (relationshipsBtn) {
-		relationshipsBtn.textContent = showRelationships ? 'Hide Relations' : 'Show Relations';
-		relationshipsBtn.classList.toggle('active', showRelationships);
-	}
+	updateToggleIndicator(relationshipsBtn, showRelationships);
 
 	// Navigation properties button
-	if (navPropsBtn) {
-		navPropsBtn.classList.toggle('active', showNavigationProperties);
-	}
+	updateToggleIndicator(navPropsBtn, showNavigationProperties);
 
 	// Inherited properties button
-	if (inheritedPropsBtn) {
-		inheritedPropsBtn.classList.toggle('active', showInheritedProperties);
-	}
+	updateToggleIndicator(inheritedPropsBtn, showInheritedProperties);
 
 	// Full height button
-	if (fullHeightBtn) {
-		fullHeightBtn.classList.toggle('active', fullHeightMode);
-	}
+	updateToggleIndicator(fullHeightBtn, fullHeightMode);
 
 	// Snap to grid button
-	if (snapGridBtn) {
-		snapGridBtn.classList.toggle('active', snapToGrid);
-		// Also update grid background visibility
-		const gridBg = document.getElementById('grid-background');
-		if (gridBg) {
-			gridBg.style.display = snapToGrid ? 'block' : 'none';
-		}
+	updateToggleIndicator(snapGridBtn, snapToGrid);
+	// Also update grid background visibility
+	const gridBg = document.getElementById('grid-background');
+	if (gridBg) {
+		gridBg.style.display = snapToGrid ? 'block' : 'none';
 	}
+
+	// Legend toggle button
+	updateToggleIndicator(legendToggleBtn, legendVisible);
 }
 
 function toggleRelationships() {
@@ -71,6 +79,25 @@ function toggleSnapToGrid() {
 	saveSettings();
 }
 
+function toggleLegend() {
+	legendVisible = !legendVisible;
+	const legend = document.getElementById('legend');
+	if (legend) {
+		legend.style.display = legendVisible ? 'block' : 'none';
+	}
+	updateButtonStates();
+	saveSettings();
+}
+
+function toggleToolbar() {
+	toolbarVisible = !toolbarVisible;
+	const toolbar = document.getElementById('toolbar');
+	if (toolbar) {
+		toolbar.style.display = toolbarVisible ? 'flex' : 'none';
+	}
+	// Don't save toolbar state - it should always start visible
+}
+
 function downloadSchema() {
 	// Generate a new GUID for the downloaded document
 	const newDocumentGuid = generateGuid();
@@ -90,7 +117,8 @@ function downloadSchema() {
 			showNavigationProperties,
 			showInheritedProperties,
 			fullHeightMode,
-			snapToGrid
+			snapToGrid,
+			legendVisible
 		},
 
 		// Capture selected table if any
