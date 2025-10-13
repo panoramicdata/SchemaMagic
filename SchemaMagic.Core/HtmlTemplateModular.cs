@@ -112,6 +112,7 @@ public static class ModularHtmlTemplate
 			"property-utilities.js",
 			"table-interaction.js",
 			"relationships.js",
+			"table-grouping.js",  // Add table grouping controls
 			"controls.js"
 		};
 

@@ -3,6 +3,10 @@ function generateTable(svg, entity, x, y) {
 	const properties = entity.properties || [];
 	const inheritedProps = showInheritedProperties ? (entity.inheritedProperties || []) : [];
 
+	// Get the matching grouping rule for this table
+	const matchingRule = getMatchingRule(entity.type);
+	console.log(`📊 Table "${entity.type}" matched rule: ${matchingRule ? matchingRule.name : 'none'}`);
+
 	// Combine and mark inherited properties
 	const allProperties = [
 		...inheritedProps.map(p => ({ ...p, isInherited: true })),
@@ -72,6 +76,9 @@ function generateTable(svg, entity, x, y) {
 	const typeIconSpace = 50; // Increased from 20 to 50 (2.5x larger)
 	const spacingBuffer = 100;                                    // Increased from 40 to 100 (2.5x larger)
 
+	// Add space for table icon in header
+	const tableIconSpace = 40;
+
 	const tableWidth = Math.max(
 		minWidth,
 		iconWidth + nameColumnWidth + typeColumnWidth + typeIconSpace + spacingBuffer + (padding * 2)
@@ -86,14 +93,17 @@ function generateTable(svg, entity, x, y) {
 	tableGroup.classList.add('table-group');
 	tableGroup.setAttribute('data-entity', entity.type);
 
-	// FIRST: Draw the main table box (background) - all tables use same style now
+	// Apply custom background color if rule matched
 	const tableRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
 	tableRect.setAttribute('x', x);
 	tableRect.setAttribute('y', y);
 	tableRect.setAttribute('width', tableWidth);
 	tableRect.setAttribute('height', tableHeight);
 	tableRect.classList.add('table-box');
-	// Removed inherited class logic - all tables use same style
+	if (matchingRule) {
+		tableRect.style.fill = matchingRule.color + '10'; // 10% opacity for background
+		tableRect.style.stroke = matchingRule.color;
+	}
 	tableGroup.appendChild(tableRect);
 
 	// SECOND: Render property group backgrounds and section dividers
@@ -161,19 +171,50 @@ function generateTable(svg, entity, x, y) {
 		}
 	});
 
-	// THIRD: Draw the header and title (these will appear ON TOP of the property groups) - all tables use same style now
+	// Apply custom header color if rule matched
 	const headerRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
 	headerRect.setAttribute('x', x);
 	headerRect.setAttribute('y', y);
 	headerRect.setAttribute('width', tableWidth);
 	headerRect.setAttribute('height', headerHeight);
 	headerRect.classList.add('table-header');
-	// Removed inherited class logic - all headers use same style
+	if (matchingRule) {
+		headerRect.style.fill = matchingRule.color;
+	}
 	tableGroup.appendChild(headerRect);
 
-	// Calculate optimal font size for the title based on table width
+	// Add table icon if rule matched - positioned in top-left of header
+	if (matchingRule && matchingRule.icon) {
+		const iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+		iconGroup.classList.add('table-icon');
+		
+		// Create FontAwesome icon using foreignObject to embed HTML
+		const iconForeignObject = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
+		iconForeignObject.setAttribute('x', x + 10);
+		iconForeignObject.setAttribute('y', y + 10);
+		iconForeignObject.setAttribute('width', '32');
+		iconForeignObject.setAttribute('height', '32');
+		
+		const iconDiv = document.createElement('div');
+		iconDiv.style.width = '32px';
+		iconDiv.style.height = '32px';
+		iconDiv.style.display = 'flex';
+		iconDiv.style.alignItems = 'center';
+		iconDiv.style.justifyContent = 'center';
+		iconDiv.style.color = 'white';
+		iconDiv.style.fontSize = '20px';
+		iconDiv.innerHTML = `<i class="${matchingRule.icon}"></i>`;
+		
+		iconForeignObject.appendChild(iconDiv);
+		iconGroup.appendChild(iconForeignObject);
+		tableGroup.appendChild(iconGroup);
+	}
+
+	// THIRD: Draw the header and title (these will appear ON TOP of the property groups) - all tables use same style now
 	const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-	titleText.setAttribute('x', x + tableWidth / 2);
+	// Shift title right if there's an icon
+	const titleX = matchingRule && matchingRule.icon ? x + tableWidth / 2 + 20 : x + tableWidth / 2;
+	titleText.setAttribute('x', titleX);
 	titleText.setAttribute('y', y + headerHeight / 2 + 18);
 	titleText.setAttribute('text-anchor', 'middle');
 	titleText.classList.add('table-title');
@@ -190,7 +231,7 @@ function generateTable(svg, entity, x, y) {
 	const baseFontSize = 40; // Current base font size
 	const maxFontSize = 80; // Double the base for better readability when zoomed out
 	const minFontSize = 32; // Minimum readable size
-	const availableWidth = tableWidth - (padding * 2); // Leave some padding on sides
+	const availableWidth = tableWidth - (padding * 2) - (matchingRule && matchingRule.icon ? tableIconSpace : 0); // Leave some padding on sides
 
 	// Estimate text width: approximately 0.6 * fontSize * characterCount for Segoe UI Bold
 	let optimalFontSize = maxFontSize;

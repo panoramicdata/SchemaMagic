@@ -18,7 +18,7 @@ public static partial class CoreSchemaAnalysisService
 	{
 		// For backward compatibility, extract the file path from filename if it's a full path
 		var filePath = Path.IsPathRooted(fileName) ? fileName : Path.GetTempFileName();
-		
+
 		// If it's not a full path, we'll create a temp file but this won't have proper directory structure
 		if (!Path.IsPathRooted(fileName))
 		{
@@ -82,6 +82,43 @@ public static partial class CoreSchemaAnalysisService
 				HtmlContent = htmlContent,
 				EntitiesFound = entities.Count,
 				DocumentGuid = documentGuid,
+				Entities = entities
+			};
+		}
+		catch (Exception ex)
+		{
+			return new SchemaAnalysisResult
+			{
+				Success = false,
+				ErrorMessage = ex.Message,
+				EntitiesFound = 0
+			};
+		}
+	}
+
+	// NEW: Analyze DbContext with entity files from GitHub
+	public static SchemaAnalysisResult AnalyzeDbContextWithEntityFiles(
+		string dbContextContent,
+		string dbContextFileName,
+		Dictionary<string, string> entityFileContents,
+		string? documentGuid = null)
+	{
+		try
+		{
+			Console.WriteLine($"🔍 Analyzing DbContext with {entityFileContents.Count} entity files");
+
+			var entities = ExtractEntitiesWithEntityFiles(dbContextContent, entityFileContents);
+
+			var entitiesJson = JsonSerializer.Serialize(entities, _jsonSerializerOptions);
+			var guid = documentGuid ?? Guid.NewGuid().ToString();
+			var htmlContent = ModularHtmlTemplate.Generate(entitiesJson, guid, null);
+
+			return new SchemaAnalysisResult
+			{
+				Success = true,
+				HtmlContent = htmlContent,
+				EntitiesFound = entities.Count,
+				DocumentGuid = guid,
 				Entities = entities
 			};
 		}
@@ -241,7 +278,7 @@ public static partial class CoreSchemaAnalysisService
 			if (entityClass != null)
 			{
 				Console.WriteLine($"   ✅ Found entity class: {entityName}");
-				
+
 				// Extract entity-level comment
 				var entityComment = ExtractEntityComment(entityClass);
 				if (!string.IsNullOrEmpty(entityComment))
@@ -249,7 +286,7 @@ public static partial class CoreSchemaAnalysisService
 					entities[entityName].Comment = entityComment;
 					Console.WriteLine($"   💬 Entity comment: \"{entityComment}\"");
 				}
-				
+
 				var properties = ExtractProperties(entityClass, entityName, foreignKeyRelationships);
 				entities[entityName].Properties = properties;
 
@@ -328,6 +365,130 @@ public static partial class CoreSchemaAnalysisService
 		}
 
 		Console.WriteLine($"✅ Entity discovery complete. Found {entities.Count} entities with properties.");
+		return entities;
+	}
+
+	private static Dictionary<string, EntityInfo> ExtractEntitiesWithEntityFiles(
+		string dbContextContent,
+		Dictionary<string, string> entityFileContents)
+	{
+		var entities = new Dictionary<string, EntityInfo>();
+
+		// Parse the DbContext
+		var tree = CSharpSyntaxTree.ParseText(dbContextContent);
+		var root = tree.GetCompilationUnitRoot();
+
+		// Find DbContext class
+		var dbContextClass = root.DescendantNodes()
+			.OfType<ClassDeclarationSyntax>()
+			.FirstOrDefault(c => c.BaseList?.Types.Any(t => t.ToString().Contains("DbContext")) == true)
+			?? throw new InvalidOperationException("No DbContext class found in the file.");
+
+		// Extract DbSet properties to find entity types
+		var dbSetProperties = dbContextClass.Members
+			.OfType<PropertyDeclarationSyntax>()
+			.Where(p => p.Type.ToString().StartsWith("DbSet<", StringComparison.OrdinalIgnoreCase))
+			.ToList();
+
+		Console.WriteLine($"🔍 Found {dbSetProperties.Count} DbSet properties");
+
+		foreach (var dbSetProperty in dbSetProperties)
+		{
+			var entityTypeName = ExtractEntityTypeName(dbSetProperty.Type.ToString());
+			if (entityTypeName != null)
+			{
+				Console.WriteLine($"📝 Discovered entity: {entityTypeName}");
+				entities[entityTypeName] = new EntityInfo
+				{
+					Type = entityTypeName,
+					Properties = []
+				};
+			}
+		}
+
+		// Parse all entity files
+		var allClasses = new List<ClassDeclarationSyntax>();
+
+		foreach (var kvp in entityFileContents)
+		{
+			try
+			{
+				var entityTree = CSharpSyntaxTree.ParseText(kvp.Value);
+				var entityRoot = entityTree.GetCompilationUnitRoot();
+				var classes = entityRoot.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
+				allClasses.AddRange(classes);
+				Console.WriteLine($"   📄 Parsed {kvp.Key}: {classes.Count} class(es)");
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"   ⚠️ Error parsing {kvp.Key}: {ex.Message}");
+			}
+		}
+
+		Console.WriteLine($"📊 Total classes parsed: {allClasses.Count}");
+
+		// Try to extract FK relationships from EF migration (won't work for GitHub, use heuristics)
+		var foreignKeyRelationships = new Dictionary<string, List<string>>();
+
+		// Process each entity
+		foreach (var entityName in entities.Keys.ToList())
+		{
+			Console.WriteLine($"🔍 Processing entity: {entityName}");
+
+			var entityClass = allClasses.FirstOrDefault(c => c.Identifier.Text == entityName);
+			if (entityClass != null)
+			{
+				Console.WriteLine($"   ✅ Found entity class: {entityName}");
+
+				// Extract entity-level comment
+				var entityComment = ExtractEntityComment(entityClass);
+				if (!string.IsNullOrEmpty(entityComment))
+				{
+					entities[entityName].Comment = entityComment;
+					Console.WriteLine($"   💬 Entity comment: \"{entityComment}\"");
+				}
+
+				var properties = ExtractProperties(entityClass, entityName, foreignKeyRelationships);
+				entities[entityName].Properties = properties;
+
+				// Extract inheritance information
+				if (entityClass.BaseList?.Types.Count > 0)
+				{
+					var baseType = entityClass.BaseList.Types.First().ToString();
+					if (baseType != "object" && !baseType.Contains("DbContext") && !IsSystemBaseType(baseType))
+					{
+						entities[entityName].BaseType = baseType;
+
+						// Extract inherited properties
+						var baseClass = allClasses.FirstOrDefault(c => c.Identifier.Text == baseType);
+						if (baseClass != null)
+						{
+							Console.WriteLine($"   📄 Found base class: {baseType}");
+							var inheritedProperties = ExtractProperties(baseClass, baseType, foreignKeyRelationships);
+							entities[entityName].InheritedProperties = inheritedProperties;
+						}
+						else
+						{
+							Console.WriteLine($"   ⚠️ Base class {baseType} not found");
+						}
+					}
+				}
+			}
+			else
+			{
+				Console.WriteLine($"   ❌ Entity class not found: {entityName}");
+
+				// Create minimal fallback
+				entities[entityName].Properties =
+				[
+					new() { Name = "Id", Type = "int", IsKey = true, IsForeignKey = false },
+					new() { Name = "Name", Type = "string", IsKey = false, IsForeignKey = false }
+				];
+				Console.WriteLine($"   🔧 Created fallback entity with 2 properties");
+			}
+		}
+
+		Console.WriteLine($"✅ Analysis complete. Found {entities.Count} entities");
 		return entities;
 	}
 
@@ -561,14 +722,14 @@ public static partial class CoreSchemaAnalysisService
 		// Priority 2: Check for XML documentation comment (/// <summary>)
 		var triviaList = property.GetLeadingTrivia();
 		var documentationComment = triviaList
-			.Where(t => t.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) || 
+			.Where(t => t.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) ||
 						t.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia))
 			.FirstOrDefault();
 
 		if (documentationComment != default)
 		{
 			var xml = documentationComment.ToString();
-			
+
 			// Extract text from <summary> tags
 			var summaryMatch = Regex.Match(xml, @"<summary>\s*(.+?)\s*</summary>", RegexOptions.Singleline);
 			if (summaryMatch.Success)
@@ -576,10 +737,10 @@ public static partial class CoreSchemaAnalysisService
 				var summaryText = summaryMatch.Groups[1].Value
 					.Replace("///", "")
 					.Trim();
-				
+
 				// Clean up extra whitespace
 				summaryText = Regex.Replace(summaryText, @"\s+", " ");
-				
+
 				return string.IsNullOrWhiteSpace(summaryText) ? null : summaryText;
 			}
 		}
@@ -662,14 +823,14 @@ public static partial class CoreSchemaAnalysisService
 		// Priority 2: Check for XML documentation comment (/// <summary>)
 		var triviaList = entityClass.GetLeadingTrivia();
 		var documentationComment = triviaList
-			.Where(t => t.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) || 
+			.Where(t => t.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) ||
 						t.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia))
 			.FirstOrDefault();
 
 		if (documentationComment != default)
 		{
 			var xml = documentationComment.ToString();
-			
+
 			// Extract text from <summary> tags
 			var summaryMatch = Regex.Match(xml, @"<summary>\s*(.+?)\s*</summary>", RegexOptions.Singleline);
 			if (summaryMatch.Success)
@@ -677,10 +838,10 @@ public static partial class CoreSchemaAnalysisService
 				var summaryText = summaryMatch.Groups[1].Value
 					.Replace("///", "")
 					.Trim();
-				
+
 				// Clean up extra whitespace
 				summaryText = Regex.Replace(summaryText, @"\s+", " ");
-				
+
 				return string.IsNullOrWhiteSpace(summaryText) ? null : summaryText;
 			}
 		}

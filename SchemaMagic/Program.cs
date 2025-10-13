@@ -198,9 +198,11 @@ More Information:
 		Console.WriteLine("============================================================");
 
 		var github = new GitHubService(accessToken);
-		var dbContextFiles = await github.FindDbContextFilesAsync(repoUrl);
+		
+		// Use the new enhanced analysis method
+		var analysisResult = await github.AnalyzeRepositoryAsync(repoUrl);
 
-		if (dbContextFiles.Count == 0)
+		if (analysisResult.DbContextFiles.Count == 0)
 		{
 			Console.WriteLine("❌ No DbContext files found in the repository");
 			Console.WriteLine();
@@ -211,14 +213,16 @@ More Information:
 			return;
 		}
 
-		Console.WriteLine($"\n📊 Found {dbContextFiles.Count} DbContext file(s):");
-		for (int i = 0; i < dbContextFiles.Count; i++)
+		Console.WriteLine($"\n📊 Found {analysisResult.DbContextFiles.Count} DbContext file(s):");
+		for (int i = 0; i < analysisResult.DbContextFiles.Count; i++)
 		{
-			Console.WriteLine($"   {i + 1}. {dbContextFiles[i].FilePath}");
+			Console.WriteLine($"   {i + 1}. {analysisResult.DbContextFiles[i].FilePath}");
 		}
+		
+		Console.WriteLine($"\n📦 Retrieved {analysisResult.EntityFiles.Count} entity model file(s)");
 
-		// Process each DbContext file
-		foreach (var dbContextFile in dbContextFiles)
+		// Process each DbContext file with entity files
+		foreach (var dbContextFile in analysisResult.DbContextFiles)
 		{
 			Console.WriteLine($"\n🔍 Analyzing: {dbContextFile.FileName}");
 			
@@ -226,8 +230,12 @@ More Information:
 			var documentGuid = GenerateGuidFromRepoAndFile(repoUrl, dbContextFile.FilePath);
 			Console.WriteLine($"🔑 Generated GUID: {documentGuid} (preserves layout state)");
 
-			// Analyze the DbContext content
-			var result = CoreSchemaAnalysisService.AnalyzeDbContextContent(dbContextFile.Content, dbContextFile.FileName);
+			// Use the new analysis method with entity files
+			var result = CoreSchemaAnalysisService.AnalyzeDbContextWithEntityFiles(
+				dbContextFile.Content,
+				dbContextFile.FileName,
+				analysisResult.EntityFiles,
+				documentGuid);
 
 			if (!result.Success)
 			{
@@ -236,6 +244,16 @@ More Information:
 			}
 
 			Console.WriteLine($"✅ Found {result.EntitiesFound} entities");
+			
+			// Show property counts for verification
+			foreach (var entity in result.Entities!.Take(5))
+			{
+				Console.WriteLine($"   📋 {entity.Key}: {entity.Value.Properties.Count} properties");
+			}
+			if (result.Entities!.Count > 5)
+			{
+				Console.WriteLine($"   ... and {result.Entities.Count - 5} more entities");
+			}
 
 			// Determine output file path
 			var outputFile = outputPath ?? Path.Combine("Output", $"{Path.GetFileNameWithoutExtension(dbContextFile.FileName)}-Schema.html");
@@ -247,23 +265,22 @@ More Information:
 				Directory.CreateDirectory(outputDir);
 			}
 
-			// Regenerate HTML with deterministic GUID
-			var entitiesJson = System.Text.Json.JsonSerializer.Serialize(result.Entities, new System.Text.Json.JsonSerializerOptions
-			{
-				WriteIndented = true,
-				PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
-			});
-
+			// Get HTML content (already generated with custom CSS if provided)
 			string htmlContent;
 			if (cssFile != null && cssFile.Exists)
 			{
 				var customCss = File.ReadAllText(cssFile.FullName);
+				var entitiesJson = System.Text.Json.JsonSerializer.Serialize(result.Entities, new System.Text.Json.JsonSerializerOptions
+				{
+					WriteIndented = true,
+					PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase
+				});
 				htmlContent = ModularHtmlTemplate.GenerateWithCustomCss(entitiesJson, documentGuid, customCss);
 				Console.WriteLine($"🎨 Applied custom CSS from: {cssFile.FullName}");
 			}
 			else
 			{
-				htmlContent = ModularHtmlTemplate.Generate(entitiesJson, documentGuid, null);
+				htmlContent = result.HtmlContent;
 			}
 
 			// Write the HTML file
@@ -275,7 +292,7 @@ More Information:
 			Console.WriteLine($"📁 Source: {dbContextFile.FilePath}");
 
 			// Open in browser (only for first file if multiple)
-			if (dbContextFiles.IndexOf(dbContextFile) == 0)
+			if (analysisResult.DbContextFiles.IndexOf(dbContextFile) == 0)
 			{
 				Console.WriteLine("\n🌐 Opening in browser...");
 				try
@@ -295,7 +312,7 @@ More Information:
 			}
 		}
 
-		Console.WriteLine($"\n✅ Successfully processed {dbContextFiles.Count} DbContext file(s)");
+		Console.WriteLine($"\n✅ Successfully processed {analysisResult.DbContextFiles.Count} DbContext file(s)");
 		Console.WriteLine($"📂 All output saved to: {Path.GetFullPath("Output")}");
 	}
 

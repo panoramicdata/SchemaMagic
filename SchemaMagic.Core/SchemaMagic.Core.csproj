@@ -35,6 +35,7 @@
 		<EmbeddedResource Include="..\Templates\force-directed-layout.js" Link="Templates\force-directed-layout.js" />
 		<EmbeddedResource Include="..\Templates\schema-generation.js" Link="Templates\schema-generation.js" />
 		<EmbeddedResource Include="..\Templates\table-generation.js" Link="Templates\table-generation.js" />
+		<EmbeddedResource Include="..\Templates\table-grouping.js" Link="Templates\table-grouping.js" />
 		<EmbeddedResource Include="..\Templates\property-utilities.js" Link="Templates\property-utilities.js" />
 		<EmbeddedResource Include="..\Templates\table-interaction.js" Link="Templates\table-interaction.js" />
 		<EmbeddedResource Include="..\Templates\relationships.js" Link="Templates\relationships.js" />

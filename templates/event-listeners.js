@@ -12,6 +12,13 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 	
 	try {
+		loadTableGroupingRules();
+		console.log('?? Table grouping rules loaded successfully');
+	} catch (e) {
+		console.error('? Failed to load table grouping rules:', e);
+	}
+	
+	try {
 		generateSchema();
 		console.log('? Schema generated successfully');
 	} catch (e) {

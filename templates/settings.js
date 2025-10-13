@@ -1,3 +1,5 @@
+// Settings management and local storage
+
 // Local storage and settings management
 
 function saveSettings() {
