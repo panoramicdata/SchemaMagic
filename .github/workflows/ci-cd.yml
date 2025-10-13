@@ -181,16 +181,16 @@ jobs:
         echo "[INFO] Configuring for GitHub Pages..."
         
         # Update base href for GitHub Pages subdirectory
-        sed -i 's|<base href="/" />|<base href="/SchemaMagic/" />|g' dist/wwwroot/index.html
+        sed -i 's|<base href="/" />|<base href="/SchemaMagic/" />|g' dist/index.html
         
         # Add .nojekyll file to prevent GitHub Pages from processing as Jekyll site
-        touch dist/wwwroot/.nojekyll
+        touch dist/.nojekyll
         
         # Copy 404.html for SPA routing
-        cp dist/wwwroot/index.html dist/wwwroot/404.html
+        cp dist/index.html dist/404.html
         
         # Add version info file
-        echo "${{ steps.nbgv.outputs.version }}" > dist/wwwroot/version.txt
+        echo "${{ steps.nbgv.outputs.version }}" > dist/version.txt
         
         echo "[SUCCESS] GitHub Pages configuration complete"
         echo "[INFO] Version: ${{ steps.nbgv.outputs.version }}"
@@ -198,7 +198,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: dist/wwwroot/
+        path: dist/
 
     - name: Deploy to GitHub Pages
       id: deployment
