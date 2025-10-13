@@ -176,21 +176,39 @@ jobs:
     - name: Publish
       run: dotnet publish SchemaMagic.Web/SchemaMagic.Web.csproj --no-build --configuration Release --output dist/
       
+    - name: List published files
+      run: |
+        echo "[INFO] Listing published files..."
+        ls -la dist/
+        echo "[INFO] Checking for wwwroot..."
+        if [ -d "dist/wwwroot" ]; then
+          echo "[INFO] wwwroot exists, listing contents..."
+          ls -la dist/wwwroot/
+        else
+          echo "[INFO] No wwwroot directory found"
+        fi
+      
     - name: Fix base path for GitHub Pages
       run: |
         echo "[INFO] Configuring for GitHub Pages..."
         
-        # Update base href for GitHub Pages subdirectory
-        sed -i 's|<base href="/" />|<base href="/SchemaMagic/" />|g' dist/index.html
-        
-        # Add .nojekyll file to prevent GitHub Pages from processing as Jekyll site
-        touch dist/.nojekyll
-        
-        # Copy 404.html for SPA routing
-        cp dist/index.html dist/404.html
-        
-        # Add version info file
-        echo "${{ steps.nbgv.outputs.version }}" > dist/version.txt
+        # Check if index.html is in wwwroot subdirectory
+        if [ -f "dist/wwwroot/index.html" ]; then
+          echo "[INFO] Found index.html in dist/wwwroot/"
+          sed -i 's|<base href="/" />|<base href="/SchemaMagic/" />|g' dist/wwwroot/index.html
+          touch dist/wwwroot/.nojekyll
+          cp dist/wwwroot/index.html dist/wwwroot/404.html
+          echo "${{ steps.nbgv.outputs.version }}" > dist/wwwroot/version.txt
+        elif [ -f "dist/index.html" ]; then
+          echo "[INFO] Found index.html in dist/"
+          sed -i 's|<base href="/" />|<base href="/SchemaMagic/" />|g' dist/index.html
+          touch dist/.nojekyll
+          cp dist/index.html dist/404.html
+          echo "${{ steps.nbgv.outputs.version }}" > dist/version.txt
+        else
+          echo "[ERROR] Could not find index.html in dist/ or dist/wwwroot/"
+          exit 1
+        fi
         
         echo "[SUCCESS] GitHub Pages configuration complete"
         echo "[INFO] Version: ${{ steps.nbgv.outputs.version }}"
@@ -198,7 +216,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: dist/
+        path: dist/wwwroot/
 
     - name: Deploy to GitHub Pages
       id: deployment
