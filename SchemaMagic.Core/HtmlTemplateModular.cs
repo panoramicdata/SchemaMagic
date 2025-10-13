@@ -76,7 +76,7 @@ public static class ModularHtmlTemplate
 		catch (Exception ex)
 		{
 			Console.WriteLine($"⚠️ Warning: Could not load custom CSS file '{customCssPath}': {ex.Message}");
-			Console.WriteLine("🔄 Falling back to default styles");
+			Console.WriteLine($"🔄 Falling back to default styles");
 			return defaultCss;
 		}
 	}
@@ -173,47 +173,52 @@ public static class ModularHtmlTemplate
 			return cached;
 		}
 
-		// First try to load from Templates directory (capital T) relative to current location
-		var currentDir = Directory.GetCurrentDirectory();
-		var templatesPath = Path.Combine(currentDir, "Templates", fileName);
+		// Try to load from embedded resources first (works in Blazor WASM)
+		var assembly = Assembly.GetExecutingAssembly();
+		var resourceName = $"SchemaMagic.Core.Templates.{fileName}";
 
-		if (File.Exists(templatesPath))
+		Console.WriteLine($"🔍 Looking for embedded resource: {resourceName}");
+
+		using var stream = assembly.GetManifestResourceStream(resourceName);
+		if (stream != null)
 		{
-			var content = File.ReadAllText(templatesPath);
-			_templateCache[fileName] = content;
-			return content;
+			using var reader = new StreamReader(stream);
+			var template = reader.ReadToEnd();
+			_templateCache[fileName] = template;
+			Console.WriteLine($"✅ Loaded from embedded resource: {fileName} ({template.Length} chars)");
+			return template;
 		}
 
-		// Try lowercase templates directory
-		var templatesPath2 = Path.Combine(currentDir, "templates", fileName);
+		// Fallback to file system (for command-line tool)
+		Console.WriteLine($"⚠️ Embedded resource not found, trying file system...");
 
-		if (File.Exists(templatesPath2))
+		// Try various file system paths
+		var pathsToTry = new[]
 		{
-			var content = File.ReadAllText(templatesPath2);
-			_templateCache[fileName] = content;
-			return content;
+			Path.Combine(Directory.GetCurrentDirectory(), "Templates", fileName),
+			Path.Combine(Directory.GetCurrentDirectory(), "templates", fileName),
+			Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "", "..", "..", "..", "..", "Templates", fileName),
+			Path.Combine("..", "Templates", fileName)
+		};
+
+		foreach (var path in pathsToTry)
+		{
+			if (File.Exists(path))
+			{
+				var content = File.ReadAllText(path);
+				_templateCache[fileName] = content;
+				Console.WriteLine($"✅ Loaded from file system: {path}");
+				return content;
+			}
 		}
 
-		// Try relative to the assembly location
-		var assemblyDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "";
-		var templatesPath3 = Path.Combine(assemblyDir, "..", "..", "..", "..", "Templates", fileName);
-
-		if (File.Exists(templatesPath3))
+		// List all embedded resources to help debug
+		Console.WriteLine("📋 Available embedded resources:");
+		foreach (var res in assembly.GetManifestResourceNames())
 		{
-			var content = File.ReadAllText(templatesPath3);
-			_templateCache[fileName] = content;
-			return content;
+			Console.WriteLine($"   - {res}");
 		}
 
-		// Fallback: look up from current directory
-		var templatesPath4 = Path.Combine("..", "Templates", fileName);
-		if (File.Exists(templatesPath4))
-		{
-			var content = File.ReadAllText(templatesPath4);
-			_templateCache[fileName] = content;
-			return content;
-		}
-
-		throw new FileNotFoundException($"Template file not found: {fileName} (searched in Templates/, templates/, and assembly-relative paths)");
+		throw new FileNotFoundException($"Template file not found: {fileName} (searched embedded resources and file system)");
 	}
 }

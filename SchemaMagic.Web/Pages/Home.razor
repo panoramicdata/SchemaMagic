@@ -1,30 +1,226 @@
 @page "/"
+@using SchemaMagic.Web.Services
+@using System.Security.Cryptography
+@using System.Text
+@inject GitHubService GitHubService
+@inject SchemaAnalysisService SchemaAnalysisService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>SchemaMagic - Interactive EF Core Schema Visualizer</PageTitle>
 
-<!-- Hero Section -->
+<!-- Hero Section with Integrated Analyzer -->
 <section class="hero-section py-5">
     <div class="container py-5">
-        <div class="row align-items-center g-5">
-            <div class="col-lg-6">
+        <div class="row g-5">
+            <div class="col-12 text-center">
                 <h1 class="display-3 fw-bold mb-4 text-white">
                     <i class="bi bi-magic"></i> SchemaMagic
                 </h1>
                 <p class="lead text-white mb-4">
                     Interactive Entity Framework Core Schema Visualizer
                 </p>
-                <p class="text-white-50 mb-4">
-                    Analyze GitHub repositories to find DbContext files and generate beautiful, 
+                <p class="text-white-50 mb-5">
+                    Enter a GitHub repository URL below to discover DbContext files and generate beautiful, 
                     interactive schema diagrams directly in your browser.
                 </p>
-                <a href="/analyze" class="btn btn-light btn-lg">
-                    <i class="bi bi-search me-2"></i>Analyze Repository
-                </a>
             </div>
-            <div class="col-lg-6 text-center">
-                <div class="schema-preview p-5">
-                    <i class="bi bi-diagram-3 display-1 text-white opacity-75"></i>
-                    <p class="mt-4 text-white-50 mb-0 fs-5">Interactive Schema Diagrams</p>
+        </div>
+
+        <!-- Integrated Analyzer Form -->
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="card shadow-lg border-0">
+                    <div class="card-body p-4">
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                <strong><i class="bi bi-exclamation-triangle"></i> Error:</strong> @errorMessage
+                                <button type="button" class="btn-close" @onclick="@(() => errorMessage = "")"></button>
+                            </div>
+                        }
+
+                        <div class="mb-4">
+                            <label for="repoUrl" class="form-label fw-bold">
+                                <i class="bi bi-github"></i> GitHub Repository URL
+                            </label>
+                            <div class="input-group input-group-lg">
+                                <input type="url"
+                                       class="form-control"
+                                       id="repoUrl"
+                                       @bind="repositoryUrl"
+                                       @bind:event="oninput"
+                                       placeholder="https://github.com/owner/repository"
+                                       disabled="@isLoading" />
+                                <button class="btn btn-primary"
+                                        type="button"
+                                        @onclick="DiscoverDbContextsAsync"
+                                        disabled="@(isLoading || string.IsNullOrWhiteSpace(repositoryUrl))">
+                                    @if (isLoading)
+                                    {
+                                        <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                        <span>Discovering...</span>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-search me-2"></i>
+                                        <span>Discover</span>
+                                    }
+                                </button>
+                            </div>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Example: https://github.com/panoramicdata/SchemaMagic
+                            </div>
+                        </div>
+
+                        <!-- Optional Token Section - Collapsible -->
+                        <div class="mb-3">
+                            <details>
+                                <summary class="text-muted" style="cursor: pointer;">
+                                    <i class="bi bi-lock"></i> <small>Private Repository? Click to add Personal Access Token</small>
+                                </summary>
+                                <div class="mt-3">
+                                    <label for="accessToken" class="form-label">
+                                        <i class="bi bi-shield-check"></i> Personal Access Token
+                                    </label>
+                                    <div class="input-group">
+                                        <input type="password"
+                                               class="form-control"
+                                               id="accessToken"
+                                               @bind="accessToken"
+                                               placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"
+                                               disabled="@isLoading" />
+                                        <button class="btn btn-outline-secondary"
+                                                type="button"
+                                                @onclick="ValidateTokenAsync"
+                                                disabled="@(isValidatingToken || string.IsNullOrWhiteSpace(accessToken))">
+                                            @if (isValidatingToken)
+                                            {
+                                                <span class="spinner-border spinner-border-sm" role="status"></span>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-shield-check"></i>
+                                            }
+                                        </button>
+                                    </div>
+                                    <div class="form-text">
+                                        <small>
+                                            <i class="bi bi-info-circle"></i>
+                                            Create a <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">
+                                                Personal Access Token
+                                            </a> with 'Contents' read permission.
+                                            @if (tokenValidationResult.HasValue)
+                                            {
+                                                @if (tokenValidationResult.Value)
+                                                {
+                                                    <span class="text-success ms-2">
+                                                        <i class="bi bi-check-circle-fill"></i> Token is valid
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-danger ms-2">
+                                                        <i class="bi bi-x-circle-fill"></i> Token is invalid
+                                                    </span>
+                                                }
+                                            }
+                                        </small>
+                                    </div>
+                                </div>
+                            </details>
+                        </div>
+
+                        @if (dbContextFiles.Any())
+                        {
+                            <div class="alert alert-success d-flex align-items-center" role="alert">
+                                <i class="bi bi-check-circle-fill me-2 fs-4"></i>
+                                <div>
+                                    <strong>Found @dbContextFiles.Count DbContext file@(dbContextFiles.Count != 1 ? "s" : "")!</strong>
+                                    <ul class="mb-0 mt-2">
+                                        @foreach (var file in dbContextFiles)
+                                        {
+                                            <li><code>@file.FilePath</code></li>
+                                        }
+                                    </ul>
+                                </div>
+                            </div>
+
+                            @if (dbContextFiles.Count > 1)
+                            {
+                                <div class="mb-3">
+                                    <label for="dbContextSelect" class="form-label fw-bold">
+                                        <i class="bi bi-file-code"></i> Select DbContext to Analyze
+                                    </label>
+                                    <select class="form-select form-select-lg"
+                                            id="dbContextSelect"
+                                            @bind="selectedDbContextPath"
+                                            disabled="@isAnalyzing">
+                                        <option value="">Choose a DbContext file...</option>
+                                        @foreach (var file in dbContextFiles)
+                                        {
+                                            <option value="@file.FilePath">@file.FileName - @file.FilePath</option>
+                                        }
+                                    </select>
+                                </div>
+
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-success btn-lg"
+                                            type="button"
+                                            @onclick="AnalyzeSchemaAsync"
+                                            disabled="@(isAnalyzing || string.IsNullOrEmpty(selectedDbContextPath))">
+                                        @if (isAnalyzing)
+                                        {
+                                            <span class="spinner-border spinner-border-sm me-2" role="status"></span>
+                                            <span>Analyzing Schema...</span>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-diagram-3 me-2"></i>
+                                            <span>Generate Interactive Schema</span>
+                                        }
+                                    </button>
+                                </div>
+                            }
+                            else
+                            {
+                                <!-- Single DbContext - show analyzing state -->
+                                @if (isAnalyzing)
+                                {
+                                    <div class="text-center py-4">
+                                        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                                            <span class="visually-hidden">Analyzing...</span>
+                                        </div>
+                                        <h5 class="text-muted">
+                                            <i class="bi bi-diagram-3 me-2"></i>Analyzing Schema...
+                                        </h5>
+                                        <p class="text-muted">Parsing <code>@dbContextFiles[0].FileName</code></p>
+                                    </div>
+                                }
+                            }
+                        }
+
+                        @if (analysisResult != null && analysisResult.Success)
+                        {
+                            <div class="mt-4 p-4 bg-success bg-opacity-10 border border-success rounded">
+                                <h5 class="text-success mb-3">
+                                    <i class="bi bi-check-circle-fill"></i> Schema Generated Successfully!
+                                </h5>
+                                <p class="mb-3">
+                                    <strong>@analysisResult.EntitiesFound entities</strong> found in your database schema.
+                                </p>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary btn-lg"
+                                            @onclick="ViewSchemaAsync">
+                                        <i class="bi bi-eye me-2"></i> View Interactive Schema
+                                    </button>
+                                    <button class="btn btn-outline-secondary"
+                                            @onclick="DownloadSchemaAsync">
+                                        <i class="bi bi-download me-2"></i> Download HTML File
+                                    </button>
+                                </div>
+                            </div>
+                        }
+                    </div>
                 </div>
             </div>
         </div>
@@ -32,7 +228,7 @@
 </section>
 
 <!-- Features Section -->
-<section class="py-5">
+<section class="py-5 bg-white">
     <div class="container">
         <div class="text-center mb-5">
             <h2 class="display-5 fw-bold mb-3">
@@ -43,7 +239,7 @@
 
         <div class="row g-4">
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
+                <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center">
                         <div class="feature-icon mb-4">
                             <i class="bi bi-github"></i>
@@ -57,7 +253,7 @@
             </div>
 
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
+                <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center">
                         <div class="feature-icon mb-4">
                             <i class="bi bi-diagram-2"></i>
@@ -71,7 +267,7 @@
             </div>
 
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
+                <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center">
                         <div class="feature-icon mb-4">
                             <i class="bi bi-lightning-charge"></i>
@@ -85,42 +281,42 @@
             </div>
 
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
+                <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center">
                         <div class="feature-icon mb-4">
                             <i class="bi bi-palette"></i>
                         </div>
-                        <h5 class="card-title fw-bold mb-3">Professional Styling</h5>
+                        <h5 class="card-title fw-bold mb-3">Dark Mode Support</h5>
                         <p class="card-text text-muted">
-                            Beautiful, responsive designs with hover effects and modern UI components.
+                            Automatic dark mode based on your system preference for comfortable viewing.
                         </p>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
+                <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center">
                         <div class="feature-icon mb-4">
                             <i class="bi bi-phone"></i>
                         </div>
                         <h5 class="card-title fw-bold mb-3">Mobile Friendly</h5>
                         <p class="card-text text-muted">
-                            Works seamlessly on desktop, tablet, and mobile devices.
+                            Works seamlessly on desktop, tablet, and mobile devices with responsive design.
                         </p>
                     </div>
                 </div>
             </div>
 
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
+                <div class="card h-100 border-0 shadow-sm">
                     <div class="card-body text-center">
                         <div class="feature-icon mb-4">
-                            <i class="bi bi-download"></i>
+                            <i class="bi bi-wifi-off"></i>
                         </div>
-                        <h5 class="card-title fw-bold mb-3">Export & Share</h5>
+                        <h5 class="card-title fw-bold mb-3">Works Offline</h5>
                         <p class="card-text text-muted">
-                            Download interactive HTML files or share links to generated schemas.
+                            Generated schemas are standalone HTML files that work offline with all features.
                         </p>
                     </div>
                 </div>
@@ -129,38 +325,158 @@
     </div>
 </section>
 
-<!-- How It Works Section -->
-<section class="py-5 bg-light">
-    <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="display-5 fw-bold mb-3">
-                <i class="bi bi-lightbulb"></i> How It Works
-            </h2>
-            <p class="lead text-muted">Get started in three simple steps</p>
-        </div>
+@code {
+    private string repositoryUrl = "";
+    private string selectedDbContextPath = "";
+    private string accessToken = "";
+    private string errorMessage = "";
+    private bool isLoading = false;
+    private bool isAnalyzing = false;
+    private bool isValidatingToken = false;
+    private bool? tokenValidationResult = null;
+    private List<DbContextInfo> dbContextFiles = new();
+    private SchemaAnalysisResult? analysisResult;
+
+    private async Task ValidateTokenAsync()
+    {
+        if (string.IsNullOrWhiteSpace(accessToken))
+            return;
+
+        isValidatingToken = true;
+        StateHasChanged();
+
+        try
+        {
+            tokenValidationResult = await GitHubService.ValidateAccessTokenAsync(accessToken);
+        }
+        catch (Exception)
+        {
+            tokenValidationResult = false;
+        }
+        finally
+        {
+            isValidatingToken = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DiscoverDbContextsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(repositoryUrl))
+            return;
+
+        isLoading = true;
+        errorMessage = "";
+        dbContextFiles.Clear();
+        analysisResult = null;
+        selectedDbContextPath = "";
+        StateHasChanged();
+
+        try
+        {
+            // Pass the access token if provided
+            var token = string.IsNullOrWhiteSpace(accessToken) ? null : accessToken;
+            dbContextFiles = await GitHubService.FindDbContextFilesAsync(repositoryUrl, token);
+
+            if (!dbContextFiles.Any())
+            {
+                errorMessage = "No DbContext files found in the repository. Make sure the repository contains Entity Framework Core DbContext classes.";
+            }
+            else if (dbContextFiles.Count == 1)
+            {
+                // Automatically select and analyze the single DbContext file
+                selectedDbContextPath = dbContextFiles[0].FilePath;
+                StateHasChanged();
+                
+                // Automatically trigger analysis
+                await AnalyzeSchemaAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = ex.Message;
+        }
+        finally
+        {
+            isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task AnalyzeSchemaAsync()
+    {
+        if (string.IsNullOrEmpty(selectedDbContextPath))
+            return;
+
+        isAnalyzing = true;
+        errorMessage = "";
+        StateHasChanged();
+
+        try
+        {
+            var selectedFile = dbContextFiles.FirstOrDefault(f => f.FilePath == selectedDbContextPath);
+            if (selectedFile != null)
+            {
+                // Generate deterministic GUID based on repository URL and DbContext file path
+                var documentGuid = GenerateGuidFromRepoAndFile(repositoryUrl, selectedFile.FilePath);
+                
+                Console.WriteLine($"?? Generated GUID for {repositoryUrl}/{selectedFile.FilePath}: {documentGuid}");
+
+                analysisResult = await SchemaAnalysisService.AnalyzeDbContextAsync(
+                    selectedFile.Content, selectedFile.FileName, documentGuid);
+
+                if (!analysisResult.Success)
+                {
+                    errorMessage = analysisResult.ErrorMessage ?? "Analysis failed. The file may not contain valid DbContext entities.";
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Analysis error: {ex.Message}";
+        }
+        finally
+        {
+            isAnalyzing = false;
+            StateHasChanged();
+        }
+    }
+
+    private static string GenerateGuidFromRepoAndFile(string repoUrl, string filePath)
+    {
+        // Combine repository URL and file path for uniqueness
+        var combined = $"{repoUrl.Trim().ToLowerInvariant()}|{filePath.Trim().ToLowerInvariant()}";
         
-        <div class="row g-4 justify-content-center">
-            <div class="col-md-4">
-                <div class="text-center">
-                    <div class="step-number mx-auto mb-3">1</div>
-                    <h5 class="fw-bold mb-2">Enter Repository URL</h5>
-                    <p class="text-muted">Paste any public GitHub repository URL</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="text-center">
-                    <div class="step-number mx-auto mb-3">2</div>
-                    <h5 class="fw-bold mb-2">Discover DbContext</h5>
-                    <p class="text-muted">Automatically find Entity Framework files</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="text-center">
-                    <div class="step-number mx-auto mb-3">3</div>
-                    <h5 class="fw-bold mb-2">Generate Schema</h5>
-                    <p class="text-muted">Create beautiful interactive diagrams</p>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+        // Generate SHA256 hash
+        using var sha256 = SHA256.Create();
+        var hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(combined));
+        
+        // Take first 16 bytes and convert to GUID format
+        var guidBytes = new byte[16];
+        Array.Copy(hashBytes, guidBytes, 16);
+        
+        // Set version (4) and variant bits for a valid GUID
+        guidBytes[7] = (byte)((guidBytes[7] & 0x0F) | 0x40); // Version 4
+        guidBytes[8] = (byte)((guidBytes[8] & 0x3F) | 0x80); // Variant is 10
+        
+        var guid = new Guid(guidBytes);
+        return guid.ToString();
+    }
+
+    private async Task ViewSchemaAsync()
+    {
+        if (analysisResult?.Success == true)
+        {
+            await JSRuntime.InvokeVoidAsync("openSchemaInNewTab", analysisResult.HtmlContent);
+        }
+    }
+
+    private async Task DownloadSchemaAsync()
+    {
+        if (analysisResult?.Success == true)
+        {
+            var fileName = $"Schema-{DateTime.Now:yyyyMMdd-HHmmss}.html";
+            await JSRuntime.InvokeVoidAsync("downloadFile", fileName, analysisResult.HtmlContent, "text/html");
+        }
+    }
+}

@@ -20,4 +20,21 @@
 		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.8.0" />
 	</ItemGroup>
 
+	<ItemGroup>
+		<!-- Embed template files as resources -->
+		<EmbeddedResource Include="..\Templates\template.html" Link="Templates\template.html" />
+		<EmbeddedResource Include="..\Templates\styles.css" Link="Templates\styles.css" />
+		<EmbeddedResource Include="..\Templates\variables.js" Link="Templates\variables.js" />
+		<EmbeddedResource Include="..\Templates\event-listeners.js" Link="Templates\event-listeners.js" />
+		<EmbeddedResource Include="..\Templates\pan-zoom.js" Link="Templates\pan-zoom.js" />
+		<EmbeddedResource Include="..\Templates\settings.js" Link="Templates\settings.js" />
+		<EmbeddedResource Include="..\Templates\force-directed-layout.js" Link="Templates\force-directed-layout.js" />
+		<EmbeddedResource Include="..\Templates\schema-generation.js" Link="Templates\schema-generation.js" />
+		<EmbeddedResource Include="..\Templates\table-generation.js" Link="Templates\table-generation.js" />
+		<EmbeddedResource Include="..\Templates\property-utilities.js" Link="Templates\property-utilities.js" />
+		<EmbeddedResource Include="..\Templates\table-interaction.js" Link="Templates\table-interaction.js" />
+		<EmbeddedResource Include="..\Templates\relationships.js" Link="Templates\relationships.js" />
+		<EmbeddedResource Include="..\Templates\controls.js" Link="Templates\controls.js" />
+	</ItemGroup>
+
 </Project>
