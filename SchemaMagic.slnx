@@ -9,6 +9,7 @@
     <File Path="QUICK-PUBLISH.md" />
     <File Path="README.md" />
     <File Path="SchemaMagic.dic" />
+    <File Path="version.json" />
   </Folder>
   <Project Path="SchemaMagic.Core/SchemaMagic.Core.csproj" />
   <Project Path="SchemaMagic.Web/SchemaMagic.Web.csproj" />
