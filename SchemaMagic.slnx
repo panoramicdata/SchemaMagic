@@ -5,6 +5,8 @@
     <File Path="CHANGELOG.md" />
     <File Path="global.json" />
     <File Path="LICENSE" />
+    <File Path="PUBLISHING.md" />
+    <File Path="QUICK-PUBLISH.md" />
     <File Path="README.md" />
     <File Path="SchemaMagic.dic" />
   </Folder>

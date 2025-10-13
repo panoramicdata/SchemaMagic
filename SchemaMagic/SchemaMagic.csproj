@@ -10,28 +10,27 @@
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>schemamagic</ToolCommandName>
     <PackageId>SchemaMagic</PackageId>
-    <Version>1.0.0</Version>
     <Authors>Panoramic Data Limited</Authors>
     <Company>Panoramic Data Limited</Company>
     <Product>SchemaMagic</Product>
-    <Description>Interactive HTML+SVG Database Schema Visualizer for Entity Framework Core. Transform your DbContexts into beautiful, interactive schema diagrams with just one command.</Description>
-    <PackageDescription>SchemaMagic is a .NET global tool that analyzes Entity Framework Core DbContext files and generates interactive HTML schema visualizations. Features include drag-and-drop tables, smart relationship detection, physics-based layout, zoom/pan controls, and persistent customizations.</PackageDescription>
-    <PackageTags>entity-framework;schema-visualization;database-diagrams;interactive;html;svg;dotnet-tool;ef-core</PackageTags>
+    <Description>Interactive HTML+SVG Database Schema Visualizer for Entity Framework Core. Transform your DbContexts into beautiful, interactive schema diagrams with just one command - from local files or GitHub repositories.</Description>
+    <PackageDescription>SchemaMagic is a .NET global tool that analyzes Entity Framework Core DbContext files and generates interactive HTML schema visualizations. Features include drag-and-drop tables, smart relationship detection, physics-based layout, zoom/pan controls, persistent customizations, and GitHub repository integration.</PackageDescription>
+    <PackageTags>entity-framework;schema-visualization;database-diagrams;interactive;html;svg;dotnet-tool;ef-core;github;dbcontext;erd</PackageTags>
     <PackageProjectUrl>https://github.com/panoramicdata/SchemaMagic</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageIcon>icon.png</PackageIcon>
     <RepositoryUrl>https://github.com/panoramicdata/SchemaMagic</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageReleaseNotes>Initial release of SchemaMagic - Interactive Entity Framework Core Schema Visualizer</PackageReleaseNotes>
-    <Copyright>© 2025 Panoramic Data Limited</Copyright>
+    <PackageReleaseNotes>Enhanced GitHub integration, improved dark mode, automated versioning with Nerdbank.GitVersioning</PackageReleaseNotes>
+    <Copyright>Â© 2025 Panoramic Data Limited</Copyright>
     
     <!-- Assembly Configuration -->
     <AssemblyTitle>SchemaMagic</AssemblyTitle>
     <AssemblyDescription>Interactive HTML+SVG Database Schema Visualizer for Entity Framework Core</AssemblyDescription>
     <AssemblyCompany>Panoramic Data Limited</AssemblyCompany>
     <AssemblyProduct>SchemaMagic</AssemblyProduct>
-    <AssemblyCopyright>© 2025 Panoramic Data Limited</AssemblyCopyright>
+    <AssemblyCopyright>Â© 2025 Panoramic Data Limited</AssemblyCopyright>
     
     <!-- Build Configuration -->
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
@@ -40,6 +39,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" Version="3.8.118">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Octokit" Version="14.0.0" />
     <PackageReference Include="System.CommandLine" Version="2.0.0-beta4.22272.1" />
   </ItemGroup>
   
@@ -49,7 +53,7 @@
   
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="\" />
-    <None Include="..\docs\icon.png" Pack="true" PackagePath="\" Condition="Exists('..\docs\icon.png')" />
+    <None Include="icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>
