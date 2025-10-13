@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Entity Framework Schema Visualization - SchemaMagic</title>
+	<!-- FontAwesome 6 Free CDN -->
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+	<!-- CSS STYLES -->
+</head>
+<body>
+	<div class="container">
+		<div class="toolbar" id="toolbar">
+			<div class="toolbar-brand">
+				<!-- Database schema logo matching website -->
+				<svg class="toolbar-logo" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+					<defs>
+						<linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+							<stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+							<stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+						</linearGradient>
+					</defs>
+					<!-- Table 1 -->
+					<rect x="50" y="50" width="120" height="80" rx="8" fill="white" stroke="url(#logoGradient)" stroke-width="8"/>
+					<rect x="50" y="50" width="120" height="25" rx="8" fill="url(#logoGradient)"/>
+					<line x1="60" y1="100" x2="160" y2="100" stroke="url(#logoGradient)" stroke-width="4"/>
+					<!-- Table 2 -->
+					<rect x="230" y="200" width="120" height="80" rx="8" fill="white" stroke="url(#logoGradient)" stroke-width="8"/>
+					<rect x="230" y="200" width="120" height="25" rx="8" fill="url(#logoGradient)"/>
+					<line x1="240" y1="250" x2="340" y2="250" stroke="url(#logoGradient)" stroke-width="4"/>
+					<!-- Relationship arrow -->
+					<path d="M 170 90 L 230 240" stroke="url(#logoGradient)" stroke-width="6" fill="none" marker-end="url(#arrow)"/>
+					<defs>
+						<marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+							<path d="M0,0 L0,6 L9,3 z" fill="#667eea"/>
+						</marker>
+					</defs>
+				</svg>
+				<h1>SchemaMagic</h1>
+			</div>
+			
+			<!-- Grouped Checkboxes (including Legend button) -->
+			<div class="toolbar-section toolbar-checkboxes">
+				<button onclick="toggleRelationships()" id="relationships-btn" class="active">
+					<span class="toggle-indicator">✓</span> Relations
+				</button>
+				<button onclick="toggleNavigationProperties()" id="nav-props-btn" class="active">
+					<span class="toggle-indicator">✓</span> Nav Props
+				</button>
+				<button onclick="toggleInheritedProperties()" id="inherited-props-btn" class="active">
+					<span class="toggle-indicator">✓</span> Inherited
+				</button>
+				<button onclick="toggleFullHeight()" id="full-height-btn" class="active">
+					<span class="toggle-indicator">✓</span> Full Height
+				</button>
+				<button onclick="toggleSnapToGrid()" id="snap-grid-btn" class="active">
+					<span class="toggle-indicator">✓</span> Snap Grid
+				</button>
+				<button onclick="toggleLegend()" id="legend-toggle-btn" class="active">
+					<span class="toggle-indicator">✓</span> Legend
+				</button>
+			</div>
+			
+			<!-- Action Buttons -->
+			<div class="toolbar-section toolbar-actions">
+				<button onclick="openTableGroupingDialog()"><i class="fas fa-layer-group"></i> Table Groups</button>
+				<button onclick="zoomIn()">Zoom In</button>
+				<button onclick="zoomOut()">Zoom Out</button>
+				<button onclick="resetZoom()">Reset Zoom</button>
+				<button onclick="downloadSchema()" class="download">Download</button>
+			</div>
+		</div>
+
+		<!-- Legend moved to bottom right corner -->
+		<div class="legend" id="legend">
+			<strong>Legend:</strong><br>
+			PK: Primary Key | FK: Foreign Key | N: Navigation | INH: Inherited
+		</div>
+
+		<!-- Table Grouping Rules Dialog -->
+		<div class="modal-overlay" id="grouping-modal-overlay" onclick="closeTableGroupingDialog()" style="display: none;"></div>
+		<div class="modal-dialog" id="grouping-modal" style="display: none;">
+			<div class="modal-header">
+				<h2><i class="fas fa-layer-group"></i> Table Grouping Rules</h2>
+				<button class="modal-close" onclick="closeTableGroupingDialog()"><i class="fas fa-times"></i></button>
+			</div>
+			<div class="modal-body">
+				<div class="modal-description">
+					Define rules to categorize tables with custom icons and colors. Rules are processed in order from top to bottom.
+					<button class="btn-secondary" onclick="resetToDefaultRules()"><i class="fas fa-undo"></i> Reset to Defaults</button>
+				</div>
+				<div class="rules-container" id="rules-container">
+					<!-- Rules will be populated here -->
+				</div>
+				<button class="btn-add-rule" onclick="addNewRule()"><i class="fas fa-plus"></i> Add New Rule</button>
+			</div>
+			<div class="modal-footer">
+				<button class="btn-primary" onclick="saveTableGroupingRules()"><i class="fas fa-save"></i> Save Rules</button>
+				<button class="btn-secondary" onclick="closeTableGroupingDialog()">Cancel</button>
+			</div>
+		</div>
+
+		<!-- Icon Picker Dialog -->
+		<div class="modal-overlay" id="icon-picker-overlay" onclick="closeIconPicker()" style="display: none;"></div>
+		<div class="modal-dialog modal-small" id="icon-picker-modal" style="display: none;">
+			<div class="modal-header">
+				<h3><i class="fas fa-icons"></i> Select Icon</h3>
+				<button class="modal-close" onclick="closeIconPicker()"><i class="fas fa-times"></i></button>
+			</div>
+			<div class="modal-body">
+				<input type="text" id="icon-search" placeholder="Search icons..." class="icon-search-input" oninput="filterIcons(this.value)">
+				<div class="icon-grid" id="icon-grid">
+					<!-- Icons will be populated here -->
+				</div>
+			</div>
+		</div>
+
+		<div class="schema-container" id="schema-container">
+			<svg id="schema-svg" viewBox="0 0 20000 15000">
+				<defs>
+					<!-- Crow's Foot Notation Markers -->
+					<marker id="one-side" markerWidth="12" markerHeight="8" refX="12" refY="4" orient="auto" markerUnits="strokeWidth">
+						<line x1="4" y1="0" x2="4" y2="8" stroke="#2563eb" stroke-width="2" />
+					</marker>
+					<marker id="one-side-highlighted" markerWidth="12" markerHeight="8" refX="12" refY="4" orient="auto" markerUnits="strokeWidth">
+						<line x1="4" y1="0" x2="4" y2="8" stroke="#764ba2" stroke-width="2" />
+					</marker>
+					<marker id="many-side" markerWidth="16" markerHeight="12" refX="0" refY="6" orient="auto" markerUnits="strokeWidth">
+						<path d="M 0 0 L 8 6 L 0 12" stroke="#2563eb" stroke-width="2" fill="none" />
+					</marker>
+					<marker id="many-side-highlighted" markerWidth="16" markerHeight="12" refX="0" refY="6" orient="auto" markerUnits="strokeWidth">
+						<path d="M 0 0 L 8 6 L 0 12" stroke="#764ba2" stroke-width="2" fill="none" />
+					</marker>
+					<marker id="one-optional-side" markerWidth="18" markerHeight="8" refX="18" refY="4" orient="auto" markerUnits="strokeWidth">
+						<circle cx="9" cy="4" r="2.5" stroke="#2563eb" stroke-width="1.5" fill="white" />
+						<line x1="4" y1="0" x2="4" y2="8" stroke="#2563eb" stroke-width="2" />
+					</marker>
+					<marker id="one-optional-side-highlighted" markerWidth="18" markerHeight="8" refX="18" refY="4" orient="auto" markerUnits="strokeWidth">
+						<circle cx="9" cy="4" r="2.5" stroke="#764ba2" stroke-width="1.5" fill="white" />
+						<line x1="4" y1="0" x2="4" y2="8" stroke="#764ba2" stroke-width="2" />
+					</marker>
+					<marker id="many-optional-side" markerWidth="22" markerHeight="12" refX="0" refY="6" orient="auto" markerUnits="strokeWidth">
+						<circle cx="11" cy="6" r="2.5" stroke="#2563eb" stroke-width="1.5" fill="white" />
+						<path d="M 0 0 L 8 6 L 0 12" stroke="#2563eb" stroke-width="2" fill="none" />
+					</marker>
+					<marker id="many-optional-side-highlighted" markerWidth="22" markerHeight="12" refX="0" refY="6" orient="auto" markerUnits="strokeWidth">
+						<circle cx="11" cy="6" r="2.5" stroke="#764ba2" stroke-width="1.5" fill="white" />
+						<path d="M 0 0 L 8 6 L 0 12" stroke="#764ba2" stroke-width="2" fill="none" />
+					</marker>
+					<!-- Grid pattern -->
+					<pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
+						<circle cx="25" cy="25" r="2.5" class="grid-pattern" />
+					</pattern>
+				</defs>
+
+				<rect id="grid-background" width="100%" height="100%" fill="url(#grid)" style="display: none;" />
+				<rect class="boundary-indicator" x="125" y="125" width="19750" height="14750" style="display: none;" id="boundary-rect" />
+				<rect id="background-pan-area" width="100%" height="100%" fill="transparent" style="cursor: grab;" />
+			</svg>
+		</div>
+	</div>
+
+	<script>
+		<!-- JAVASCRIPT CONTENT -->
+	</script>
+</body>
+</html>
