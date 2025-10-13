@@ -36,7 +36,7 @@ jobs:
       run: |
         VERSION=$(nbgv get-version -v SimpleVersion)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "?? Version: $VERSION"
+        echo "[INFO] Version: $VERSION"
         
     - name: Restore dependencies
       run: dotnet restore
@@ -74,8 +74,8 @@ jobs:
         FULL_VERSION=$(nbgv get-version -v SemVer2)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "fullVersion=$FULL_VERSION" >> $GITHUB_OUTPUT
-        echo "?? Version: $VERSION"
-        echo "?? Full Version: $FULL_VERSION"
+        echo "[INFO] Version: $VERSION"
+        echo "[INFO] Full Version: $FULL_VERSION"
         
     - name: Restore dependencies
       run: dotnet restore
@@ -88,7 +88,7 @@ jobs:
       
     - name: Display Package Info
       run: |
-        echo "?? Generated Packages:"
+        echo "[INFO] Generated Packages:"
         ls -lh ./nupkg/
         
     - name: Publish to NuGet
@@ -121,9 +121,9 @@ jobs:
           ```
           
           ### Links
-          - ?? [NuGet Package](https://www.nuget.org/packages/SchemaMagic/${{ steps.nbgv.outputs.version }})
-          - ?? [Web Application](https://panoramicdata.github.io/SchemaMagic)
-          - ?? [Documentation](https://github.com/panoramicdata/SchemaMagic/blob/main/README.md)
+          - [NuGet Package](https://www.nuget.org/packages/SchemaMagic/${{ steps.nbgv.outputs.version }})
+          - [Web Application](https://panoramicdata.github.io/SchemaMagic)
+          - [Documentation](https://github.com/panoramicdata/SchemaMagic/blob/main/README.md)
         draft: false
         prerelease: false
         
@@ -162,7 +162,7 @@ jobs:
       run: |
         VERSION=$(nbgv get-version -v SimpleVersion)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-        echo "?? Web App Version: $VERSION"
+        echo "[INFO] Web App Version: $VERSION"
         
     - name: Setup Pages
       uses: actions/configure-pages@v4
@@ -178,7 +178,7 @@ jobs:
       
     - name: Fix base path for GitHub Pages
       run: |
-        echo "?? Configuring for GitHub Pages..."
+        echo "[INFO] Configuring for GitHub Pages..."
         
         # Update base href for GitHub Pages subdirectory
         sed -i 's|<base href="/" />|<base href="/SchemaMagic/" />|g' dist/wwwroot/index.html
@@ -192,8 +192,8 @@ jobs:
         # Add version info file
         echo "${{ steps.nbgv.outputs.version }}" > dist/wwwroot/version.txt
         
-        echo "? GitHub Pages configuration complete"
-        echo "?? Version: ${{ steps.nbgv.outputs.version }}"
+        echo "[SUCCESS] GitHub Pages configuration complete"
+        echo "[INFO] Version: ${{ steps.nbgv.outputs.version }}"
         
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
@@ -206,8 +206,8 @@ jobs:
       
     - name: Deployment Summary
       run: |
-        echo "### ?? Deployment Successful!" >> $GITHUB_STEP_SUMMARY
+        echo "### Deployment Successful!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "?? **Version:** ${{ steps.nbgv.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-        echo "?? **URL:** ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
-        echo "? **Deployed:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+        echo "**Version:** ${{ steps.nbgv.outputs.version }}" >> $GITHUB_STEP_SUMMARY
+        echo "**URL:** ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Deployed:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
