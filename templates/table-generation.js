@@ -178,6 +178,13 @@ function generateTable(svg, entity, x, y) {
 	titleText.setAttribute('text-anchor', 'middle');
 	titleText.classList.add('table-title');
 	titleText.textContent = entity.type;
+	
+	// Add tooltip if table comment exists
+	if (entity.comment) {
+		const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+		title.textContent = entity.comment;
+		titleText.appendChild(title);
+	}
 
 	// Dynamic font sizing: start with double the normal size and scale down if needed
 	const baseFontSize = 40; // Current base font size
@@ -354,6 +361,14 @@ function renderProperty(tableGroup, property, x, propY, tableWidth, padding, ico
 	}
 
 	propText.textContent = property.name;
+	
+	// Add tooltip if comment exists
+	if (property.comment) {
+		const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+		title.textContent = property.comment;
+		propText.appendChild(title);
+	}
+	
 	tableGroup.appendChild(propText);
 
 	// Add underline for navigation properties since SVG doesn't support text-decoration properly
@@ -376,8 +391,11 @@ function renderProperty(tableGroup, property, x, propY, tableWidth, padding, ico
 	// Property type (right-aligned with proper spacing and color coding)
 	const typeText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 
-	// Calculate position for type text and icon
-	const typeIcon = getTypeIcon(property.type);
+	// For navigation properties, always show the navigation arrow icon
+	const typeIcon = isNavigationProperty(property) ? 
+		{ iconType: 'Navigation', isNullable: property.type.endsWith('?') } :
+		getTypeIcon(property.type);
+	
 	const typeTextX = typeIcon ? (x + tableWidth - padding - 50) : (x + tableWidth - padding); // Increased from 20 to 50 (2.5x larger)
 
 	typeText.setAttribute('x', typeTextX);

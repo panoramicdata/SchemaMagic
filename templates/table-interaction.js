@@ -90,7 +90,8 @@ function bringTableToFront(tableGroup) {
 }
 
 function moveTable(tableGroup, x, y) {
-	const elements = tableGroup.querySelectorAll('rect, text, line, circle');
+	// FIXED: Include polygon and g elements (for type icons like diamonds and navigation arrows)
+	const elements = tableGroup.querySelectorAll('rect, text, line, circle, polygon, g');
 	const oldRect = tableGroup.querySelector('.table-box');
 	const oldX = parseFloat(oldRect.getAttribute('x'));
 	const oldY = parseFloat(oldRect.getAttribute('y'));
@@ -114,6 +115,36 @@ function moveTable(tableGroup, x, y) {
 			const cy = parseFloat(element.getAttribute('cy'));
 			element.setAttribute('cx', cx + deltaX);
 			element.setAttribute('cy', cy + deltaY);
+		} else if (element.tagName === 'polygon') {
+			// FIXED: Handle polygon elements (enum diamonds, navigation arrows)
+			const pointsAttr = element.getAttribute('points');
+			if (pointsAttr) {
+				// Parse points string: "x1,y1 x2,y2 x3,y3 ..."
+				const points = pointsAttr.trim().split(/\s+/).map(pair => {
+					const [x, y] = pair.split(',').map(parseFloat);
+					return `${x + deltaX},${y + deltaY}`;
+				});
+				element.setAttribute('points', points.join(' '));
+			}
+		} else if (element.tagName === 'g') {
+			// FIXED: Handle g (group) elements by transforming them
+			const currentTransform = element.getAttribute('transform') || '';
+			const translateMatch = currentTransform.match(/translate\(([^,]+),([^)]+)\)/);
+			
+			if (translateMatch) {
+				// Update existing translate
+				const currentX = parseFloat(translateMatch[1]);
+				const currentY = parseFloat(translateMatch[2]);
+				const newTransform = currentTransform.replace(
+					/translate\([^)]+\)/,
+					`translate(${currentX + deltaX},${currentY + deltaY})`
+				);
+				element.setAttribute('transform', newTransform);
+			} else {
+				// Add new translate
+				const newTransform = currentTransform + ` translate(${deltaX},${deltaY})`;
+				element.setAttribute('transform', newTransform.trim());
+			}
 		} else if (element.tagName === 'rect' || element.tagName === 'text') {
 			// Handle rect and text elements
 			const currentX = parseFloat(element.getAttribute('x'));

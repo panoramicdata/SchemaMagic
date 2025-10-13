@@ -6,4 +6,5 @@ public class EntityInfo
 	public string BaseType { get; set; } = string.Empty;
 	public List<PropertyInfo> Properties { get; set; } = [];
 	public List<PropertyInfo> InheritedProperties { get; set; } = [];
+	public string? Comment { get; set; }
 }

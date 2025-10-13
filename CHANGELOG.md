@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- ?? **Property Comment Tooltips**: Hover over property names to see comments from EF Core `[Comment]` attributes or XML documentation
+  - Priority 1: EF Core `[Comment("...")]` attribute
+  - Priority 2: XML documentation `/// <summary>` comments
+  - Beautiful native browser tooltips with SVG `<title>` elements
+  - Perfect for documenting database column purposes and business rules
+
 ## [1.0.0] - 2024-10-04
 
 ### Added

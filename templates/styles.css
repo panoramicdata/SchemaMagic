@@ -201,6 +201,7 @@ body {
 
 .property-navigation {
 	fill: #059669;
+	font-weight: bold;
 	cursor: pointer;
 }
 

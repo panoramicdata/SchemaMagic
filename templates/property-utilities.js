@@ -161,7 +161,22 @@ function isNavigationProperty(property) {
 		/Entity$/
 	];
 
-	return navPatterns.some(pattern => pattern.test(property.type));
+	// First check: Standard collection and naming patterns
+	if (navPatterns.some(pattern => pattern.test(property.type))) {
+		return true;
+	}
+
+	// ENHANCED: Second check - detect entity references by checking if the type exists in our entities object
+	// This catches many-to-one relationships like "Tag", "Task", "User", etc.
+	const cleanType = property.type.replace(/\?$/, ''); // Remove nullable marker
+	
+	// Check if this type name matches an existing entity
+	if (typeof entities !== 'undefined' && entities[cleanType]) {
+		console.log(`🔍 Detected navigation property: ${property.name} (${property.type}) - matches entity ${cleanType}`);
+		return true;
+	}
+
+	return false;
 }
 
 function navigateToEntity(typeName) {
@@ -233,6 +248,8 @@ function createPropertyIcon(iconType, x, y) {
 		let iconContent = null;
 		const textY = y - 12; // Increased from -5 to -12 (2.5x larger)
 		const centerX = x + iconSize/2 + 10; // Increased from 4 to 10 (2.5x larger)
+		const strokeColor = isNullable ? '#9ca3af' : '#4b5563';
+		const fillColor = isNullable ? '#9ca3af' : '#4b5563';
 		
 		switch(type) {
 			case 'string':
@@ -242,6 +259,7 @@ function createPropertyIcon(iconType, x, y) {
 				iconContent.setAttribute('y', textY);
 				iconContent.setAttribute('text-anchor', 'middle');
 				iconContent.setAttribute('dominant-baseline', 'central');
+				iconContent.setAttribute('fill', fillColor);
 				iconContent.classList.add('type-icon-symbol-large');
 				iconContent.textContent = 'a';
 				break;
@@ -256,6 +274,7 @@ function createPropertyIcon(iconType, x, y) {
 				iconContent.setAttribute('y', textY);
 				iconContent.setAttribute('text-anchor', 'middle');
 				iconContent.setAttribute('dominant-baseline', 'central');
+				iconContent.setAttribute('fill', fillColor);
 				iconContent.classList.add('type-icon-symbol-large');
 				iconContent.textContent = '#';
 				break;
@@ -269,6 +288,7 @@ function createPropertyIcon(iconType, x, y) {
 				iconContent.setAttribute('y', textY);
 				iconContent.setAttribute('text-anchor', 'middle');
 				iconContent.setAttribute('dominant-baseline', 'central');
+				iconContent.setAttribute('fill', fillColor);
 				iconContent.classList.add('type-icon-symbol-large');
 				iconContent.textContent = '.';
 				break;
@@ -280,6 +300,7 @@ function createPropertyIcon(iconType, x, y) {
 				iconContent.setAttribute('y', textY);
 				iconContent.setAttribute('text-anchor', 'middle');
 				iconContent.setAttribute('dominant-baseline', 'central');
+				iconContent.setAttribute('fill', fillColor);
 				iconContent.classList.add('type-icon-symbol-large');
 				iconContent.textContent = '✓';
 				break;
@@ -291,33 +312,38 @@ function createPropertyIcon(iconType, x, y) {
 				iconContent.setAttribute('y', textY - 8); // Increased from 3 to 8 (2.5x larger)
 				iconContent.setAttribute('width', '16'); // Increased from 6 to 16 (2.5x larger)
 				iconContent.setAttribute('height', '16'); // Increased from 6 to 16 (2.5x larger)
+				iconContent.setAttribute('fill', fillColor);
+				iconContent.setAttribute('stroke', strokeColor);
 				iconContent.classList.add('type-icon-shape-large');
 				break;
 				
 			case 'DateTime':
 			case 'DateTimeOffset':
 			case 'TimeSpan':
-				// Simple calendar icon (rectangle with line) - larger size
-				iconContent = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+				// Simple calendar icon (rectangle with line) - larger size - create as individual elements instead of group
 				const dateRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
 				dateRect.setAttribute('x', centerX - 10); // Increased from 4 to 10 (2.5x larger)
 				dateRect.setAttribute('y', textY - 8); // Increased from 3 to 8 (2.5x larger)
 				dateRect.setAttribute('width', '20'); // Increased from 8 to 20 (2.5x larger)
 				dateRect.setAttribute('height', '16'); // Increased from 6 to 16 (2.5x larger)
 				dateRect.setAttribute('fill', 'none');
-				dateRect.setAttribute('stroke', isNullable ? '#9ca3af' : '#4b5563');
+				dateRect.setAttribute('stroke', strokeColor);
 				dateRect.setAttribute('stroke-width', '2'); // Increased from 0.8 to 2 (2.5x larger)
+				dateRect.classList.add('type-icon-shape-large');
+				elements.push(dateRect);
+				
 				const dateLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
 				dateLine.setAttribute('x1', centerX - 8); // Increased from 3 to 8 (2.5x larger)
 				dateLine.setAttribute('y1', textY - 2); // Increased from 1 to 2 (2.5x larger)
 				dateLine.setAttribute('x2', centerX + 8); // Increased from 3 to 8 (2.5x larger)
 				dateLine.setAttribute('y2', textY - 2); // Increased from 1 to 2 (2.5x larger)
-				dateLine.setAttribute('stroke', isNullable ? '#9ca3af' : '#4b5563');
+				dateLine.setAttribute('stroke', strokeColor);
 				dateLine.setAttribute('stroke-width', '2'); // Increased from 0.8 to 2 (2.5x larger)
-				iconContent.appendChild(dateRect);
-				iconContent.appendChild(dateLine);
-				iconContent.classList.add('type-icon-shape-large');
-				break;
+				dateLine.classList.add('type-icon-shape-large');
+				elements.push(dateLine);
+				
+				// Return early for DateTime since we already added both elements
+				return elements;
 				
 			case 'JsonDocument':
 				// Curly braces for JSON - larger size
@@ -326,6 +352,7 @@ function createPropertyIcon(iconType, x, y) {
 				iconContent.setAttribute('y', textY);
 				iconContent.setAttribute('text-anchor', 'middle');
 				iconContent.setAttribute('dominant-baseline', 'central');
+				iconContent.setAttribute('fill', fillColor);
 				iconContent.classList.add('type-icon-symbol-large');
 				iconContent.textContent = '{}';
 				break;
@@ -337,6 +364,7 @@ function createPropertyIcon(iconType, x, y) {
 				iconContent.setAttribute('y', textY);
 				iconContent.setAttribute('text-anchor', 'middle');
 				iconContent.setAttribute('dominant-baseline', 'central');
+				iconContent.setAttribute('fill', fillColor);
 				iconContent.classList.add('type-icon-symbol-large');
 				iconContent.textContent = '[]';
 				break;
@@ -345,6 +373,8 @@ function createPropertyIcon(iconType, x, y) {
 				// Simple diamond for enums - larger size
 				iconContent = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
 				iconContent.setAttribute('points', `${centerX},${textY - 8} ${centerX + 8},${textY} ${centerX},${textY + 8} ${centerX - 8},${textY}`); // Increased from 3 to 8 (2.5x larger)
+				iconContent.setAttribute('fill', fillColor);
+				iconContent.setAttribute('stroke', strokeColor);
 				iconContent.classList.add('type-icon-shape-large');
 				break;
 				
@@ -363,27 +393,12 @@ function createPropertyIcon(iconType, x, y) {
 				iconContent.setAttribute('y', textY);
 				iconContent.setAttribute('text-anchor', 'middle');
 				iconContent.setAttribute('dominant-baseline', 'central');
+				iconContent.setAttribute('fill', fillColor);
 				iconContent.classList.add('type-icon-symbol-large');
 				iconContent.textContent = '?';
 		}
 		
-		// Apply nullable coloring for type icons
 		if (iconContent) {
-			if (isNullable) {
-				if (iconContent.classList.contains('type-icon-symbol-large')) {
-					iconContent.setAttribute('fill', '#9ca3af'); // Light grey for nullable
-				} else if (iconContent.classList.contains('type-icon-shape-large')) {
-					iconContent.setAttribute('fill', '#9ca3af');
-					iconContent.setAttribute('stroke', '#9ca3af'); 
-				}
-			} else {
-				if (iconContent.classList.contains('type-icon-symbol-large')) {
-					iconContent.setAttribute('fill', '#4b5563'); // Dark grey for non-nullable
-				} else if (iconContent.classList.contains('type-icon-shape-large')) {
-					iconContent.setAttribute('fill', '#4b5563');
-					iconContent.setAttribute('stroke', '#4b5563');
-				}
-			}
 			elements.push(iconContent);
 		}
 	}

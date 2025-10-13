@@ -226,7 +226,7 @@ public static partial class CoreSchemaAnalysisService
 		Console.WriteLine($"📊 Total classes found: {allClasses.Count}");
 		Console.WriteLine($"📊 Unique class names: {allClasses.Select(c => c.Identifier.Text).Distinct().Count()}");
 
-		// Now extract properties for each entity
+		// Now extract properties and comments for each entity
 		foreach (var entityName in entities.Keys.ToList())
 		{
 			Console.WriteLine($"🔍 Processing entity: {entityName}");
@@ -241,6 +241,15 @@ public static partial class CoreSchemaAnalysisService
 			if (entityClass != null)
 			{
 				Console.WriteLine($"   ✅ Found entity class: {entityName}");
+				
+				// Extract entity-level comment
+				var entityComment = ExtractEntityComment(entityClass);
+				if (!string.IsNullOrEmpty(entityComment))
+				{
+					entities[entityName].Comment = entityComment;
+					Console.WriteLine($"   💬 Entity comment: \"{entityComment}\"");
+				}
+				
 				var properties = ExtractProperties(entityClass, entityName, foreignKeyRelationships);
 				entities[entityName].Properties = properties;
 
@@ -510,15 +519,20 @@ public static partial class CoreSchemaAnalysisService
 			// Check if this property is a foreign key (from EF snapshot OR heuristic detection)
 			var isForeignKey = entityForeignKeys.Contains(propertyName) || IsHeuristicForeignKey(propertyName, propertyType);
 
+			// Extract comment from [Comment] attribute or XML documentation
+			var comment = ExtractPropertyComment(property);
+
 			var propertyInfo = new PropertyInfo
 			{
 				Name = propertyName,
 				Type = propertyType,
 				IsKey = IsKeyProperty(propertyName, entityName),
-				IsForeignKey = isForeignKey
+				IsForeignKey = isForeignKey,
+				Comment = comment
 			};
 
-			Console.WriteLine($"   Property: {propertyName} ({propertyType}) - Key: {propertyInfo.IsKey}, FK: {propertyInfo.IsForeignKey}");
+			var commentInfo = string.IsNullOrEmpty(comment) ? "" : $", Comment: \"{comment}\"";
+			Console.WriteLine($"   Property: {propertyName} ({propertyType}) - Key: {propertyInfo.IsKey}, FK: {propertyInfo.IsForeignKey}{commentInfo}");
 			properties.Add(propertyInfo);
 		}
 
@@ -526,12 +540,59 @@ public static partial class CoreSchemaAnalysisService
 		return properties;
 	}
 
+	private static string? ExtractPropertyComment(PropertyDeclarationSyntax property)
+	{
+		// Priority 1: Check for [Comment("...")] attribute (EF Core)
+		var commentAttribute = property.AttributeLists
+			.SelectMany(al => al.Attributes)
+			.FirstOrDefault(a => a.Name.ToString() == "Comment" || a.Name.ToString().EndsWith(".Comment"));
+
+		if (commentAttribute?.ArgumentList?.Arguments.Count > 0)
+		{
+			var argument = commentAttribute.ArgumentList.Arguments[0];
+			if (argument.Expression is LiteralExpressionSyntax literal)
+			{
+				// Remove quotes from string literal
+				var commentText = literal.Token.ValueText;
+				return string.IsNullOrWhiteSpace(commentText) ? null : commentText;
+			}
+		}
+
+		// Priority 2: Check for XML documentation comment (/// <summary>)
+		var triviaList = property.GetLeadingTrivia();
+		var documentationComment = triviaList
+			.Where(t => t.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) || 
+						t.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia))
+			.FirstOrDefault();
+
+		if (documentationComment != default)
+		{
+			var xml = documentationComment.ToString();
+			
+			// Extract text from <summary> tags
+			var summaryMatch = Regex.Match(xml, @"<summary>\s*(.+?)\s*</summary>", RegexOptions.Singleline);
+			if (summaryMatch.Success)
+			{
+				var summaryText = summaryMatch.Groups[1].Value
+					.Replace("///", "")
+					.Trim();
+				
+				// Clean up extra whitespace
+				summaryText = Regex.Replace(summaryText, @"\s+", " ");
+				
+				return string.IsNullOrWhiteSpace(summaryText) ? null : summaryText;
+			}
+		}
+
+		return null;
+	}
+
 	private static bool IsHeuristicForeignKey(string propertyName, string propertyType)
 	{
 		// Heuristic FK detection for when no EF snapshot is available
 		return propertyName.EndsWith("Id", StringComparison.OrdinalIgnoreCase) &&
-			   !propertyName.Equals("Id", StringComparison.OrdinalIgnoreCase) && // Not the primary key "Id"
-			   (propertyType.Contains("int") || propertyType.Contains("Guid")); // FK types
+			   !propertyName.Equals("Id", StringComparison.OrdinalIgnoreCase) // Not the primary key "Id"
+			   && (propertyType.Contains("int") || propertyType.Contains("Guid")); // FK types
 	}
 
 	private static bool IsKeyProperty(string propertyName, string entityName) =>
@@ -580,4 +641,50 @@ public static partial class CoreSchemaAnalysisService
 
 	[GeneratedRegex(@"\.HasForeignKey\(""([^""]+)""\)")]
 	private static partial Regex HasForeignKeyRegex();
+
+	private static string? ExtractEntityComment(ClassDeclarationSyntax entityClass)
+	{
+		// Priority 1: Check for [Comment("...")] attribute (EF Core)
+		var commentAttribute = entityClass.AttributeLists
+			.SelectMany(al => al.Attributes)
+			.FirstOrDefault(a => a.Name.ToString() == "Comment" || a.Name.ToString().EndsWith(".Comment"));
+
+		if (commentAttribute?.ArgumentList?.Arguments.Count > 0)
+		{
+			var argument = commentAttribute.ArgumentList.Arguments[0];
+			if (argument.Expression is LiteralExpressionSyntax literal)
+			{
+				var commentText = literal.Token.ValueText;
+				return string.IsNullOrWhiteSpace(commentText) ? null : commentText;
+			}
+		}
+
+		// Priority 2: Check for XML documentation comment (/// <summary>)
+		var triviaList = entityClass.GetLeadingTrivia();
+		var documentationComment = triviaList
+			.Where(t => t.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) || 
+						t.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia))
+			.FirstOrDefault();
+
+		if (documentationComment != default)
+		{
+			var xml = documentationComment.ToString();
+			
+			// Extract text from <summary> tags
+			var summaryMatch = Regex.Match(xml, @"<summary>\s*(.+?)\s*</summary>", RegexOptions.Singleline);
+			if (summaryMatch.Success)
+			{
+				var summaryText = summaryMatch.Groups[1].Value
+					.Replace("///", "")
+					.Trim();
+				
+				// Clean up extra whitespace
+				summaryText = Regex.Replace(summaryText, @"\s+", " ");
+				
+				return string.IsNullOrWhiteSpace(summaryText) ? null : summaryText;
+			}
+		}
+
+		return null;
+	}
 }

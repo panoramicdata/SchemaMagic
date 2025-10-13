@@ -25,6 +25,7 @@ Transform your Entity Framework DbContexts into beautiful, interactive schema di
 - 💾 **Persistent Customization**: Your layout changes are saved and restored automatically
 - 📦 **Self-Contained**: Generated HTML files work offline with no external dependencies
 - ⚡ **Fast Generation**: Parses C# code directly using Roslyn - no compilation needed
+- 💬 **Property Tooltips**: Hover over properties to see comments from `[Comment]` attributes or XML documentation
 
 ![SchemaMagic Demo](https://github.com/panoramicdata/SchemaMagic/raw/main/docs/demo.gif)
 
@@ -117,6 +118,30 @@ SchemaMagic automatically detects and visualizes:
 - **🧭 N**: Navigation Property (green)
 - **📊 INH**: Inherited Property (blue)
 - **Type Colors**: Different colors for strings, numbers, dates, etc.
+
+### Property Documentation Tooltips
+
+SchemaMagic displays property comments as tooltips when you hover over property names:
+
+**Priority 1: EF Core Comment Attribute**
+```csharp
+[Comment("Official company name")]
+public string Name { get; set; }
+```
+
+**Priority 2: XML Documentation Comments**
+```csharp
+/// <summary>
+/// User's given name
+/// </summary>
+public string FirstName { get; set; }
+```
+
+When you hover over properties with comments in the generated schema, you'll see beautiful native browser tooltips displaying the documentation. This is perfect for:
+- 📝 Documenting column purposes and business rules
+- 🔍 Providing context without cluttering the visualization  
+- 📚 Sharing domain knowledge with your team
+- ✅ Following documentation best practices
 
 ## 🎨 Customization
 
