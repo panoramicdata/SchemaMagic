@@ -1,4 +1,4 @@
-# Publishing SchemaMagic to NuGet
+﻿# Publishing SchemaMagic to NuGet
 
 This guide explains how to publish SchemaMagic as a .NET Global Tool to NuGet.org and deploy the web application to GitHub Pages.
 

@@ -161,7 +161,9 @@ jobs:
       id: nbgv
       run: |
         VERSION=$(nbgv get-version -v SimpleVersion)
+        FULL_VERSION=$(nbgv get-version -v SemVer2)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "fullVersion=$FULL_VERSION" >> $GITHUB_OUTPUT
         echo "[INFO] Web App Version: $VERSION"
         
     - name: Setup Pages
@@ -171,64 +173,36 @@ jobs:
       run: dotnet restore SchemaMagic.Web/SchemaMagic.Web.csproj
       
     - name: Publish
-      run: dotnet publish SchemaMagic.Web/SchemaMagic.Web.csproj --configuration Release --output dist/
+      run: dotnet publish SchemaMagic.Web/SchemaMagic.Web.csproj --configuration Release --output publish/
       
     - name: List published files
       run: |
         echo "[INFO] Listing published files..."
-        ls -la dist/
+        ls -la publish/
         echo "[INFO] Checking for wwwroot..."
-        if [ -d "dist/wwwroot" ]; then
+        if [ -d "publish/wwwroot" ]; then
           echo "[INFO] wwwroot exists, listing contents..."
-          ls -la dist/wwwroot/
-          echo "[INFO] Looking for index.html in wwwroot..."
-          find dist/wwwroot -name "index.html" -type f || echo "[INFO] No index.html found in wwwroot"
+          ls -la publish/wwwroot/ | head -20
+          echo "[INFO] Checking for _framework..."
+          ls -la publish/wwwroot/_framework/ | head -10 || echo "[INFO] No _framework in wwwroot"
         else
           echo "[INFO] No wwwroot directory found"
+          echo "[INFO] Checking for _framework in publish root..."
+          ls -la publish/_framework/ | head -10 || echo "[INFO] No _framework in publish root"
         fi
-        echo "[INFO] Searching for ALL index.html files in dist/..."
-        find dist/ -name "index.html" -type f || echo "[INFO] No index.html found anywhere in dist/"
-        echo "[INFO] Listing ALL files in dist/ recursively (first 50)..."
-        find dist/ -type f | head -50
+        echo "[INFO] Searching for index.html..."
+        find publish/ -name "index.html" -type f
       
-    - name: Fix base path for GitHub Pages
+    - name: Configure for GitHub Pages
       run: |
-        echo "[INFO] Configuring for GitHub Pages..."
+        echo "[INFO] Configuring for GitHub Pages with custom domain (schema.magicsuite.net)..."
         
-        # Check if index.html is in wwwroot subdirectory
-        if [ -f "dist/wwwroot/index.html" ]; then
-          echo "[INFO] Found index.html in dist/wwwroot/"
-          sed -i 's|<base href="/" />|<base href="/SchemaMagic/" />|g' dist/wwwroot/index.html
-          touch dist/wwwroot/.nojekyll
-          cp dist/wwwroot/index.html dist/wwwroot/404.html
-          echo "${{ steps.nbgv.outputs.version }}" > dist/wwwroot/version.txt
-        elif [ -f "dist/index.html" ]; then
-          echo "[INFO] Found index.html in dist/"
-          sed -i 's|<base href="/" />|<base href="/SchemaMagic/" />|g' dist/index.html
-          touch dist/.nojekyll
-          cp dist/index.html dist/404.html
-          echo "${{ steps.nbgv.outputs.version }}" > dist/version.txt
+        # Determine the correct directory structure
+        if [ -d "publish/wwwroot" ]; then
+          echo "[INFO] Found publish/wwwroot/ - using it as deployment root"
+          DEPLOY_DIR="publish/wwwroot"
         else
-          echo "[ERROR] Could not find index.html in dist/ or dist/wwwroot/"
-          exit 1
+          echo "[INFO] No wwwroot subdirectory - using publish/ as deployment root"
+          DEPLOY_DIR="publish"
         fi
         
-        echo "[SUCCESS] GitHub Pages configuration complete"
-        echo "[INFO] Version: ${{ steps.nbgv.outputs.version }}"
-        
-    - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
-      with:
-        path: dist/wwwroot/
-
-    - name: Deploy to GitHub Pages
-      id: deployment
-      uses: actions/deploy-pages@v4
-      
-    - name: Deployment Summary
-      run: |
-        echo "### Deployment Successful!" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "**Version:** ${{ steps.nbgv.outputs.version }}" >> $GITHUB_STEP_SUMMARY
-        echo "**URL:** ${{ steps.deployment.outputs.page_url }}" >> $GITHUB_STEP_SUMMARY
-        echo "**Deployed:** $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY

@@ -1,4 +1,4 @@
-# SchemaMagic - Interactive Entity Framework Core Schema Visualizer
+﻿# SchemaMagic - Interactive Entity Framework Core Schema Visualizer
 
 ## Project Overview
 

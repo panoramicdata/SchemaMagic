@@ -60,54 +60,67 @@ jobs:
       run: dotnet restore SchemaMagic.Web/SchemaMagic.Web.csproj
       
     - name: Publish
-      run: dotnet publish SchemaMagic.Web/SchemaMagic.Web.csproj --configuration Release --output dist/
+      run: dotnet publish SchemaMagic.Web/SchemaMagic.Web.csproj --configuration Release --output publish/
       
     - name: List published files
       run: |
         echo "Listing published files for debugging..."
-        echo "Contents of dist/:"
-        ls -la dist/
+        echo "Contents of publish/:"
+        ls -la publish/
+        echo ""
+        echo "Contents of publish/wwwroot/:"
+        ls -la publish/wwwroot/ || echo "No wwwroot directory"
         echo ""
         echo "Searching for ALL index.html files:"
-        find dist/ -name "index.html" -type f || echo "No index.html found"
+        find publish/ -name "index.html" -type f || echo "No index.html found"
         echo ""
-        echo "First 50 files in dist/:"
-        find dist/ -type f | head -50
+        echo "Searching for _framework directory:"
+        find publish/ -type d -name "_framework" || echo "No _framework directory found"
       
     - name: Configure for GitHub Pages
       run: |
         echo "Configuring for GitHub Pages..."
         
-        # Base href is already "/" in index.html for custom domain (schema.magicsuite.net)
-        # No need to change it anymore since we're using a custom domain
+        # Determine the correct directory structure
+        if [ -d "publish/wwwroot" ]; then
+          echo "Found publish/wwwroot/ - using it as deployment root"
+          DEPLOY_DIR="publish/wwwroot"
+        else
+          echo "No wwwroot subdirectory - using publish/ as deployment root"
+          DEPLOY_DIR="publish"
+        fi
         
         # Add .nojekyll file to prevent GitHub Pages from processing as Jekyll site
-        touch dist/wwwroot/.nojekyll
+        touch ${DEPLOY_DIR}/.nojekyll
         
         # Copy 404.html for SPA routing
-        cp dist/wwwroot/index.html dist/wwwroot/404.html
+        cp ${DEPLOY_DIR}/index.html ${DEPLOY_DIR}/404.html
         
         # Ensure CNAME file is present for custom domain
         if [ -f "SchemaMagic.Web/wwwroot/CNAME" ]; then
-          cp SchemaMagic.Web/wwwroot/CNAME dist/wwwroot/CNAME
-          echo "CNAME file copied: $(cat dist/wwwroot/CNAME)"
+          cp SchemaMagic.Web/wwwroot/CNAME ${DEPLOY_DIR}/CNAME
+          echo "CNAME file copied: $(cat ${DEPLOY_DIR}/CNAME)"
         else
           echo "Warning: CNAME file not found"
         fi
         
         # Add version info file
-        echo "${{ steps.nbgv.outputs.fullVersion }}" > dist/wwwroot/version.txt
-        date -u +'%Y-%m-%d %H:%M:%S UTC' > dist/wwwroot/deployed.txt
+        echo "${{ steps.nbgv.outputs.fullVersion }}" > ${DEPLOY_DIR}/version.txt
+        date -u +'%Y-%m-%d %H:%M:%S UTC' > ${DEPLOY_DIR}/deployed.txt
         
         echo "Configuration complete"
         echo "Version: ${{ steps.nbgv.outputs.version }}"
-        echo "Build size: $(du -sh dist/wwwroot | cut -f1)"
+        echo "Build size: $(du -sh ${DEPLOY_DIR} | cut -f1)"
         echo "Custom domain: schema.magicsuite.net"
+        echo "Deployment directory: ${DEPLOY_DIR}"
+        
+        # Save deployment directory for next step
+        echo "DEPLOY_DIR=${DEPLOY_DIR}" >> $GITHUB_ENV
         
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: dist/wwwroot/
+        path: ${{ env.DEPLOY_DIR }}
 
     - name: Deploy to GitHub Pages
       id: deployment
