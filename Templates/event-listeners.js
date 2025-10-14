@@ -20,9 +20,21 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	try {
 		generateSchema();
-		console.log('? Schema generated successfully');
+		console.log('?? Schema generated successfully');
 	} catch (e) {
 		console.error('? Failed to generate schema:', e);
+	}
+	
+	// Load view state AFTER schema has been generated (so svgViewBox is initialized)
+	try {
+		const loaded = loadViewState();
+		if (loaded) {
+			console.log('?? Zoom/pan state restored from previous session');
+		} else {
+			console.log('?? No saved zoom/pan state found - using defaults');
+		}
+	} catch (e) {
+		console.error('? Failed to load view state:', e);
 	}
 	
 	try {

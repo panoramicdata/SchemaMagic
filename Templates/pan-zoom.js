@@ -161,7 +161,7 @@ function zoomOut() {
 
 function resetZoom() {
 	currentZoom = 0.35; // Changed from 1 to 0.35 to match initial zoom
-	svgViewBox = { x: 0, y: 0, width: CANVAS_WIDTH, height: CANVAS_HEIGHT };
+	svgViewBox = { x: 0, y: 0, width: CANVAS_WIDTH / currentZoom, height: CANVAS_HEIGHT / currentZoom };
 	updateViewBox();
 	
 	// Save view state when resetting zoom
@@ -170,28 +170,46 @@ function resetZoom() {
 	console.log('Zoom Reset: 35%'); // Updated log message
 }
 
-// Save the current view state (position and zoom level) to local storage
+// Save the current view state (position and zoom level) to local storage using document-specific key
 function saveViewState() {
 	const viewState = {
 		centerX: svgViewBox.x + svgViewBox.width / 2,
 		centerY: svgViewBox.y + svgViewBox.height / 2,
 		zoom: currentZoom
 	};
-	localStorage.setItem('schemaViewState', JSON.stringify(viewState));
-	console.log('View state saved:', viewState);
-}
-
-// Load the view state from local storage
-function loadViewState() {
-	const viewState = JSON.parse(localStorage.getItem('schemaViewState'));
-	if (viewState) {
-		svgViewBox.x = viewState.centerX - svgViewBox.width / 2;
-		svgViewBox.y = viewState.centerY - svgViewBox.height / 2;
-		currentZoom = viewState.zoom;
-		updateViewBox();
-		console.log('View state loaded:', viewState);
+	try {
+		localStorage.setItem(getDocumentStorageKey('viewState'), JSON.stringify(viewState));
+		console.log('?? View state saved:', viewState);
+	} catch (e) {
+		console.warn('?? Failed to save view state:', e);
 	}
 }
 
-// Load view state on initial script run
-loadViewState();
+// Load the view state from local storage using document-specific key
+// This should be called AFTER generateSchema() has initialized svgViewBox properly
+function loadViewState() {
+	try {
+		const savedState = localStorage.getItem(getDocumentStorageKey('viewState'));
+		if (savedState) {
+			const viewState = JSON.parse(savedState);
+			
+			// Apply the saved zoom first to get correct viewBox dimensions
+			currentZoom = viewState.zoom;
+			const newWidth = CANVAS_WIDTH / currentZoom;
+			const newHeight = CANVAS_HEIGHT / currentZoom;
+			
+			// Then apply the saved center position
+			svgViewBox.x = viewState.centerX - newWidth / 2;
+			svgViewBox.y = viewState.centerY - newHeight / 2;
+			svgViewBox.width = newWidth;
+			svgViewBox.height = newHeight;
+			
+			updateViewBox();
+			console.log('?? View state loaded:', viewState);
+			return true;
+		}
+	} catch (e) {
+		console.warn('?? Failed to load view state:', e);
+	}
+	return false;
+}
