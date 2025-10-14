@@ -1,4 +1,4 @@
-# SchemaMagic - Manual Build and Publish Guide
+﻿# SchemaMagic - Manual Build and Publish Guide
 
 ## Prerequisites
 1. .NET 9 SDK installed

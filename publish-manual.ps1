@@ -1,4 +1,4 @@
-#Requires -Version 7.0
+﻿#Requires -Version 7.0
 
 <#
 .SYNOPSIS
@@ -36,6 +36,10 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# Set console encoding to UTF-8 to display emojis correctly
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+$OutputEncoding = [System.Text.Encoding]::UTF8
 
 Write-Host ""
 Write-Host "?? SchemaMagic Manual Publish Script" -ForegroundColor Cyan
@@ -177,35 +181,48 @@ if ($confirm -ne "y") {
 
 # Publish
 Write-Host ""
-Write-Host "?? Publishing to NuGet.org..." -ForegroundColor Yellow
-dotnet nuget push ./nupkg/*.nupkg `
-    --api-key $API_KEY `
-    --source https://api.nuget.org/v3/index.json `
-    --skip-duplicate
+Write-Host "🚀 Publishing to NuGet.org..." -ForegroundColor Yellow
 
-if ($LASTEXITCODE -eq 0) {
-    Write-Host ""
-    Write-Host "? Published successfully!" -ForegroundColor Green
-    Write-Host ""
-    Write-Host "?? Package URL: https://www.nuget.org/packages/SchemaMagic/$SIMPLE_VERSION" -ForegroundColor Cyan
-    Write-Host ""
-    Write-Host "?? Next steps:" -ForegroundColor Yellow
-    Write-Host "   1. Wait 5-10 minutes for NuGet indexing" -ForegroundColor White
-    Write-Host "   2. Create git tag:" -ForegroundColor White
-    Write-Host "      git tag -a v$VERSION -m 'Release v$VERSION'" -ForegroundColor Cyan
-    Write-Host "   3. Push tag to GitHub:" -ForegroundColor White
-    Write-Host "      git push origin v$VERSION" -ForegroundColor Cyan
-    Write-Host "   4. Test installation:" -ForegroundColor White
-    Write-Host "      dotnet tool update -g SchemaMagic" -ForegroundColor Cyan
-    Write-Host ""
-} else {
-    Write-Host ""
-    Write-Host "? Publish failed with exit code $LASTEXITCODE" -ForegroundColor Red
-    Write-Host ""
-    Write-Host "Common issues:" -ForegroundColor Yellow
-    Write-Host "   � API key expired or invalid" -ForegroundColor White
-    Write-Host "   � Version already published (NuGet doesn't allow overwrites)" -ForegroundColor White
-    Write-Host "   � Network connectivity issues" -ForegroundColor White
-    Write-Host ""
+# Get the actual nupkg file path
+$nupkgFiles = Get-ChildItem ./nupkg/*.nupkg -ErrorAction Stop
+if ($nupkgFiles.Count -eq 0) {
+    Write-Host "❌ No .nupkg files found in ./nupkg/" -ForegroundColor Red
     exit 1
 }
+
+Write-Host "📦 Found $($nupkgFiles.Count) package(s) to publish" -ForegroundColor Cyan
+
+foreach ($pkg in $nupkgFiles) {
+    Write-Host "   Publishing: $($pkg.Name)" -ForegroundColor White
+    dotnet nuget push $pkg.FullName `
+        --api-key $API_KEY `
+        --source https://api.nuget.org/v3/index.json `
+        --skip-duplicate
+    
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host ""
+        Write-Host "❌ Publish failed for $($pkg.Name) with exit code $LASTEXITCODE" -ForegroundColor Red
+        Write-Host ""
+        Write-Host "Common issues:" -ForegroundColor Yellow
+        Write-Host "   • API key expired or invalid" -ForegroundColor White
+        Write-Host "   • Version already published (NuGet doesn't allow overwrites)" -ForegroundColor White
+        Write-Host "   • Network connectivity issues" -ForegroundColor White
+        Write-Host ""
+        exit 1
+    }
+}
+
+Write-Host ""
+Write-Host "? Published successfully!" -ForegroundColor Green
+Write-Host ""
+Write-Host "?? Package URL: https://www.nuget.org/packages/SchemaMagic/$SIMPLE_VERSION" -ForegroundColor Cyan
+Write-Host ""
+Write-Host "?? Next steps:" -ForegroundColor Yellow
+Write-Host "   1. Wait 5-10 minutes for NuGet indexing" -ForegroundColor White
+Write-Host "   2. Create git tag:" -ForegroundColor White
+Write-Host "      git tag -a v$VERSION -m 'Release v$VERSION'" -ForegroundColor Cyan
+Write-Host "   3. Push tag to GitHub:" -ForegroundColor White
+Write-Host "      git push origin v$VERSION" -ForegroundColor Cyan
+Write-Host "   4. Test installation:" -ForegroundColor White
+Write-Host "      dotnet tool update -g SchemaMagic" -ForegroundColor Cyan
+Write-Host ""
