@@ -375,3 +375,9 @@ FodyWeavers.xsd
 # SchemaMagic specific
 Output/
 Output/*.html
+
+# Secrets - API keys, tokens, credentials
+.secrets/
+*.secret
+*.secrets
+api-keys.txt

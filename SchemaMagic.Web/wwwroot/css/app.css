@@ -495,12 +495,12 @@ code {
     border-radius: 0.25rem;
     font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
     font-size: 0.875em;
-    color: #d63384;
+    color: #495057; /* Changed from #d63384 (red) to neutral gray */
 }
 
 [data-bs-theme="dark"] code {
     background: #343a40;
-    color: #e685b5;
+    color: #adb5bd; /* Lighter gray for dark mode */
 }
 
 /* Badges */
