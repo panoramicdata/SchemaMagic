@@ -51,7 +51,7 @@ jobs:
         FULL_VERSION=$(nbgv get-version -v SemVer2)
         echo "version=$VERSION" >> $GITHUB_OUTPUT
         echo "fullVersion=$FULL_VERSION" >> $GITHUB_OUTPUT
-        echo "?? Deploying SchemaMagic Web v$VERSION"
+        echo "Deploying SchemaMagic Web v$VERSION"
         
     - name: Setup Pages
       uses: actions/configure-pages@v4
@@ -64,19 +64,19 @@ jobs:
       
     - name: List published files
       run: |
-        echo "?? Listing published files for debugging..."
-        echo "Contents of dist/":
+        echo "Listing published files for debugging..."
+        echo "Contents of dist/:"
         ls -la dist/
         echo ""
         echo "Searching for ALL index.html files:"
         find dist/ -name "index.html" -type f || echo "No index.html found"
         echo ""
-        echo "First 50 files in dist/":
+        echo "First 50 files in dist/:"
         find dist/ -type f | head -50
       
     - name: Configure for GitHub Pages
       run: |
-        echo "?? Configuring for GitHub Pages..."
+        echo "Configuring for GitHub Pages..."
         
         # Base href is already "/" in index.html for custom domain (schema.magicsuite.net)
         # No need to change it anymore since we're using a custom domain
@@ -90,19 +90,19 @@ jobs:
         # Ensure CNAME file is present for custom domain
         if [ -f "SchemaMagic.Web/wwwroot/CNAME" ]; then
           cp SchemaMagic.Web/wwwroot/CNAME dist/wwwroot/CNAME
-          echo "? CNAME file copied: $(cat dist/wwwroot/CNAME)"
+          echo "CNAME file copied: $(cat dist/wwwroot/CNAME)"
         else
-          echo "??  Warning: CNAME file not found"
+          echo "Warning: CNAME file not found"
         fi
         
         # Add version info file
         echo "${{ steps.nbgv.outputs.fullVersion }}" > dist/wwwroot/version.txt
         date -u +'%Y-%m-%d %H:%M:%S UTC' > dist/wwwroot/deployed.txt
         
-        echo "? Configuration complete"
-        echo "?? Version: ${{ steps.nbgv.outputs.version }}"
-        echo "?? Build size: $(du -sh dist/wwwroot | cut -f1)"
-        echo "?? Custom domain: schema.magicsuite.net"
+        echo "Configuration complete"
+        echo "Version: ${{ steps.nbgv.outputs.version }}"
+        echo "Build size: $(du -sh dist/wwwroot | cut -f1)"
+        echo "Custom domain: schema.magicsuite.net"
         
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
@@ -115,17 +115,17 @@ jobs:
       
     - name: Deployment Summary
       run: |
-        echo "### ?? SchemaMagic Web Deployed!" >> $GITHUB_STEP_SUMMARY
+        echo "### SchemaMagic Web Deployed!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "| Property | Value |" >> $GITHUB_STEP_SUMMARY
         echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
-        echo "| ?? Version | ${{ steps.nbgv.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| ?? Full Version | ${{ steps.nbgv.outputs.fullVersion }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| ?? Custom Domain | https://schema.magicsuite.net |" >> $GITHUB_STEP_SUMMARY
-        echo "| ?? GitHub Pages | ${{ steps.deployment.outputs.page_url }} |" >> $GITHUB_STEP_SUMMARY
-        echo "| ?? Deployed | $(date -u +'%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
-        echo "| ?? Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Version | ${{ steps.nbgv.outputs.version }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Full Version | ${{ steps.nbgv.outputs.fullVersion }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Custom Domain | https://schema.magicsuite.net |" >> $GITHUB_STEP_SUMMARY
+        echo "| GitHub Pages | ${{ steps.deployment.outputs.page_url }} |" >> $GITHUB_STEP_SUMMARY
+        echo "| Deployed | $(date -u +'%Y-%m-%d %H:%M:%S UTC') |" >> $GITHUB_STEP_SUMMARY
+        echo "| Branch | ${{ github.ref_name }} |" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**Try it now:**" >> $GITHUB_STEP_SUMMARY
-        echo "- ?? **Custom Domain**: [schema.magicsuite.net](https://schema.magicsuite.net) ??" >> $GITHUB_STEP_SUMMARY
-        echo "- ?? **GitHub Pages**: [${{ steps.deployment.outputs.page_url }}](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
+        echo "- **Custom Domain**: [schema.magicsuite.net](https://schema.magicsuite.net)" >> $GITHUB_STEP_SUMMARY
+        echo "- **GitHub Pages**: [${{ steps.deployment.outputs.page_url }}](${{ steps.deployment.outputs.page_url }})" >> $GITHUB_STEP_SUMMARY
