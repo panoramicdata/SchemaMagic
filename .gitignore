@@ -373,5 +373,5 @@ FodyWeavers.xsd
 *.sln.iml
 
 # SchemaMagic specific
-*.html
 Output/
+Output/*.html
