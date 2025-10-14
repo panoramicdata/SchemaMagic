@@ -1,12 +1,61 @@
+/* Import Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap');
+
 /* Global Styles */
 html, body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
     height: 100%;
 }
 
 body {
     margin: 0;
     padding: 0;
+}
+
+/* Hero Title Font */
+.hero-title {
+    font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+/* Hero Logo & Text Layout */
+.hero-logo-text {
+    flex-wrap: wrap;
+}
+
+.hero-logo {
+    height: 120px;
+    width: auto;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+}
+
+/* Responsive Hero Layout */
+@media (max-width: 767.98px) {
+    .hero-logo-text {
+        flex-direction: column !important;
+        gap: 1rem;
+    }
+    
+    .hero-logo {
+        height: 80px;
+        margin-right: 0 !important;
+        margin-bottom: 1rem;
+    }
+    
+    .hero-title {
+        font-size: 2.5rem !important;
+    }
+}
+
+@media (max-width: 991.98px) and (min-width: 768px) {
+    .hero-logo {
+        height: 100px;
+    }
+    
+    .hero-title {
+        font-size: 3rem;
+    }
 }
 
 /* Dark mode support using Bootstrap 5.3 color-mode */
@@ -66,6 +115,15 @@ main {
     background: linear-gradient(135deg, #5a67d8 0%, #6a4190 100%) !important;
 }
 
+/* Background Light Section */
+.bg-light {
+    background-color: #f8f9fa !important;
+}
+
+[data-bs-theme="dark"] .bg-light {
+    background-color: #1a1d23 !important;
+}
+
 /* Hero Section */
 .hero-section {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -81,6 +139,34 @@ main {
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 1rem;
+}
+
+/* Project Link Cards */
+.project-link-card {
+    border: 1px solid rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.project-link-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 12px 24px rgba(0,0,0,0.15) !important;
+}
+
+[data-bs-theme="dark"] .project-link-card {
+    border-color: #495057;
+}
+
+[data-bs-theme="dark"] .project-link-card:hover {
+    box-shadow: 0 12px 24px rgba(0,0,0,0.5) !important;
+}
+
+.project-link-card svg {
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
+    transition: transform 0.3s ease;
+}
+
+.project-link-card:hover svg {
+    transform: scale(1.1);
 }
 
 /* Demo Button Styling */

@@ -1,0 +1,584 @@
+@page "/cli-tool"
+
+<PageTitle>CLI Tool - SchemaMagic</PageTitle>
+
+<div class="cli-tool-page">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <div class="page-header text-center mb-5">
+                    <h1 class="display-4 fw-bold">
+                        <i class="bi bi-terminal"></i> SchemaMagic CLI Tool
+                    </h1>
+                    <p class="lead text-muted">
+                        A powerful command-line tool for analyzing Entity Framework Core DbContext files 
+                        and generating interactive schema visualizations
+                    </p>
+                </div>
+
+                <!-- Quick Start Card -->
+                <div class="card mb-4 border-primary shadow">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">
+                            <i class="bi bi-lightning-charge"></i> Quick Start
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <h5>Installation</h5>
+                        <div class="code-block mb-4">
+                            <code>dotnet tool install -g SchemaMagic</code>
+                            <button class="btn btn-sm btn-outline-secondary copy-btn" 
+                                    onclick="navigator.clipboard.writeText('dotnet tool install -g SchemaMagic')">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+
+                        <h5>Basic Usage</h5>
+                        <div class="code-block mb-4">
+                            <code>schemamagic path/to/MyDbContext.cs</code>
+                            <button class="btn btn-sm btn-outline-secondary copy-btn" 
+                                    onclick="navigator.clipboard.writeText('schemamagic path/to/MyDbContext.cs')">
+                                <i class="bi bi-clipboard"></i> Copy
+                            </button>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Output:</strong> Generates an interactive HTML file in the <code>Output/</code> 
+                            directory and automatically opens it in your default browser.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Links Card -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="bi bi-link-45deg"></i> Get SchemaMagic</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <a href="https://github.com/panoramicdata/SchemaMagic" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   class="btn btn-dark btn-lg w-100 d-flex align-items-center justify-content-center">
+                                    <svg height="24" viewBox="0 0 16 16" width="24" aria-hidden="true" class="me-2" style="fill: white;">
+                                        <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+                                    </svg>
+                                    View on GitHub
+                                </a>
+                            </div>
+                            <div class="col-md-6">
+                                <a href="https://www.nuget.org/packages/SchemaMagic" 
+                                   target="_blank" 
+                                   rel="noopener noreferrer"
+                                   class="btn btn-primary btn-lg w-100 d-flex align-items-center justify-content-center">
+                                    <svg height="24" viewBox="0 0 24 24" width="24" aria-hidden="true" class="me-2" style="fill: white;">
+                                        <path d="M12 2.5C6.2 2.5 1.5 7.2 1.5 13S6.2 23.5 12 23.5 22.5 18.8 22.5 13 17.8 2.5 12 2.5zM5.4 7.1c.4-.7 1.1-1.3 1.8-1.6l2.3 3.9c-.3.1-.5.2-.8.4-.5.3-1 .8-1.3 1.3L5.4 9c-.2-.6-.2-1.3 0-1.9zM6.6 17c-.8-1.4-.9-3.1-.2-4.6l2 2c.1.4.3.8.6 1.2.3.4.7.7 1.2.9l-1 1.7c-1-.3-1.9-.9-2.6-1.6zm10.8 0c-.7.7-1.6 1.2-2.6 1.6l-1-1.7c.5-.2.9-.5 1.2-.9s.5-.8.6-1.2l2 2c.7 1.5.6 3.2-.2 4.6zm1.2-8l-2 2c-.3-.5-.7-1-1.3-1.3-.2-.2-.5-.3-.8-.4l2.3-3.9c.7.3 1.4.9 1.8 1.6.2.6.2 1.3 0 1.9z"/>
+                                    </svg>
+                                    View on NuGet
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Installation Details -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="bi bi-download"></i> Installation</h3>
+                    </div>
+                    <div class="card-body">
+                        <h5>Install as Global Tool</h5>
+                        <p>Install SchemaMagic globally to use it from any directory:</p>
+                        <div class="code-block mb-4">
+                            <code>dotnet tool install -g SchemaMagic</code>
+                        </div>
+
+                        <h5>Update Existing Installation</h5>
+                        <p>Update to the latest version:</p>
+                        <div class="code-block mb-4">
+                            <code>dotnet tool update -g SchemaMagic</code>
+                        </div>
+
+                        <h5>Uninstall</h5>
+                        <p>Remove SchemaMagic from your system:</p>
+                        <div class="code-block mb-3">
+                            <code>dotnet tool uninstall -g SchemaMagic</code>
+                        </div>
+
+                        <h5>Local Tool Installation</h5>
+                        <p>Install as a local tool within a specific project:</p>
+                        <div class="code-block mb-2">
+                            <code>dotnet new tool-manifest</code>
+                        </div>
+                        <div class="code-block">
+                            <code>dotnet tool install SchemaMagic</code>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Command Line Usage -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="bi bi-code-slash"></i> Command Line Usage</h3>
+                    </div>
+                    <div class="card-body">
+                        <h5>Basic Schema Generation</h5>
+                        <div class="code-block mb-4">
+                            <code>schemamagic path/to/MyDbContext.cs</code>
+                        </div>
+                        <p class="text-muted">
+                            Generates an interactive HTML schema in <code>Output/MyDbContext-Schema.html</code>
+                            and opens it in your default browser.
+                        </p>
+
+                        <h5>Custom Output File</h5>
+                        <div class="code-block mb-4">
+                            <code>schemamagic MyDbContext.cs --output MyCustomSchema.html</code>
+                        </div>
+                        <p class="text-muted">
+                            Specify a custom output filename. File will still be created in the <code>Output/</code> directory.
+                        </p>
+
+                        <h5>Custom CSS Styling</h5>
+                        <div class="code-block mb-4">
+                            <code>schemamagic MyDbContext.cs --css-file custom-styles.css</code>
+                        </div>
+                        <p class="text-muted">
+                            Use a custom CSS file to override default styling.
+                        </p>
+
+                        <h5>Export Default CSS</h5>
+                        <div class="code-block mb-4">
+                            <code>schemamagic --output-default-css my-styles.css</code>
+                        </div>
+                        <p class="text-muted">
+                            Export the default CSS template to customize and reuse.
+                        </p>
+
+                        <h5>Preserve Layout State</h5>
+                        <div class="code-block mb-4">
+                            <code>schemamagic MyDbContext.cs --guid "12345678-1234-1234-1234-123456789abc"</code>
+                        </div>
+                        <p class="text-muted">
+                            Use a specific GUID to preserve table positions across regenerations.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Command Line Options -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="bi bi-sliders"></i> Command Line Options</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Option</th>
+                                        <th>Description</th>
+                                        <th>Example</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><code>&lt;dbcontext-file&gt;</code></td>
+                                        <td>Path to the DbContext C# file (required)</td>
+                                        <td><code>MyDbContext.cs</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>--output &lt;file&gt;</code></td>
+                                        <td>Custom output HTML filename</td>
+                                        <td><code>--output MySchema.html</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>--css-file &lt;file&gt;</code></td>
+                                        <td>Custom CSS file for styling</td>
+                                        <td><code>--css-file custom.css</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>--guid &lt;guid&gt;</code></td>
+                                        <td>Specific GUID for localStorage state</td>
+                                        <td><code>--guid "abc-123..."</code></td>
+                                    </tr>
+                                    <tr>
+                                        <td><code>--output-default-css [path]</code></td>
+                                        <td>Export default CSS template</td>
+                                        <td><code>--output-default-css styles.css</code></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="bi bi-star"></i> Key Features</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5><i class="bi bi-cpu text-primary"></i> Smart Analysis</h5>
+                                <ul>
+                                    <li>Automatic entity discovery from DbSet properties</li>
+                                    <li>Foreign key detection from EF migrations</li>
+                                    <li>Navigation property mapping</li>
+                                    <li>Inheritance hierarchy visualization</li>
+                                    <li>Multi-project entity search</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5><i class="bi bi-file-earmark-code text-success"></i> Output Generation</h5>
+                                <ul>
+                                    <li>Interactive HTML with embedded SVG</li>
+                                    <li>Drag-and-drop table positioning</li>
+                                    <li>Zoom and pan controls</li>
+                                    <li>Dark mode support</li>
+                                    <li>Standalone files (work offline)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Output Behavior -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="bi bi-folder"></i> Output Behavior</h3>
+                    </div>
+                    <div class="card-body">
+                        <h5>Default Output Location</h5>
+                        <p>
+                            SchemaMagic creates an <code>Output/</code> directory relative to your DbContext file:
+                        </p>
+                        <div class="code-block mb-4">
+                            <code>{DbContextDirectory}/Output/{DbContextName}-Schema.html</code>
+                        </div>
+
+                        <h5>File Naming Convention</h5>
+                        <p>Generated files follow the pattern: <code>{DbContextName}-Schema.html</code></p>
+                        
+                        <h5>State Persistence</h5>
+                        <p>
+                            Each generated schema has a unique GUID that enables browser localStorage to save:
+                        </p>
+                        <ul>
+                            <li>Table positions after drag-and-drop</li>
+                            <li>Zoom level and pan position</li>
+                            <li>User preferences and settings</li>
+                        </ul>
+
+                        <h5>Git Integration</h5>
+                        <p>
+                            Add <code>Output/</code> to your <code>.gitignore</code> to keep generated files 
+                            out of version control:
+                        </p>
+                        <div class="code-block">
+                            <code>Output/</code>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Features -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="bi bi-hand-index"></i> Interactive Features</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>Mouse Controls</h5>
+                                <ul>
+                                    <li><strong>Drag Tables:</strong> Click and drag entity tables to reposition</li>
+                                    <li><strong>Zoom:</strong> Mouse wheel to zoom in/out</li>
+                                    <li><strong>Pan:</strong> Drag the background to move the view</li>
+                                    <li><strong>Select:</strong> Click a table to highlight relationships</li>
+                                    <li><strong>Navigate:</strong> Click foreign keys to jump to related entities</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Keyboard Shortcuts</h5>
+                                <ul>
+                                    <li><strong>Escape:</strong> Clear table selection</li>
+                                    <li><strong>Ctrl+H:</strong> Toggle toolbar visibility</li>
+                                </ul>
+
+                                <h5>Visual Features</h5>
+                                <ul>
+                                    <li>Property type color coding</li>
+                                    <li>Foreign key relationship lines</li>
+                                    <li>Hover effects for properties</li>
+                                    <li>Full-height mode for large tables</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Examples -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="bi bi-card-list"></i> Usage Examples</h3>
+                    </div>
+                    <div class="card-body">
+                        <h5>Example 1: Basic Schema Generation</h5>
+                        <div class="code-block mb-3">
+                            <code>schemamagic ./DataAccess/ApplicationDbContext.cs</code>
+                        </div>
+                        <p class="text-muted">
+                            Analyzes the DbContext and generates 
+                            <code>./DataAccess/Output/ApplicationDbContext-Schema.html</code>
+                        </p>
+
+                        <h5>Example 2: Custom Output with CSS</h5>
+                        <div class="code-block mb-2">
+                            <code>schemamagic --output-default-css company-theme.css</code>
+                        </div>
+                        <p class="text-muted mb-2">First, export and customize the CSS template</p>
+                        <div class="code-block mb-3">
+                            <code>schemamagic MyDbContext.cs --css-file company-theme.css --output Company-Schema.html</code>
+                        </div>
+                        <p class="text-muted">Then generate with custom styling</p>
+
+                        <h5>Example 3: Multiple DbContexts</h5>
+                        <div class="code-block mb-2">
+                            <code>schemamagic ./Data/TenantDbContext.cs</code>
+                        </div>
+                        <div class="code-block mb-3">
+                            <code>schemamagic ./Data/CodeContext.cs</code>
+                        </div>
+                        <p class="text-muted">
+                            Generate separate schemas for different contexts in your application
+                        </p>
+
+                        <h5>Example 4: CI/CD Integration</h5>
+                        <div class="code-block mb-3">
+                            <code>dotnet tool install SchemaMagic<br/>schemamagic ./MyDbContext.cs --output docs/schema.html</code>
+                        </div>
+                        <p class="text-muted">
+                            Integrate schema generation into your build pipeline for automatic documentation updates
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Requirements -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="bi bi-exclamation-triangle"></i> Requirements</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h5>System Requirements</h5>
+                                <ul>
+                                    <li>.NET 9 SDK or later</li>
+                                    <li>Windows, macOS, or Linux</li>
+                                    <li>Command line/terminal access</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h5>Project Requirements</h5>
+                                <ul>
+                                    <li>Entity Framework Core DbContext files</li>
+                                    <li>Valid C# syntax</li>
+                                    <li>Public DbSet properties</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Troubleshooting -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="bi bi-tools"></i> Troubleshooting</h3>
+                    </div>
+                    <div class="card-body">
+                        <h5>Common Issues</h5>
+                        
+                        <div class="mb-3">
+                            <strong>"No entities found"</strong>
+                            <p class="text-muted">
+                                Ensure your DbContext has public DbSet&lt;T&gt; properties. 
+                                SchemaMagic discovers entities through these properties.
+                            </p>
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Missing relationships</strong>
+                            <p class="text-muted">
+                                Add an EF Core migration to generate accurate foreign key metadata. 
+                                SchemaMagic uses migration snapshots for relationship detection.
+                            </p>
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Browser not opening</strong>
+                            <p class="text-muted">
+                                Manually open the generated HTML file from the Output/ directory. 
+                                The file path is displayed in the console output.
+                            </p>
+                        </div>
+
+                        <div class="mb-3">
+                            <strong>Entity classes not found</strong>
+                            <p class="text-muted">
+                                SchemaMagic searches the project directory for entity definitions. 
+                                If entities are in referenced projects, ensure they're accessible.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Support -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h3><i class="bi bi-question-circle"></i> Support & Contributing</h3>
+                    </div>
+                    <div class="card-body">
+                        <p>
+                            SchemaMagic is an open-source project built with <i class="bi bi-heart-fill text-danger"></i> by 
+                            <a href="https://panoramicdata.com" target="_blank">Panoramic Data Limited</a>.
+                        </p>
+
+                        <div class="row mt-4">
+                            <div class="col-md-4 mb-3">
+                                <div class="text-center">
+                                    <i class="bi bi-bug fs-1 text-danger"></i>
+                                    <h5 class="mt-2">Report Issues</h5>
+                                    <a href="https://github.com/panoramicdata/SchemaMagic/issues" 
+                                       target="_blank" 
+                                       class="btn btn-outline-primary">
+                                        GitHub Issues
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="text-center">
+                                    <i class="bi bi-chat-dots fs-1 text-primary"></i>
+                                    <h5 class="mt-2">Discussions</h5>
+                                    <a href="https://github.com/panoramicdata/SchemaMagic/discussions" 
+                                       target="_blank" 
+                                       class="btn btn-outline-primary">
+                                        GitHub Discussions
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <div class="text-center">
+                                    <i class="bi bi-code-slash fs-1 text-success"></i>
+                                    <h5 class="mt-2">Contribute</h5>
+                                    <a href="https://github.com/panoramicdata/SchemaMagic" 
+                                       target="_blank" 
+                                       class="btn btn-outline-primary">
+                                        View Repository
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Call to Action -->
+                <div class="text-center mt-5 mb-4">
+                    <a href="/" class="btn btn-primary btn-lg me-2">
+                        <i class="bi bi-house"></i> Try Web Version
+                    </a>
+                    <a href="https://www.nuget.org/packages/SchemaMagic" 
+                       target="_blank" 
+                       class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-download"></i> Download Tool
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .cli-tool-page {
+        padding: 40px 0;
+    }
+
+    .page-header {
+        margin-top: 20px;
+    }
+
+    .card {
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 1rem 1.5rem;
+    }
+
+    .card-header h3,
+    .card-header h5 {
+        margin: 0;
+    }
+
+    .code-block {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 15px;
+        font-family: 'Monaco', 'Consolas', 'Courier New', monospace;
+        font-size: 0.9rem;
+        position: relative;
+        overflow-x: auto;
+    }
+
+    .code-block code {
+        background: transparent;
+        padding: 0;
+        color: #212529;
+        white-space: pre-wrap;
+        word-break: break-all;
+    }
+
+    .copy-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 4px 8px;
+        font-size: 0.8rem;
+    }
+
+    [data-bs-theme="dark"] .code-block {
+        background: #2b3035;
+        border-color: #495057;
+    }
+
+    [data-bs-theme="dark"] .code-block code {
+        color: #e9ecef;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table code {
+        background: transparent;
+        color: inherit;
+        font-size: 0.9em;
+    }
+
+    h5 {
+        margin-top: 1.5rem;
+        margin-bottom: 1rem;
+        color: #495057;
+    }
+
+    [data-bs-theme="dark"] h5 {
+        color: #e9ecef;
+    }
+</style>

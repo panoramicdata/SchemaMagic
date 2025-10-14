@@ -3,28 +3,28 @@ document.addEventListener('DOMContentLoaded', function () {
 	console.log('?? SchemaMagic: DOM loaded, initializing...');
 	console.log('?? Entities found:', typeof entities !== 'undefined' ? Object.keys(entities).length : 'UNDEFINED');
 	console.log('?? Document GUID:', typeof DOCUMENT_GUID !== 'undefined' ? DOCUMENT_GUID : 'UNDEFINED');
-	
+
 	try {
 		loadSettings();
 		console.log('?? Settings loaded successfully');
 	} catch (e) {
 		console.error('? Failed to load settings:', e);
 	}
-	
+
 	try {
 		loadTableGroupingRules();
 		console.log('?? Table grouping rules loaded successfully');
 	} catch (e) {
 		console.error('? Failed to load table grouping rules:', e);
 	}
-	
+
 	try {
 		generateSchema();
 		console.log('?? Schema generated successfully');
 	} catch (e) {
 		console.error('? Failed to generate schema:', e);
 	}
-	
+
 	// Load view state AFTER schema has been generated (so svgViewBox is initialized)
 	try {
 		const loaded = loadViewState();
@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	} catch (e) {
 		console.error('? Failed to load view state:', e);
 	}
-	
+
 	try {
 		setupEventListeners();
 		console.log('?? Event listeners set up successfully');
@@ -57,17 +57,17 @@ function setupEventListeners() {
 
 	svg.addEventListener('wheel', handleWheel);
 	svg.addEventListener('contextmenu', e => e.preventDefault());
-	
+
 	// Add click anywhere to show toolbar
-	container.addEventListener('click', function(e) {
+	container.addEventListener('click', function (e) {
 		// If toolbar is hidden and user clicks anywhere, show it
 		if (!toolbarVisible) {
 			toggleToolbar();
 		}
 	});
-	
+
 	// Add keyboard shortcuts
-	document.addEventListener('keydown', function(e) {
+	document.addEventListener('keydown', function (e) {
 		if (e.key === 'Escape' && selectedTable) {
 			clearSelection();
 			e.preventDefault();

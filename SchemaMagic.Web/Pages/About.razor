@@ -12,6 +12,60 @@
                     and generating interactive schema visualizations directly in your browser.
                 </p>
 
+                <!-- Project Links Card - Prominent Placement -->
+                <div class="card mt-4 border-primary">
+                    <div class="card-header bg-primary text-white">
+                        <h3 class="mb-0">
+                            <i class="bi bi-download"></i> Get SchemaMagic
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-4">
+                            SchemaMagic is available in multiple formats:
+                        </p>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <div class="d-grid">
+                                    <a href="https://github.com/panoramicdata/SchemaMagic" 
+                                       target="_blank" 
+                                       rel="noopener noreferrer"
+                                       class="btn btn-dark btn-lg d-flex align-items-center justify-content-center">
+                                        <svg height="24" viewBox="0 0 16 16" width="24" aria-hidden="true" class="me-2" style="fill: white;">
+                                            <path d="M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z"></path>
+                                        </svg>
+                                        View on GitHub
+                                    </a>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <small class="text-muted">Source code & documentation</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-grid">
+                                    <a href="https://www.nuget.org/packages/SchemaMagic" 
+                                       target="_blank" 
+                                       rel="noopener noreferrer"
+                                       class="btn btn-primary btn-lg d-flex align-items-center justify-content-center">
+                                        <svg height="24" viewBox="0 0 24 24" width="24" aria-hidden="true" class="me-2" style="fill: white;">
+                                            <path d="M12 2.5C6.2 2.5 1.5 7.2 1.5 13S6.2 23.5 12 23.5 22.5 18.8 22.5 13 17.8 2.5 12 2.5zM5.4 7.1c.4-.7 1.1-1.3 1.8-1.6l2.3 3.9c-.3.1-.5.2-.8.4-.5.3-1 .8-1.3 1.3L5.4 9c-.2-.6-.2-1.3 0-1.9zM6.6 17c-.8-1.4-.9-3.1-.2-4.6l2 2c.1.4.3.8.6 1.2.3.4.7.7 1.2.9l-1 1.7c-1-.3-1.9-.9-2.6-1.6zm10.8 0c-.7.7-1.6 1.2-2.6 1.6l-1-1.7c.5-.2.9-.5 1.2-.9s.5-.8.6-1.2l2 2c.7 1.5.6 3.2-.2 4.6zm1.2-8l-2 2c-.3-.5-.7-1-1.3-1.3-.2-.2-.5-.3-.8-.4l2.3-3.9c.7.3 1.4.9 1.8 1.6.2.6.2 1.3 0 1.9z"/>
+                                        </svg>
+                                        View on NuGet
+                                    </a>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <small class="text-muted">Install as .NET tool</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle"></i>
+                            <strong>Looking for the CLI tool?</strong> Visit the 
+                            <a href="/cli-tool" class="alert-link">CLI Tool page</a> for complete installation 
+                            and usage documentation.
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card mt-4">
                     <div class="card-header">
                         <h3><i class="bi bi-magic"></i> What It Does</h3>
@@ -37,7 +91,7 @@
                     </div>
                     <div class="card-body">
                         <ol>
-                            <li><strong>GitHub Integration:</strong> Connect to any public GitHub repository</li>
+                            <li><strong>GitHub Integration:</strong> Connect to any public or private GitHub repository</li>
                             <li><strong>Automatic Discovery:</strong> Find all DbContext files in the repository</li>
                             <li><strong>Roslyn Analysis:</strong> Parse C# code to extract entity relationships</li>
                             <li><strong>Interactive Generation:</strong> Create SVG-based schema diagrams</li>
@@ -122,38 +176,11 @@
                                 <ul>
                                     <li>GitHub repositories only</li>
                                     <li>GitHub API rate limits apply</li>
-                                    <li>Single DbContext analysis</li>
+                                    <li>Single DbContext analysis per session</li>
                                     <li>Client-side processing only</li>
                                 </ul>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <div class="card mt-4">
-                    <div class="card-header">
-                        <h3><i class="bi bi-link-45deg"></i> Related Projects</h3>
-                    </div>
-                    <div class="card-body">
-                        <p>SchemaMagic is also available as:</p>
-                        <ul>
-                            <li>
-                                <strong>Command-line tool:</strong> 
-                                <code>dotnet tool install -g SchemaMagic</code>
-                            </li>
-                            <li>
-                                <strong>GitHub Repository:</strong> 
-                                <a href="https://github.com/panoramicdata/SchemaMagic" target="_blank">
-                                    panoramicdata/SchemaMagic
-                                </a>
-                            </li>
-                            <li>
-                                <strong>NuGet Package:</strong> 
-                                <a href="https://www.nuget.org/packages/SchemaMagic" target="_blank">
-                                    SchemaMagic
-                                </a>
-                            </li>
-                        </ul>
                     </div>
                 </div>
 
@@ -188,9 +215,13 @@
                 </div>
 
                 <div class="text-center mt-5">
-                    <a href="/analyze" class="btn btn-primary btn-lg">
-                        <i class="bi bi-search"></i>
+                    <a href="/" class="btn btn-primary btn-lg me-2">
+                        <i class="bi bi-house"></i>
                         Try SchemaMagic Web
+                    </a>
+                    <a href="/cli-tool" class="btn btn-outline-primary btn-lg">
+                        <i class="bi bi-terminal"></i>
+                        View CLI Tool Docs
                     </a>
                 </div>
             </div>

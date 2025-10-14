@@ -21,6 +21,14 @@ window.downloadFile = (fileName, content, contentType) => {
     URL.revokeObjectURL(url);
 };
 
+// Set focus on repository input when page loads
+window.setRepositoryInputFocus = () => {
+    const repoInput = document.getElementById('repoUrl');
+    if (repoInput) {
+        repoInput.focus();
+    }
+};
+
 // Enhanced error handling
 window.addEventListener('unhandledrejection', (event) => {
     console.error('Unhandled promise rejection:', event.reason);
