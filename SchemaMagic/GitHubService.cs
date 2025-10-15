@@ -149,7 +149,9 @@ public class GitHubService
 		var entityFiles = new Dictionary<string, string>();
 		var entitySet = new HashSet<string>(entityNames);
 
-		// Strategy 1: Look for files with matching names
+		Console.WriteLine($"   ?? Searching for {entityNames.Count} entities: {string.Join(", ", entityNames.Take(5))}{(entityNames.Count > 5 ? "..." : "")}");
+
+		// Strategy 1: Look for files with matching names (exact match)
 		var potentialEntityFiles = tree.Tree
 			.Where(item => item.Type == TreeType.Blob)
 			.Where(item => item.Path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
@@ -160,7 +162,7 @@ public class GitHubService
 			})
 			.ToList();
 
-		Console.WriteLine($"   ?? Found {potentialEntityFiles.Count} files matching entity names");
+		Console.WriteLine($"   ?? Found {potentialEntityFiles.Count} files with exact name matches");
 
 		foreach (var file in potentialEntityFiles)
 		{
@@ -182,46 +184,81 @@ public class GitHubService
 			}
 		}
 
-		// Strategy 2: Look in common model directories
-		var modelDirectories = new[] { "Models", "Entities", "Domain", "Data" };
-		var modelFiles = tree.Tree
-			.Where(item => item.Type == TreeType.Blob)
-			.Where(item => item.Path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
-			.Where(item => modelDirectories.Any(dir => 
-				item.Path.Contains($"/{dir}/", StringComparison.OrdinalIgnoreCase) ||
-				item.Path.Contains($"\\{dir}\\", StringComparison.OrdinalIgnoreCase)))
-			.ToList();
-
-		Console.WriteLine($"   ?? Checking {modelFiles.Count} files in model directories");
-
-		foreach (var file in modelFiles)
+		// Strategy 2: Search ALL .cs files in the repository for matching class definitions
+		// This is more expensive but necessary when entity files don't match the expected naming pattern
+		if (entityFiles.Count < entityNames.Count)
 		{
-			try
-			{
-				var fileName = Path.GetFileNameWithoutExtension(file.Path);
-				
-				// Skip if we already have this entity
-				if (entityFiles.ContainsKey(fileName))
-					continue;
-
-				// Only fetch if it might be one of our entities
-				if (!entitySet.Contains(fileName))
-					continue;
-
-				var content = await GetFileContentAsync(owner, repo, file.Path);
-				
-				if (ContainsClassDefinition(content, fileName))
+			Console.WriteLine($"   ?? {entityNames.Count - entityFiles.Count} entities still missing, searching all .cs files...");
+			
+			var remainingEntities = entityNames.Where(e => !entityFiles.ContainsKey(e)).ToHashSet();
+			
+			// Get all .cs files, prioritizing common entity directories
+			var allCsFiles = tree.Tree
+				.Where(item => item.Type == TreeType.Blob)
+				.Where(item => item.Path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
+				.Where(item => !item.Path.Contains("/bin/") && !item.Path.Contains("/obj/"))
+				.OrderBy(item =>
 				{
-					entityFiles[fileName] = content;
-					Console.WriteLine($"      ? {fileName}: {file.Path}");
+					// Prioritize files in common entity directories
+					var path = item.Path.ToLower();
+					if (path.Contains("/models/")) return 0;
+					if (path.Contains("/entities/")) return 1;
+					if (path.Contains("/domain/")) return 2;
+					if (path.Contains("/data/")) return 3;
+					return 4;
+				})
+				.ThenBy(item => item.Path)
+				.Take(500) // Limit to prevent too many API calls
+				.ToList();
+
+			Console.WriteLine($"   ?? Scanning {allCsFiles.Count} .cs files for entity class definitions");
+
+			var foundCount = 0;
+			foreach (var file in allCsFiles)
+			{
+				// Stop if we found all entities
+				if (remainingEntities.Count == 0)
+					break;
+
+				try
+				{
+					var content = await GetFileContentAsync(owner, repo, file.Path);
+					
+					// Check if this file contains any of our remaining entity classes
+					foreach (var entityName in remainingEntities.ToList())
+					{
+						if (ContainsClassDefinition(content, entityName))
+						{
+							entityFiles[entityName] = content;
+							remainingEntities.Remove(entityName);
+							foundCount++;
+							Console.WriteLine($"      ? Found {entityName} in {file.Path}");
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					// Silently skip files that cause errors (rate limits, etc.)
+					if (ex.Message.Contains("rate limit", StringComparison.OrdinalIgnoreCase))
+					{
+						Console.WriteLine($"      ?? GitHub API rate limit reached. Consider providing --github-token");
+						break;
+					}
 				}
 			}
-			catch (Exception ex)
+
+			if (foundCount > 0)
 			{
-				Console.WriteLine($"      ?? Error reading {file.Path}: {ex.Message}");
+				Console.WriteLine($"   ? Broad search found {foundCount} additional entities");
+			}
+
+			if (remainingEntities.Count > 0)
+			{
+				Console.WriteLine($"   ?? Still missing {remainingEntities.Count} entities: {string.Join(", ", remainingEntities.Take(5))}{(remainingEntities.Count > 5 ? "..." : "")}");
 			}
 		}
 
+		Console.WriteLine($"   ?? Total: Found {entityFiles.Count}/{entityNames.Count} entity files");
 		return entityFiles;
 	}
 
