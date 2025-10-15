@@ -32,81 +32,90 @@ SchemaMagic uses **Nerdbank.GitVersioning (nbgv)** for automatic version managem
 
 ## Publishing Methods
 
-### Method 1: Automated Publishing via GitHub Actions (Recommended)
+### Method 1: Automated Publishing Script (Recommended)
 
-The CI/CD pipeline automatically handles everything when you push a version tag.
+The `Publish.ps1` script automates the entire release process by creating and pushing a Git tag, which triggers the CI/CD pipeline.
 
-#### Setup GitHub Secrets
-
-1. Go to repository **Settings ? Secrets and variables ? Actions**
-2. Add a new secret named `NUGET_API_KEY`
-3. Paste your NuGet API key as the value
-
-#### Trigger Automated Publishing
-
-```bash
-# Make your changes
-git add .
-git commit -m "Add new feature"
-git push origin main
-
-# Create and push a version tag
-git tag -a v1.0.42 -m "Release version 1.0.42"
-git push origin v1.0.42
-```
-
-**What happens automatically:**
-1. ? Tests run
-2. ? NuGet package built with nbgv version
-3. ? Package published to NuGet.org
-4. ? GitHub Release created with install instructions
-5. ? Web application deployed to GitHub Pages
-6. ? Deployment summary added to Actions run
-
-**GitHub Actions Workflow:**
-- Trigger: Push tags matching `v*` (e.g., v1.0.42)
-- File: `.github/workflows/ci-cd.yml`
-- Jobs:
-  - `test`: Run tests
-  - `publish-nuget`: Build and publish NuGet package (only on tag push)
-  - `deploy-web`: Deploy Blazor WebAssembly app to GitHub Pages
-
-### Method 2: Manual Publishing with Publish.ps1
-
-For local testing or manual control over the publishing process.
-
-#### Test Build Only
+#### Quick Publish
 
 ```powershell
+# 1. Commit all your changes
+git add .
+git commit -m "Your changes"
+git push origin main
+
+# 2. Run publish script (creates tag, pushes it, triggers CI/CD)
 .\Publish.ps1
 ```
 
-This will:
-- ? Calculate version from git history (e.g., 1.0.42)
-- ? Build the NuGet package
-- ? Create git tag locally (e.g., v1.0.42)
-- ? Display package location for manual testing
-
-#### Full Publish to NuGet
-
-```powershell
-.\Publish.ps1 -PublishToNuGet -ApiKey "YOUR_NUGET_API_KEY"
-```
-
-Or using environment variable:
-
-```powershell
-$env:NUGET_API_KEY = "YOUR_NUGET_API_KEY"
-.\Publish.ps1 -PublishToNuGet
-```
+**What happens automatically:**
+1. ? Version calculated from git history using nbgv (e.g., 1.0.42)
+2. ? NuGet package built locally
+3. ? Git tag created (e.g., v1.0.42)
+4. ? **Tag pushed to GitHub (triggers CI/CD pipeline)**
+5. ? CI/CD runs tests
+6. ? CI/CD publishes to NuGet.org
+7. ? CI/CD creates GitHub Release
+8. ? CI/CD deploys web application to GitHub Pages
 
 #### Dry Run (Test Without Changes)
 
 ```powershell
-.\Publish.ps1 -DryRun -PublishToNuGet
+.\Publish.ps1 -DryRun
 ```
 
-**Note:** Manual publishing doesn't automatically deploy to GitHub Pages. Use GitHub Actions or manually trigger the `deploy-web.yml` workflow.
+#### Manual NuGet Publish (Emergency Only)
+
+```powershell
+# This will ALSO trigger CI/CD (which will also publish)
+# Only use if CI/CD is broken and you need immediate hotfix
+.\Publish.ps1 -PublishToNuGet -ApiKey "YOUR_NUGET_API_KEY"
+```
+
+### Method 2: Manual Git Tag (Alternative)
+
+You can also manually create and push tags to trigger CI/CD:
+
+```bash
+# Get current version
+dotnet tool install -g nbgv
+$version = nbgv get-version -v SimpleVersion
+
+# Create and push tag
+git tag -a "v$version" -m "Release version $version"
+git push origin "v$version"
+```
+
+**What happens automatically:**
+1. ? GitHub Actions CI/CD pipeline triggered
+2. ? Tests run
+3. ? NuGet package published
+4. ? GitHub Release created
+5. ? Web application deployed
+
+## CI/CD Pipeline Configuration
+
+### Trigger Rules
+
+The CI/CD pipeline (`.github/workflows/ci-cd.yml`) **only** triggers on:
+
+1. **Version tags** (`v*`) - e.g., `v1.0.42`, `v2.1.0`
+2. **Manual workflow dispatch** (via GitHub Actions UI)
+
+**Important:** The pipeline does **NOT** trigger on:
+- ❌ Regular pushes to `main` or `develop`
+- ❌ Pull requests
+- ❌ Branch updates
+
+This prevents unnecessary builds and ensures releases are intentional.
+
+### Setup GitHub Secrets
+
+For CI/CD to work, configure the NuGet API key:
+
+1. Go to repository **Settings → Secrets and variables → Actions**
+2. Add a new secret named `NUGET_API_KEY`
+3. Paste your NuGet API key as the value
 
 ## Version Bumping
 
