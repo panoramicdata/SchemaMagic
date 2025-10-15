@@ -674,8 +674,8 @@ public static partial class CoreSchemaAnalysisService
 			var propertyName = property.Identifier.Text;
 			var propertyType = property.Type.ToString();
 
-			// Clean up the type string
-			propertyType = propertyType.Replace("?", "").Trim();
+			// FIXED: DO NOT remove the nullable marker - preserve it for JavaScript analysis
+			propertyType = propertyType.Trim(); // Only trim whitespace, keep '?'
 
 			// Check if this property is a foreign key (from EF snapshot OR heuristic detection)
 			var isForeignKey = entityForeignKeys.Contains(propertyName) || IsHeuristicForeignKey(propertyName, propertyType);
@@ -686,7 +686,7 @@ public static partial class CoreSchemaAnalysisService
 			var propertyInfo = new PropertyInfo
 			{
 				Name = propertyName,
-				Type = propertyType,
+				Type = propertyType, // Now includes '?' if nullable
 				IsKey = IsKeyProperty(propertyName, entityName),
 				IsForeignKey = isForeignKey,
 				Comment = comment

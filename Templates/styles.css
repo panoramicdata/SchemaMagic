@@ -682,7 +682,7 @@ body {
 	stroke: #2563eb;
 	stroke-width: 8;
 	fill: none;
-	opacity: 0.8;
+	/* Removed opacity to ensure consistent color with crow's foot notation */
 	/* No transition - lines update immediately */
 }
 
@@ -1464,7 +1464,33 @@ body {
 
 .crows-foot-notation path,
 .crows-foot-notation line {
-	/* Inherits color from parent attributes */
+	/* Explicitly set stroke to match relationship lines */
+	stroke: #2563eb;
+	stroke-width: 8;
+	fill: none;
+}
+
+@media (prefers-color-scheme: dark) {
+	.crows-foot-notation path,
+	.crows-foot-notation line {
+		stroke: #60a5fa;
+		stroke-width: 8;
+	}
+}
+
+.crows-foot-notation circle {
+	/* Ensure circles have white fill in light mode and darker fill in dark mode for contrast */
+	fill: white;
+	stroke: #2563eb; /* Exact same blue as relationship lines */
+	stroke-width: 8; /* Match relationship line stroke-width */
+}
+
+@media (prefers-color-scheme: dark) {
+	.crows-foot-notation circle {
+		fill: #1a202c; /* Dark background for circles in dark mode */
+		stroke: #60a5fa;
+		stroke-width: 8;
+	}
 }
 
 /* When relationship is highlighted, crow's feet should also be highlighted */
@@ -1473,9 +1499,17 @@ body {
 	stroke: #764ba2 !important; /* Purple to match highlighted relationships */
 }
 
+.crows-foot-notation.highlighted circle {
+	stroke: #764ba2 !important; /* Purple stroke for circles when highlighted */
+}
+
 @media (prefers-color-scheme: dark) {
 	.crows-foot-notation.highlighted path,
 	.crows-foot-notation.highlighted line {
+		stroke: #a78bfa !important;
+	}
+	
+	.crows-foot-notation.highlighted circle {
 		stroke: #a78bfa !important;
 	}
 }
@@ -1486,9 +1520,19 @@ body {
 	opacity: 0.3;
 }
 
+.crows-foot-notation.dimmed circle {
+	stroke: #d1d5db !important; /* Dimmed stroke for circles */
+	opacity: 0.3;
+}
+
 @media (prefers-color-scheme: dark) {
 	.crows-foot-notation.dimmed path,
 	.crows-foot-notation.dimmed line {
+		stroke: #4b5563 !important;
+		opacity: 0.2;
+	}
+	
+	.crows-foot-notation.dimmed circle {
 		stroke: #4b5563 !important;
 		opacity: 0.2;
 	}

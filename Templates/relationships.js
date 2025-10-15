@@ -242,13 +242,14 @@ function createCrowsFootRelationshipLine(svg, fromEntityName, toEntityName, prop
 }
 
 function drawCrowsFootNotation(svg, x, y, direction, relationship, isFromSide) {
-	const CROW_SIZE = 35; // Size of crow's foot
-	const ONE_SIDE_OFFSET = 20; // Offset from table edge for "one" side notation
-	const CIRCLE_RADIUS = 10; // Radius for optional indicator
-	const CIRCLE_OFFSET = -20; // CHANGED: Negative offset to place circle BEFORE the crow's foot (closer to table)
+	const CROW_SIZE = 35; // Size of crow's foot (distance from table edge to tip)
+	const CIRCLE_RADIUS = 20; // Radius for optional indicator
+	const GAP = 5; // Small gap between circle and notation
+	const CIRCLE_OFFSET = CROW_SIZE + CIRCLE_RADIUS + GAP; // Position circle with gap from notation
 	
-	// Use the same blue color as relationship lines for consistency
-	const color = '#2563eb'; // Blue color matching relationship lines
+	// Use exact same blue color as relationship lines from CSS (.relationship-line)
+	const color = '#2563eb'; // Must match CSS .relationship-line stroke color
+	const strokeWidth = 8; // Must match CSS .relationship-line stroke-width
 	
 	// Determine what notation to draw based on relationship type and side
 	let notationType;
@@ -286,52 +287,52 @@ function drawCrowsFootNotation(svg, x, y, direction, relationship, isFromSide) {
 	
 	// Draw notation based on type
 	if (notationType.includes('many')) {
-		// Draw circle for optional relationships FIRST (positioned between table and crow's foot)
+		// Draw circle for optional relationships FIRST (positioned with gap from crow's foot)
 		if (notationType.includes('optional')) {
 			const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
 			circle.setAttribute('cx', CIRCLE_OFFSET);
 			circle.setAttribute('cy', '0');
 			circle.setAttribute('r', CIRCLE_RADIUS);
 			circle.setAttribute('stroke', color);
-			circle.setAttribute('stroke-width', '5');
-			circle.setAttribute('fill', 'none'); // FIXED: Transparent fill so circle is visible
+			circle.setAttribute('stroke-width', strokeWidth);
+			circle.setAttribute('fill', 'white'); // White fill so circle is visible against any background
 			group.appendChild(circle);
-			console.log(`⭕ Drew optional circle for many side at cx=${CIRCLE_OFFSET}`);
+			console.log(`⭕ Drew optional circle for many side at cx=${CIRCLE_OFFSET}, r=${CIRCLE_RADIUS}`);
 		}
 		
 		// Draw crow's foot as a path with two segments forming a > shape
 		// The path should point AWAY from the table (to the right in unrotated state)
-		// So: toe at x=0, legs extend to the right and up/down
+		// Tip at x=CROW_SIZE (same distance as "one" side vertical line)
 		const crowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
 		const pathData = `M 0,${-CROW_SIZE} L ${CROW_SIZE},0 L 0,${CROW_SIZE}`;
 		crowPath.setAttribute('d', pathData);
 		crowPath.setAttribute('stroke', color);
-		crowPath.setAttribute('stroke-width', '8');
+		crowPath.setAttribute('stroke-width', strokeWidth);
 		crowPath.setAttribute('fill', 'none');
 		crowPath.setAttribute('stroke-linejoin', 'miter');
 		group.appendChild(crowPath);
 	} else {
-		// Draw circle for optional relationships FIRST
+		// Draw circle for optional relationships FIRST (positioned with gap from vertical line)
 		if (notationType.includes('optional')) {
 			const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-			circle.setAttribute('cx', 0);
+			circle.setAttribute('cx', CIRCLE_OFFSET);
 			circle.setAttribute('cy', '0');
 			circle.setAttribute('r', CIRCLE_RADIUS);
 			circle.setAttribute('stroke', color);
-			circle.setAttribute('stroke-width', '5');
-			circle.setAttribute('fill', 'none'); // FIXED: Transparent fill so circle is visible
+			circle.setAttribute('stroke-width', strokeWidth);
+			circle.setAttribute('fill', 'white'); // White fill so circle is visible against any background
 			group.appendChild(circle);
-			console.log(`⭕ Drew optional circle for one side at cx=0`);
+			console.log(`⭕ Drew optional circle for one side at cx=${CIRCLE_OFFSET}, r=${CIRCLE_RADIUS}`);
 		}
 		
-		// One side - vertical line with offset from table edge (drawn AFTER circle so it appears in front)
+		// One side - vertical line at CROW_SIZE distance (same as crow's foot tip)
 		const verticalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-		verticalLine.setAttribute('x1', ONE_SIDE_OFFSET);
+		verticalLine.setAttribute('x1', CROW_SIZE); // Same distance as crow's foot tip
 		verticalLine.setAttribute('y1', -CROW_SIZE);
-		verticalLine.setAttribute('x2', ONE_SIDE_OFFSET);
+		verticalLine.setAttribute('x2', CROW_SIZE);
 		verticalLine.setAttribute('y2', CROW_SIZE);
 		verticalLine.setAttribute('stroke', color);
-		verticalLine.setAttribute('stroke-width', '8');
+		verticalLine.setAttribute('stroke-width', strokeWidth);
 		group.appendChild(verticalLine);
 	}
 	
@@ -524,8 +525,11 @@ function findPropertyConnectionPoint(tableGroup, propertyName, fallbackY) {
 	for (const propText of propertyTexts) {
 		if (propText.textContent === propertyName) {
 			const y = parseFloat(propText.getAttribute('y'));
-			console.log(`🎯 Found property ${propertyName} at y=${y}`);
-			return y;
+			// FIXED: Adjust Y to be at the CENTER of the property text/icon, not the baseline
+			// Property icons are rendered at y-12 (which is the center), so we need to match that
+			const centerY = y - 12;
+			console.log(`🎯 Found property ${propertyName} at y=${y}, centerY=${centerY}`);
+			return centerY;
 		}
 	}
 
