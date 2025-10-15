@@ -533,7 +533,7 @@ body {
 	font-size: 15px;
 	font-weight: bold;
 	font-family: 'Segoe UI', sans-serif;
-	fill: white;
+	fill: #000000; /* Changed from white to black for better contrast */
 	dominant-baseline: central;
 	text-anchor: middle;
 }
@@ -683,7 +683,7 @@ body {
 	stroke-width: 8;
 	fill: none;
 	opacity: 0.8;
-	transition: all 0.3s ease;
+	/* No transition - lines update immediately */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -712,7 +712,7 @@ body {
 	stroke: #d1d5db;
 	stroke-width: 8; /* Consistent thickness even when dimmed */
 	opacity: 0.3;
-	transition: all 0.3s ease;
+	/* No transition here either */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1269,4 +1269,227 @@ body {
 	color: white;
 	opacity: 0.9;
 	pointer-events: none;
+}
+
+/* Unused Rules Notification */
+.unused-rules-notification {
+	display: none;
+	background: #fffbeb;
+	border: 2px solid #fbbf24;
+	border-radius: 8px;
+	padding: 16px;
+	margin: 16px 0;
+	animation: slideInDown 0.3s ease-out;
+}
+
+@media (prefers-color-scheme: dark) {
+	.unused-rules-notification {
+		background: #78350f;
+		border-color: #f59e0b;
+	}
+}
+
+@keyframes slideInDown {
+	from {
+		opacity: 0;
+		transform: translateY(-10px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.notification-header {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	margin-bottom: 12px;
+	color: #92400e;
+	font-weight: 600;
+}
+
+@media (prefers-color-scheme: dark) {
+	.notification-header {
+		color: #fde68a;
+	}
+}
+
+.notification-header i {
+	color: #f59e0b;
+}
+
+.btn-close-notification {
+	background: none;
+	border: none;
+	cursor: pointer;
+	color: #92400e;
+	margin-left: auto;
+	padding: 4px 8px;
+	border-radius: 4px;
+	transition: all 0.2s;
+}
+
+.btn-close-notification:hover {
+	background: rgba(146, 64, 14, 0.1);
+	color: #78350f;
+}
+
+@media (prefers-color-scheme: dark) {
+	.btn-close-notification {
+		color: #fde68a;
+	}
+	
+	.btn-close-notification:hover {
+		background: rgba(253, 230, 138, 0.1);
+		color: #fef3c7;
+	}
+}
+
+.notification-body {
+	color: #78350f;
+}
+
+@media (prefers-color-scheme: dark) {
+	.notification-body {
+		color: #fde68a;
+	}
+}
+
+.notification-body p {
+	margin-bottom: 12px;
+}
+
+.unused-rules-list {
+	list-style: none;
+	padding: 0;
+	margin: 0 0 16px 0;
+	max-height: 200px;
+	overflow-y: auto;
+}
+
+.unused-rules-list li {
+	padding: 8px 12px;
+	background: white;
+	border: 1px solid #fbbf24;
+	border-radius: 6px;
+	margin-bottom: 8px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	flex-wrap: wrap;
+}
+
+@media (prefers-color-scheme: dark) {
+	.unused-rules-list li {
+		background: #451a03;
+		border-color: #f59e0b;
+	}
+}
+
+.unused-rules-list li strong {
+	color: #92400e;
+	font-size: 14px;
+}
+
+@media (prefers-color-scheme: dark) {
+	.unused-rules-list li strong {
+		color: #fde68a;
+	}
+}
+
+.rule-pattern-badge {
+	background: #fef3c7;
+	color: #78350f;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-size: 12px;
+	font-family: 'Consolas', 'Monaco', monospace;
+	flex: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+	.rule-pattern-badge {
+		background: #92400e;
+		color: #fde68a;
+	}
+}
+
+.btn-delete-unused {
+	background: #ef4444;
+	color: white;
+	border: none;
+	padding: 4px 8px;
+	border-radius: 4px;
+	cursor: pointer;
+	font-size: 12px;
+	transition: all 0.2s;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.btn-delete-unused:hover {
+	background: #dc2626;
+	transform: scale(1.05);
+}
+
+.btn-remove-all-unused {
+	background: #ef4444;
+	color: white;
+	border: none;
+	padding: 10px 16px;
+	border-radius: 6px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 500;
+	transition: all 0.2s;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	justify-content: center;
+}
+
+.btn-remove-all-unused:hover {
+	background: #dc2626;
+	box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+	transform: translateY(-1px);
+}
+
+/* Crow's foot notation styling */
+.crows-foot-notation {
+	/* Default blue color */
+}
+
+.crows-foot-notation path,
+.crows-foot-notation line {
+	/* Inherits color from parent attributes */
+}
+
+/* When relationship is highlighted, crow's feet should also be highlighted */
+.crows-foot-notation.highlighted path,
+.crows-foot-notation.highlighted line {
+	stroke: #764ba2 !important; /* Purple to match highlighted relationships */
+}
+
+@media (prefers-color-scheme: dark) {
+	.crows-foot-notation.highlighted path,
+	.crows-foot-notation.highlighted line {
+		stroke: #a78bfa !important;
+	}
+}
+
+.crows-foot-notation.dimmed path,
+.crows-foot-notation.dimmed line {
+	stroke: #d1d5db !important; /* Match dimmed relationship lines */
+	opacity: 0.3;
+}
+
+@media (prefers-color-scheme: dark) {
+	.crows-foot-notation.dimmed path,
+	.crows-foot-notation.dimmed line {
+		stroke: #4b5563 !important;
+		opacity: 0.2;
+	}
 }

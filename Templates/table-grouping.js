@@ -2,7 +2,11 @@
 
 // Open the table grouping dialog
 function openTableGroupingDialog() {
+	// Automatically remove unused rules before populating UI
+	autoRemoveUnusedRules();
+	
 	populateRulesUI();
+	analyzeUnusedRules(); // Analyze again to show any remaining issues
 	document.getElementById('grouping-modal-overlay').style.display = 'block';
 	document.getElementById('grouping-modal').style.display = 'block';
 }
@@ -11,6 +15,172 @@ function openTableGroupingDialog() {
 function closeTableGroupingDialog() {
 	document.getElementById('grouping-modal-overlay').style.display = 'none';
 	document.getElementById('grouping-modal').style.display = 'none';
+}
+
+// Automatically remove unused rules without confirmation
+function autoRemoveUnusedRules() {
+	const entityNames = Object.keys(entities);
+	const rulesToKeep = [];
+	let removedCount = 0;
+	
+	tableGroupingRules.forEach((rule, index) => {
+		// Always keep the default catch-all rule (usually last)
+		if (rule.pattern === '.*') {
+			rulesToKeep.push(rule);
+			return;
+		}
+		
+		try {
+			const regex = new RegExp(rule.pattern, 'i');
+			const matches = entityNames.filter(name => regex.test(name));
+			
+			if (matches.length === 0) {
+				// Rule doesn't match anything - skip it (don't add to rulesToKeep)
+				removedCount++;
+				console.log(`??? Auto-removed unused rule: "${rule.name}" (pattern: ${rule.pattern})`);
+			} else {
+				// Rule matches at least one table - keep it
+				rulesToKeep.push(rule);
+			}
+		} catch (e) {
+			// Invalid regex - remove it
+			removedCount++;
+			console.warn(`??? Auto-removed invalid rule "${rule.name}": ${e.message}`);
+		}
+	});
+	
+	if (removedCount > 0) {
+		tableGroupingRules = rulesToKeep;
+		saveTableGroupingRulesToStorage();
+		console.log(`? Auto-removed ${removedCount} unused rule(s). ${tableGroupingRules.length} rules remain.`);
+	} else {
+		console.log(`? All ${tableGroupingRules.length} rules are in use - no cleanup needed`);
+	}
+}
+
+// Analyze which rules don't match any tables (for informational purposes only)
+function analyzeUnusedRules() {
+	const entityNames = Object.keys(entities);
+	const unusedRules = [];
+	
+	tableGroupingRules.forEach((rule, index) => {
+		// Skip the default catch-all rule (usually last)
+		if (rule.pattern === '.*') {
+			return;
+		}
+		
+		try {
+			const regex = new RegExp(rule.pattern, 'i');
+			const matches = entityNames.filter(name => regex.test(name));
+			
+			if (matches.length === 0) {
+				unusedRules.push({
+					index: index,
+					rule: rule,
+					name: rule.name,
+					pattern: rule.pattern
+				});
+			}
+		} catch (e) {
+			console.warn(`Invalid regex pattern in rule "${rule.name}": ${rule.pattern}`, e);
+		}
+	});
+	
+	// Only show notification if there are STILL unused rules after auto-cleanup
+	// (This should rarely happen, but good to have for edge cases)
+	if (unusedRules.length > 0) {
+		console.log(`?? Found ${unusedRules.length} unused rules after auto-cleanup (edge case):`);
+		unusedRules.forEach(item => {
+			console.log(`   - "${item.name}" (pattern: ${item.pattern})`);
+		});
+		showUnusedRulesNotification(unusedRules);
+	} else {
+		console.log('? All rules match at least one table');
+		closeUnusedRulesNotification();
+	}
+	
+	return unusedRules;
+}
+
+// Show notification about unused rules (only for edge cases now)
+function showUnusedRulesNotification(unusedRules) {
+	// Check if notification element already exists
+	let notification = document.getElementById('unused-rules-notification');
+	if (!notification) {
+		notification = document.createElement('div');
+		notification.id = 'unused-rules-notification';
+		notification.className = 'unused-rules-notification';
+		
+		// Insert after modal description
+		const modalBody = document.querySelector('#grouping-modal .modal-body');
+		const description = modalBody.querySelector('.modal-description');
+		description.insertAdjacentElement('afterend', notification);
+	}
+	
+	// Build notification content
+	const rulesList = unusedRules.map(item => 
+		`<li>
+			<strong>${item.name}</strong> 
+			<span class="rule-pattern-badge">${item.pattern}</span>
+			<button class="btn-delete-unused" onclick="deleteRule(${item.index})" title="Delete this rule">
+				<i class="fas fa-trash"></i> Delete
+			</button>
+		</li>`
+	).join('');
+	
+	notification.innerHTML = `
+		<div class="notification-header">
+			<i class="fas fa-info-circle"></i>
+			<strong>Unused Rules Detected (${unusedRules.length})</strong>
+			<button class="btn-close-notification" onclick="closeUnusedRulesNotification()">
+				<i class="fas fa-times"></i>
+			</button>
+		</div>
+		<div class="notification-body">
+			<p>These rules don't match any tables. They were kept because they might be for future use:</p>
+			<ul class="unused-rules-list">
+				${rulesList}
+			</ul>
+			<button class="btn-remove-all-unused" onclick="removeAllUnusedRules()">
+				<i class="fas fa-trash-alt"></i> Remove All Unused Rules
+			</button>
+		</div>
+	`;
+	
+	notification.style.display = 'block';
+}
+
+// Close the unused rules notification
+function closeUnusedRulesNotification() {
+	const notification = document.getElementById('unused-rules-notification');
+	if (notification) {
+		notification.style.display = 'none';
+	}
+}
+
+// Remove all unused rules at once (still available for manual use)
+function removeAllUnusedRules() {
+	const unusedRules = analyzeUnusedRules();
+	
+	if (unusedRules.length === 0) {
+		alert('No unused rules to remove!');
+		return;
+	}
+	
+	// Sort indices in descending order to avoid index shifting issues
+	const indicesToRemove = unusedRules.map(item => item.index).sort((a, b) => b - a);
+	
+	indicesToRemove.forEach(index => {
+		tableGroupingRules.splice(index, 1);
+	});
+	
+	console.log(`? Manually removed ${indicesToRemove.length} unused rules`);
+	
+	// Refresh the UI
+	populateRulesUI();
+	closeUnusedRulesNotification();
+	
+	alert(`Successfully removed ${indicesToRemove.length} unused rule(s)!`);
 }
 
 // Populate the rules UI
@@ -32,6 +202,7 @@ function createRuleElement(rule, index) {
 	const div = document.createElement('div');
 	div.className = 'rule-item';
 	div.dataset.index = index;
+	div.setAttribute('draggable', 'true'); // Make the element draggable
 	
 	div.innerHTML = `
 		<div class="rule-drag-handle" title="Drag to reorder">
@@ -78,54 +249,55 @@ function createRuleElement(rule, index) {
 	return div;
 }
 
-// Initialize drag-and-drop sorting
+// Initialize drag-and-drop sorting using HTML5 Drag and Drop API
 function initializeSortable() {
 	const container = document.getElementById('rules-container');
 	let draggedElement = null;
 	
 	container.querySelectorAll('.rule-item').forEach(item => {
-		const handle = item.querySelector('.rule-drag-handle');
-		
-		handle.addEventListener('mousedown', (e) => {
+		// Drag start - store the dragged element
+		item.addEventListener('dragstart', (e) => {
 			draggedElement = item;
 			item.classList.add('dragging');
+			e.dataTransfer.effectAllowed = 'move';
+			e.dataTransfer.setData('text/html', item.innerHTML);
+		});
+		
+		// Drag end - clean up
+		item.addEventListener('dragend', (e) => {
+			item.classList.remove('dragging');
+		});
+		
+		// Drag over - allow dropping
+		item.addEventListener('dragover', (e) => {
 			e.preventDefault();
+			e.dataTransfer.dropEffect = 'move';
+			
+			if (draggedElement && draggedElement !== item) {
+				const bounding = item.getBoundingClientRect();
+				const offset = e.clientY - bounding.top;
+				
+				// Insert before or after based on mouse position
+				if (offset > bounding.height / 2) {
+					item.parentNode.insertBefore(draggedElement, item.nextSibling);
+				} else {
+					item.parentNode.insertBefore(draggedElement, item);
+				}
+			}
+		});
+		
+		// Drop - finalize the drop
+		item.addEventListener('drop', (e) => {
+			e.preventDefault();
+			e.stopPropagation();
 		});
 	});
 	
-	document.addEventListener('mouseup', () => {
-		if (draggedElement) {
-			draggedElement.classList.remove('dragging');
-			draggedElement = null;
-		}
-	});
-	
+	// Also handle drag over the container itself
 	container.addEventListener('dragover', (e) => {
 		e.preventDefault();
-		if (!draggedElement) return;
-		
-		const afterElement = getDragAfterElement(container, e.clientY);
-		if (afterElement == null) {
-			container.appendChild(draggedElement);
-		} else {
-			container.insertBefore(draggedElement, afterElement);
-		}
+		e.dataTransfer.dropEffect = 'move';
 	});
-}
-
-function getDragAfterElement(container, y) {
-	const draggableElements = [...container.querySelectorAll('.rule-item:not(.dragging)')];
-	
-	return draggableElements.reduce((closest, child) => {
-		const box = child.getBoundingClientRect();
-		const offset = y - box.top - box.height / 2;
-		
-		if (offset < 0 && offset > closest.offset) {
-			return { offset: offset, element: child };
-		} else {
-			return closest;
-		}
-	}, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 // Rule CRUD operations
@@ -140,12 +312,14 @@ function addNewRule() {
 	
 	tableGroupingRules.push(newRule);
 	populateRulesUI();
+	analyzeUnusedRules(); // Re-analyze after adding
 }
 
 function deleteRule(index) {
 	if (confirm(`Delete rule "${tableGroupingRules[index].name}"?`)) {
 		tableGroupingRules.splice(index, 1);
 		populateRulesUI();
+		analyzeUnusedRules(); // Re-analyze after deleting
 	}
 }
 
@@ -174,24 +348,30 @@ function testPattern(index) {
 		const matches = Object.keys(entities).filter(name => regex.test(name));
 		
 		if (matches.length === 0) {
-			matchesContainer.innerHTML = '<div class="test-result-none">No tables match this pattern</div>';
+			matchesContainer.innerHTML = '<div class="test-result-none">?? No tables match this pattern</div>';
 		} else {
 			matchesContainer.innerHTML = `
 				<div class="test-result-success">
-					<strong>Matches ${matches.length} table(s):</strong>
-					${matches.slice(0, 10).join(', ')}${matches.length > 10 ? '...' : ''}
+					<strong>? Matches ${matches.length} table(s):</strong>
+					${matches.slice(0, 10).join(', ')}${matches.length > 10 ? ` ... and ${matches.length - 10} more` : ''}
 				</div>
 			`;
 		}
 	} catch (e) {
-		matchesContainer.innerHTML = `<div class="test-result-error">Invalid regex: ${e.message}</div>`;
+		matchesContainer.innerHTML = `<div class="test-result-error">? Invalid regex: ${e.message}</div>`;
 	}
 }
 
 function resetToDefaultRules() {
 	if (confirm('Reset all rules to default settings? This will overwrite your current rules.')) {
 		tableGroupingRules = [...DEFAULT_TABLE_GROUPING_RULES];
+		saveTableGroupingRulesToStorage();
+		
+		// Auto-remove unused defaults immediately
+		autoRemoveUnusedRules();
+		
 		populateRulesUI();
+		analyzeUnusedRules(); // Re-analyze after reset
 	}
 }
 
@@ -262,6 +442,7 @@ function selectIcon(iconClass) {
 	if (currentEditingRuleIndex !== null) {
 		tableGroupingRules[currentEditingRuleIndex].icon = iconClass;
 		populateRulesUI();
+		analyzeUnusedRules(); // Re-analyze after icon change
 	}
 	closeIconPicker();
 }

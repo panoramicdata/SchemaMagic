@@ -94,7 +94,7 @@ function createCrowsFootRelationshipLine(svg, fromEntityName, toEntityName, prop
 	const relationship = analyzeRelationshipCardinality(fromEntityName, toEntityName, propertyName);
 	console.log(`📊 Relationship analysis:`, relationship);
 
-	// Get connection points
+	// Get connection points for the specific property rows
 	const fromInfo = getTableConnectionPoint(fromEntityName, propertyName, null);
 	const toInfo = getTableConnectionPoint(toEntityName, 'Id', null);
 
@@ -103,50 +103,118 @@ function createCrowsFootRelationshipLine(svg, fromEntityName, toEntityName, prop
 		return;
 	}
 
-	// Determine smart positioning based on table locations
+	// Constants for routing
+	const MARKER_OFFSET = 50;
+	const MARKER_GAP = 20; // Gap between table edge and crow's foot
+	const SELF_REF_LOOP_WIDTH = 200;
+
+	let pathSegments = [];
 	let fromX, fromY, toX, toY;
+	let fromDirection, toDirection; // Track which direction the connection goes
 
 	fromY = fromInfo.y;
 	toY = toInfo.y;
 
-	if (fromInfo.centerX < toInfo.centerX) {
-		// Source table is to the LEFT of target table
+	// Check if this is a self-referential relationship
+	if (fromEntityName === toEntityName) {
+		console.log(`🔄 Self-referential relationship detected: ${fromEntityName} -> ${fromEntityName}`);
+		
+		fromX = fromInfo.leftEdge;
+		toX = toInfo.leftEdge;
+		fromDirection = 'left';
+		toDirection = 'left';
+		
+		const loopLeft = fromInfo.leftEdge - SELF_REF_LOOP_WIDTH;
+		
+		pathSegments = [
+			`M ${fromX} ${fromY}`,
+			`L ${loopLeft} ${fromY}`,
+			`L ${loopLeft} ${toY}`,
+			`L ${toX} ${toY}`
+		];
+		
+		console.log(`🔄 Self-referential loop`);
+	} else if (fromInfo.centerX < toInfo.centerX) {
+		// LEFT->RIGHT
 		fromX = fromInfo.rightEdge;
 		toX = toInfo.leftEdge;
-		console.log(`🔄 LEFT->RIGHT: Source right edge(${fromX},${fromY}) -> Target left edge(${toX},${toY})`);
+		fromDirection = 'right';
+		toDirection = 'left';
+		
+		const verticalSeparation = Math.abs(fromY - toY);
+		const horizontalSeparation = toX - fromX;
+		
+		if (verticalSeparation > 250) {
+			const minHorizontalFirst = Math.max(MARKER_OFFSET, horizontalSeparation * 0.4);
+			const midX = fromX + minHorizontalFirst;
+			const entryX = toX - MARKER_OFFSET;
+			
+			pathSegments = [
+				`M ${fromX} ${fromY}`,
+				`L ${midX} ${fromY}`,
+				`L ${midX} ${toY}`,
+				`L ${entryX} ${toY}`,
+				`L ${toX} ${toY}`
+			];
+		} else {
+			const exitX = fromX + MARKER_OFFSET;
+			const entryX = toX - MARKER_OFFSET;
+			
+			pathSegments = [
+				`M ${fromX} ${fromY}`,
+				`L ${exitX} ${fromY}`,
+				`L ${exitX} ${toY}`,
+				`L ${entryX} ${toY}`,
+				`L ${toX} ${toY}`
+			];
+		}
 	} else {
-		// Source table is to the RIGHT of target table
+		// RIGHT->LEFT
 		fromX = fromInfo.leftEdge;
 		toX = toInfo.rightEdge;
-		console.log(`🔄 RIGHT->LEFT: Source left edge(${fromX},${fromY}) -> Target right edge(${toX},${toY})`);
+		fromDirection = 'left';
+		toDirection = 'right';
+		
+		const verticalSeparation = Math.abs(fromY - toY);
+		const horizontalSeparation = fromX - toX;
+		
+		if (verticalSeparation > 250) {
+			const minHorizontalFirst = Math.max(MARKER_OFFSET, horizontalSeparation * 0.4);
+			const midX = fromX - minHorizontalFirst;
+			const entryX = toX + MARKER_OFFSET;
+			
+			pathSegments = [
+				`M ${fromX} ${fromY}`,
+				`L ${midX} ${fromY}`,
+				`L ${midX} ${toY}`,
+				`L ${entryX} ${toY}`,
+				`L ${toX} ${toY}`
+			];
+		} else {
+			const exitX = fromX - MARKER_OFFSET;
+			const entryX = toX + MARKER_OFFSET;
+			
+			pathSegments = [
+				`M ${fromX} ${fromY}`,
+				`L ${exitX} ${fromY}`,
+				`L ${exitX} ${toY}`,
+				`L ${entryX} ${toY}`,
+				`L ${toX} ${toY}`
+			];
+		}
 	}
 
+	const pathData = pathSegments.join(' ');
+
+	// Create the main line WITHOUT markers
 	const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-
-	// Create angled connector with proper coordinates
-	const midX = (fromX + toX) / 2;
-	const pathData = `M ${fromX} ${fromY} L ${midX} ${fromY} L ${midX} ${toY} L ${toX} ${toY}`;
-
 	line.setAttribute('d', pathData);
 	line.classList.add('relationship-line');
 	line.setAttribute('data-from', fromEntityName);
 	line.setAttribute('data-to', toEntityName);
 	line.setAttribute('data-property', propertyName);
 	line.setAttribute('data-relationship-type', relationship.type);
-
-	// Set appropriate crow's foot markers based on relationship analysis
-	const markers = getCrowsFootMarkers(relationship);
-
-	// For foreign key relationships:
-	// - FROM entity has FK = "many" side = needs crow's foot marker
-	// - TO entity has PK = "one" side = needs single line marker
-	// In SVG, marker-start is at the path start, marker-end is at path end
-	line.setAttribute('marker-start', markers.fromSide); // Many side (FK table start)
-	line.setAttribute('marker-end', markers.toSide);     // One side (PK table end)
-
-	console.log(`🐾 Crow's Foot line: ${fromEntityName}(${fromX},${fromY}) -> ${toEntityName}(${toX},${toY})`);
-	console.log(`   Type: ${relationship.type}, Markers: ${markers.fromSide} -> ${markers.toSide}`);
-	console.log(`   Path: ${pathData}`);
+	line.setAttribute('data-self-referential', fromEntityName === toEntityName ? 'true' : 'false');
 
 	// Insert line BEFORE any table groups to ensure it appears behind tables
 	const firstTableGroup = svg.querySelector('.table-group');
@@ -155,6 +223,127 @@ function createCrowsFootRelationshipLine(svg, fromEntityName, toEntityName, prop
 	} else {
 		svg.appendChild(line);
 	}
+
+	// Draw crow's foot notation as explicit SVG elements and track them
+	const fromCrowsFoot = drawCrowsFootNotation(svg, fromX, fromY, fromDirection, relationship, true); // Start point (many side)
+	const toCrowsFoot = drawCrowsFootNotation(svg, toX, toY, toDirection, relationship, false); // End point (one side)
+	
+	// Add data attributes to crow's feet to track which relationship they belong to
+	fromCrowsFoot.setAttribute('data-from', fromEntityName);
+	fromCrowsFoot.setAttribute('data-to', toEntityName);
+	fromCrowsFoot.setAttribute('data-property', propertyName);
+	
+	toCrowsFoot.setAttribute('data-from', fromEntityName);
+	toCrowsFoot.setAttribute('data-to', toEntityName);
+	toCrowsFoot.setAttribute('data-property', propertyName);
+
+	console.log(`🐾 Crow's Foot line created with explicit notation`);
+	console.log(`   Type: ${relationship.type}, From: ${fromDirection}, To: ${toDirection}`);
+}
+
+function drawCrowsFootNotation(svg, x, y, direction, relationship, isFromSide) {
+	const CROW_SIZE = 35; // Size of crow's foot
+	const ONE_SIDE_OFFSET = 20; // Offset from table edge for "one" side notation
+	const CIRCLE_RADIUS = 10; // Radius for optional indicator
+	const CIRCLE_OFFSET = -20; // CHANGED: Negative offset to place circle BEFORE the crow's foot (closer to table)
+	
+	// Use the same blue color as relationship lines for consistency
+	const color = '#2563eb'; // Blue color matching relationship lines
+	
+	// Determine what notation to draw based on relationship type and side
+	let notationType;
+	if (isFromSide) {
+		// From side (FK table) = many side
+		notationType = relationship.fromOptional ? 'many-optional' : 'many';
+	} else {
+		// To side (PK table) = one side
+		notationType = relationship.toOptional ? 'one-optional' : 'one';
+	}
+	
+	console.log(`🐾 Drawing crow's foot: ${notationType} at (${x}, ${y}) facing ${direction}`);
+	
+	// Calculate rotation angle based on direction
+	let angle = 0;
+	switch (direction) {
+		case 'right':
+			angle = 0;
+			break;
+		case 'left':
+			angle = 180;
+			break;
+		case 'up':
+			angle = -90;
+			break;
+		case 'down':
+			angle = 90;
+			break;
+	}
+	
+	// Create a group for the notation
+	const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+	group.setAttribute('transform', `translate(${x}, ${y}) rotate(${angle})`);
+	group.classList.add('crows-foot-notation');
+	
+	// Draw notation based on type
+	if (notationType.includes('many')) {
+		// Draw circle for optional relationships FIRST (positioned between table and crow's foot)
+		if (notationType.includes('optional')) {
+			const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+			circle.setAttribute('cx', CIRCLE_OFFSET);
+			circle.setAttribute('cy', '0');
+			circle.setAttribute('r', CIRCLE_RADIUS);
+			circle.setAttribute('stroke', color);
+			circle.setAttribute('stroke-width', '5');
+			circle.setAttribute('fill', 'none'); // FIXED: Transparent fill so circle is visible
+			group.appendChild(circle);
+			console.log(`⭕ Drew optional circle for many side at cx=${CIRCLE_OFFSET}`);
+		}
+		
+		// Draw crow's foot as a path with two segments forming a > shape
+		// The path should point AWAY from the table (to the right in unrotated state)
+		// So: toe at x=0, legs extend to the right and up/down
+		const crowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+		const pathData = `M 0,${-CROW_SIZE} L ${CROW_SIZE},0 L 0,${CROW_SIZE}`;
+		crowPath.setAttribute('d', pathData);
+		crowPath.setAttribute('stroke', color);
+		crowPath.setAttribute('stroke-width', '8');
+		crowPath.setAttribute('fill', 'none');
+		crowPath.setAttribute('stroke-linejoin', 'miter');
+		group.appendChild(crowPath);
+	} else {
+		// Draw circle for optional relationships FIRST
+		if (notationType.includes('optional')) {
+			const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+			circle.setAttribute('cx', 0);
+			circle.setAttribute('cy', '0');
+			circle.setAttribute('r', CIRCLE_RADIUS);
+			circle.setAttribute('stroke', color);
+			circle.setAttribute('stroke-width', '5');
+			circle.setAttribute('fill', 'none'); // FIXED: Transparent fill so circle is visible
+			group.appendChild(circle);
+			console.log(`⭕ Drew optional circle for one side at cx=0`);
+		}
+		
+		// One side - vertical line with offset from table edge (drawn AFTER circle so it appears in front)
+		const verticalLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+		verticalLine.setAttribute('x1', ONE_SIDE_OFFSET);
+		verticalLine.setAttribute('y1', -CROW_SIZE);
+		verticalLine.setAttribute('x2', ONE_SIDE_OFFSET);
+		verticalLine.setAttribute('y2', CROW_SIZE);
+		verticalLine.setAttribute('stroke', color);
+		verticalLine.setAttribute('stroke-width', '8');
+		group.appendChild(verticalLine);
+	}
+	
+	// Insert crow's foot BEFORE tables (at the beginning of SVG) to ensure proper z-indexing
+	const firstTableGroup = svg.querySelector('.table-group');
+	if (firstTableGroup) {
+		svg.insertBefore(group, firstTableGroup);
+	} else {
+		svg.appendChild(group);
+	}
+	
+	return group; // Return the group so we can track it with the relationship line
 }
 
 function analyzeRelationshipCardinality(fromEntityName, toEntityName, propertyName) {
@@ -170,8 +359,9 @@ function analyzeRelationshipCardinality(fromEntityName, toEntityName, propertyNa
 	const allFromProps = [...(fromEntity.properties || []), ...(fromEntity.inheritedProperties || [])];
 	const fkProp = allFromProps.find(p => p.name === propertyName);
 
-	// Check if FK is nullable (optional relationship)
-	const isNullable = fkProp && (fkProp.type.includes('?') || fkProp.nullable === true);
+	// Check if FK is nullable (optional relationship on the "many" side)
+	// FIXED: Only check type string for '?' - PropertyInfo doesn't have a nullable property
+	const isNullable = fkProp && fkProp.type.includes('?');
 
 	// Look for navigation properties to determine relationship type
 	const allToProps = [...(toEntity.properties || []), ...(toEntity.inheritedProperties || [])];
@@ -184,40 +374,54 @@ function analyzeRelationshipCardinality(fromEntityName, toEntityName, propertyNa
 		p.name.toLowerCase().includes(navPropName.toLowerCase() + 's') // Plural form
 	);
 
-	// Check if source entity has a navigation property to target (indicating potential 1:1)
+	// Check if source entity has a navigation property to target
 	const sourceNavPropName = toEntityName.replace(/Model$/, '');
 	const sourceNavProp = allFromProps.find(p =>
 		p.type === toEntityName ||
+		p.type === `${toEntityName}?` || // Nullable navigation property
 		p.name === sourceNavPropName
 	);
 
+	// Check if the navigation property on the source is nullable (indicates optional on "one" side)
+	// FIXED: Only check type string for '?' - PropertyInfo doesn't have a nullable property
+	const sourceNavPropIsNullable = sourceNavProp && sourceNavProp.type.includes('?');
+
 	// Determine relationship type based on analysis
 	let relationshipType;
+	let toOptional = false; // Whether the "one" side is optional (0..1)
 
 	if (collectionNavProp && sourceNavProp) {
 		// Both sides have navigation properties - this is 1:N (most common)
 		relationshipType = '1:N';
+		// The "one" side is optional if EITHER the FK is nullable OR the navigation property is nullable
+		toOptional = isNullable || sourceNavPropIsNullable;
 	} else if (sourceNavProp && !collectionNavProp) {
 		// Only source has nav prop, no collection on target - could be 1:1 or 1:0..1
-		relationshipType = isNullable ? '1:0..1' : '1:1';
+		relationshipType = (isNullable || sourceNavPropIsNullable) ? '1:0..1' : '1:1';
+		toOptional = isNullable || sourceNavPropIsNullable; // The "one" side is optional if either is nullable
 	} else if (collectionNavProp) {
 		// Target has collection - definitely 1:N
 		relationshipType = '1:N';
+		toOptional = isNullable; // The "one" side is optional if FK is nullable
 	} else {
 		// No navigation properties found - assume 1:N (most common for FK relationships)
 		relationshipType = '1:N';
+		toOptional = isNullable; // The "one" side is optional if FK is nullable
 	}
 
 	console.log(`📊 Relationship analysis for ${fromEntityName}.${propertyName} -> ${toEntityName}:`);
 	console.log(`   FK nullable: ${isNullable}`);
 	console.log(`   Collection nav prop: ${collectionNavProp ? collectionNavProp.name : 'none'}`);
 	console.log(`   Source nav prop: ${sourceNavProp ? sourceNavProp.name : 'none'}`);
+	console.log(`   Source nav prop nullable: ${sourceNavPropIsNullable}`);
 	console.log(`   Determined type: ${relationshipType}`);
+	console.log(`   From optional (many side): ${isNullable}`);
+	console.log(`   To optional (one side): ${toOptional}`);
 
 	return {
 		type: relationshipType,
-		fromOptional: isNullable, // FK side optionality
-		toOptional: false // PK side is typically required
+		fromOptional: isNullable, // FK side optionality (many side)
+		toOptional: toOptional // PK side optionality (one side)
 	};
 }
 
@@ -233,16 +437,16 @@ function getCrowsFootMarkers(relationship) {
 			break;
 
 		case '1:0..1':
-			// One-to-zero-or-one: FK side has circle (optional), PK side has line
+			// One-to-zero-or-one: FK side has circle+line (optional), PK side has line
 			fromSide = relationship.fromOptional ? 'url(#one-optional-side)' : 'url(#one-side)';
 			toSide = 'url(#one-side)';
 			break;
 
 		case '1:N':
 		default:
-			// CORRECTED: For One-to-Many relationships:
+			// For One-to-Many relationships:
 			// - FROM side (FK table) = "many" side = needs crow's foot
-			// - TO side (PK table) = "one" side = needs single line
+			// - TO side (PK table) = "one" side = needs single line (optionally with circle if nullable)
 			fromSide = relationship.fromOptional ? 'url(#many-optional-side)' : 'url(#many-side)';
 			toSide = 'url(#one-side)';
 			break;
@@ -252,7 +456,7 @@ function getCrowsFootMarkers(relationship) {
 }
 
 function getCrowsFootMarkersHighlighted(relationship) {
-	// Highlighted markers (red) - same logic but with highlighted versions
+	// Highlighted markers (purple) - same logic but with highlighted versions
 	let fromSide, toSide;
 
 	switch (relationship.type) {
@@ -268,9 +472,6 @@ function getCrowsFootMarkersHighlighted(relationship) {
 
 		case '1:N':
 		default:
-			// CORRECTED: For One-to-Many relationships:
-			// - FROM side (FK table) = "many" side = needs crow's foot
-			// - TO side (PK table) = "one" side = needs single line
 			fromSide = relationship.fromOptional ? 'url(#many-optional-side-highlighted)' : 'url(#many-side-highlighted)';
 			toSide = 'url(#one-side-highlighted)';
 			break;
@@ -350,38 +551,150 @@ function findPropertyConnectionPoint(tableGroup, propertyName, fallbackY) {
 
 function updateRelationships() {
 	const lines = document.querySelectorAll('.relationship-line');
-	console.log(`🔄 Updating ${lines.length} relationship lines`);
+	const crowsFeet = document.querySelectorAll('.crows-foot-notation');
+	
+	console.log(`🔄 Updating ${lines.length} relationship lines and ${crowsFeet.length} crow's feet`);
+
+	// Remove all existing crow's feet
+	crowsFeet.forEach(cf => cf.remove());
 
 	lines.forEach(line => {
 		const from = line.getAttribute('data-from');
 		const to = line.getAttribute('data-to');
 		const propertyName = line.getAttribute('data-property');
 		const relationshipType = line.getAttribute('data-relationship-type') || '1:N';
+		const isSelfReferential = line.getAttribute('data-self-referential') === 'true';
+
+		// Re-analyze the relationship to get proper optional indicators
+		const relationship = analyzeRelationshipCardinality(from, to, propertyName);
 
 		// Get updated connection points
 		const fromInfo = getTableConnectionPoint(from, propertyName, null);
 		const toInfo = getTableConnectionPoint(to, 'Id', null);
 
 		if (fromInfo && toInfo) {
-			// Determine smart positioning based on current table locations
+			// Recreate the routing with same logic as creation
+			const MARKER_OFFSET = 50;
+			const SELF_REF_LOOP_WIDTH = 200;
+			
 			let fromX, fromY, toX, toY;
+			let fromDirection, toDirection;
+			let pathSegments = [];
 
 			fromY = fromInfo.y;
 			toY = toInfo.y;
 
-			if (fromInfo.centerX < toInfo.centerX) {
-				// From table is to the LEFT of target table - connect from RIGHT edge to LEFT edge
-				fromX = fromInfo.rightEdge; // Connect from right edge of source
-				toX = toInfo.leftEdge;      // Connect to left edge of destination
+			if (isSelfReferential || from === to) {
+				// Self-referential
+				fromX = fromInfo.leftEdge;
+				toX = toInfo.leftEdge;
+				fromDirection = 'left';
+				toDirection = 'left';
+				
+				const loopLeft = fromInfo.leftEdge - SELF_REF_LOOP_WIDTH;
+				
+				pathSegments = [
+					`M ${fromX} ${fromY}`,
+					`L ${loopLeft} ${fromY}`,
+					`L ${loopLeft} ${toY}`,
+					`L ${toX} ${toY}`
+				];
+			} else if (fromInfo.centerX < toInfo.centerX) {
+				// LEFT->RIGHT
+				fromX = fromInfo.rightEdge;
+				toX = toInfo.leftEdge;
+				fromDirection = 'right';
+				toDirection = 'left';
+				
+				const verticalSeparation = Math.abs(fromY - toY);
+				const horizontalSeparation = toX - fromX;
+				
+				if (verticalSeparation > 250) {
+					const minHorizontalFirst = Math.max(MARKER_OFFSET, horizontalSeparation * 0.4);
+					const midX = fromX + minHorizontalFirst;
+					const entryX = toX - MARKER_OFFSET;
+					
+					pathSegments = [
+						`M ${fromX} ${fromY}`,
+						`L ${midX} ${fromY}`,
+						`L ${midX} ${toY}`,
+						`L ${entryX} ${toY}`,
+						`L ${toX} ${toY}`
+					];
+				} else {
+					const exitX = fromX + MARKER_OFFSET;
+					const entryX = toX - MARKER_OFFSET;
+					
+					pathSegments = [
+						`M ${fromX} ${fromY}`,
+						`L ${exitX} ${fromY}`,
+						`L ${exitX} ${toY}`,
+						`L ${entryX} ${toY}`,
+						`L ${toX} ${toY}`
+					];
+				}
 			} else {
-				// From table is to the RIGHT of target table - connect from LEFT edge to RIGHT edge
-				fromX = fromInfo.leftEdge;  // Connect from left edge of source
-				toX = toInfo.rightEdge;     // Connect to right edge of destination
+				// RIGHT->LEFT
+				fromX = fromInfo.leftEdge;
+				toX = toInfo.rightEdge;
+				fromDirection = 'left';
+				toDirection = 'right';
+				
+				const verticalSeparation = Math.abs(fromY - toY);
+				const horizontalSeparation = fromX - toX;
+				
+				if (verticalSeparation > 250) {
+					const minHorizontalFirst = Math.max(MARKER_OFFSET, horizontalSeparation * 0.4);
+					const midX = fromX - minHorizontalFirst;
+					const entryX = toX + MARKER_OFFSET;
+					
+					pathSegments = [
+						`M ${fromX} ${fromY}`,
+						`L ${midX} ${fromY}`,
+						`L ${midX} ${toY}`,
+						`L ${entryX} ${toY}`,
+						`L ${toX} ${toY}`
+					];
+				} else {
+					const exitX = fromX - MARKER_OFFSET;
+					const entryX = toX + MARKER_OFFSET;
+					
+					pathSegments = [
+						`M ${fromX} ${fromY}`,
+						`L ${exitX} ${fromY}`,
+						`L ${exitX} ${toY}`,
+						`L ${entryX} ${toY}`,
+						`L ${toX} ${toY}`
+					];
+				}
 			}
 
-			const midX = (fromX + toX) / 2;
-			const pathData = `M ${fromX} ${fromY} L ${midX} ${fromY} L ${midX} ${toY} L ${toX} ${toY}`;
+			const pathData = pathSegments.join(' ');
 			line.setAttribute('d', pathData);
+			
+			// Recreate crow's feet at new positions with proper relationship analysis
+			const svg = document.getElementById('schema-svg');
+			const fromCrowsFoot = drawCrowsFootNotation(svg, fromX, fromY, fromDirection, relationship, true);
+			const toCrowsFoot = drawCrowsFootNotation(svg, toX, toY, toDirection, relationship, false);
+			
+			// Add data attributes to track crow's feet
+			fromCrowsFoot.setAttribute('data-from', from);
+			fromCrowsFoot.setAttribute('data-to', to);
+			fromCrowsFoot.setAttribute('data-property', propertyName);
+			
+			toCrowsFoot.setAttribute('data-from', from);
+			toCrowsFoot.setAttribute('data-to', to);
+			toCrowsFoot.setAttribute('data-property', propertyName);
+			
+			// Apply same styling to crow's feet as the relationship line
+			const lineClasses = Array.from(line.classList);
+			if (lineClasses.includes('highlighted')) {
+				fromCrowsFoot.classList.add('highlighted');
+				toCrowsFoot.classList.add('highlighted');
+			} else if (lineClasses.includes('dimmed')) {
+				fromCrowsFoot.classList.add('dimmed');
+				toCrowsFoot.classList.add('dimmed');
+			}
 		}
 
 		line.classList.remove('highlighted', 'dimmed', 'hidden');
@@ -391,24 +704,37 @@ function updateRelationships() {
 		} else {
 			line.style.display = 'block';
 
-			// Reconstruct relationship analysis for marker updates
-			const relationship = { type: relationshipType, fromOptional: false, toOptional: false };
-
 			if (showOnlySelectedRelations && selectedTable) {
 				if (from === selectedTable || to === selectedTable) {
 					line.classList.add('highlighted');
-					// Use highlighted crow's foot markers
-					const markers = getCrowsFootMarkersHighlighted(relationship);
-					line.setAttribute('marker-start', markers.fromSide);
-					line.setAttribute('marker-end', markers.toSide);
 				} else {
 					line.classList.add('dimmed');
 				}
+			}
+		}
+	});
+	
+	// Update crow's feet visibility to match relationship lines
+	document.querySelectorAll('.crows-foot-notation').forEach(cf => {
+		const from = cf.getAttribute('data-from');
+		const to = cf.getAttribute('data-to');
+		
+		if (!showRelationships) {
+			cf.style.display = 'none';
+		} else {
+			cf.style.display = 'block';
+			
+			// Apply highlighting/dimming based on selected table
+			if (showOnlySelectedRelations && selectedTable) {
+				if (from === selectedTable || to === selectedTable) {
+					cf.classList.add('highlighted');
+					cf.classList.remove('dimmed');
+				} else {
+					cf.classList.add('dimmed');
+					cf.classList.remove('highlighted');
+				}
 			} else {
-				// Use normal crow's foot markers
-				const markers = getCrowsFootMarkers(relationship);
-				line.setAttribute('marker-start', markers.fromSide);
-				line.setAttribute('marker-end', markers.toSide);
+				cf.classList.remove('highlighted', 'dimmed');
 			}
 		}
 	});

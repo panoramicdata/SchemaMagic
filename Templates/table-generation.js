@@ -116,22 +116,22 @@ function generateTable(svg, entity, x, y) {
 			// Check if we need a section divider
 			const firstProp = item.properties[0];
 			if (lastPropertyWasInherited && !firstProp.isInherited) {
-				// Add section divider line
+				// Add section divider line - adjusted Y position to be closer to properties
 				const divider = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-				divider.setAttribute('x1', x + 10); // Increased from 4 to 10 (2.5x larger)
-				divider.setAttribute('y1', currentY - 10); // Increased from 4 to 10 (2.5x larger)
-				divider.setAttribute('x2', x + tableWidth - 10); // Increased from 4 to 10 (2.5x larger)
-				divider.setAttribute('y2', currentY - 10); // Increased from 4 to 10 (2.5x larger)
+				divider.setAttribute('x1', x + 10);
+				divider.setAttribute('y1', currentY - 5); // Changed from -10 to -5 to move it down
+				divider.setAttribute('x2', x + tableWidth - 10);
+				divider.setAttribute('y2', currentY - 5); // Changed from -10 to -5 to move it down
 				divider.classList.add('section-divider');
 				tableGroup.appendChild(divider);
 			}
 
 			// Draw group background with proper positioning
 			const groupRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-			groupRect.setAttribute('x', x + 5); // Increased from 2 to 5 (2.5x larger)
-			groupRect.setAttribute('y', currentY - 10); // Increased from 4 to 10 (2.5x larger)
-			groupRect.setAttribute('width', tableWidth - 10); // Increased from 4 to 10 (2.5x larger)
-			groupRect.setAttribute('height', item.properties.length * rowHeight + 10); // Increased from 4 to 10 (2.5x larger)
+			groupRect.setAttribute('x', x + 5);
+			groupRect.setAttribute('y', currentY - 10);
+			groupRect.setAttribute('width', tableWidth - 10);
+			groupRect.setAttribute('height', item.properties.length * rowHeight + 10);
 			groupRect.classList.add('property-group');
 			if (firstProp.isInherited) {
 				groupRect.classList.add('inherited-section');
@@ -143,10 +143,10 @@ function generateTable(svg, entity, x, y) {
 				item.properties[0].isForeignKey &&
 				isNavigationProperty(item.properties[1])) {
 				const connectLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-				connectLine.setAttribute('x1', x + 25); // Increased from 10 to 25 (2.5x larger)
-				connectLine.setAttribute('y1', currentY + 10); // Increased from 4 to 10 (2.5x larger)
-				connectLine.setAttribute('x2', x + 25); // Increased from 10 to 25 (2.5x larger)
-				connectLine.setAttribute('y2', currentY + rowHeight + 10); // Increased from 4 to 10 (2.5x larger)
+				connectLine.setAttribute('x1', x + 25);
+				connectLine.setAttribute('y1', currentY + 10);
+				connectLine.setAttribute('x2', x + 25);
+				connectLine.setAttribute('y2', currentY + rowHeight + 10);
 				connectLine.classList.add('fk-nav-connector');
 				tableGroup.appendChild(connectLine);
 			}
@@ -156,12 +156,12 @@ function generateTable(svg, entity, x, y) {
 		} else {
 			// Check if we need a section divider
 			if (lastPropertyWasInherited && !item.property.isInherited) {
-				// Add section divider line
+				// Add section divider line - adjusted Y position to be closer to properties
 				const divider = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-				divider.setAttribute('x1', x + 10); // Increased from 4 to 10 (2.5x larger)
-				divider.setAttribute('y1', currentY - 10); // Increased from 4 to 10 (2.5x larger)
-				divider.setAttribute('x2', x + tableWidth - 10); // Increased from 4 to 10 (2.5x larger)
-				divider.setAttribute('y2', currentY - 10); // Increased from 4 to 10 (2.5x larger)
+				divider.setAttribute('x1', x + 10);
+				divider.setAttribute('y1', currentY - 5); // Changed from -10 to -5 to move it down
+				divider.setAttribute('x2', x + tableWidth - 10);
+				divider.setAttribute('y2', currentY - 5); // Changed from -10 to -5 to move it down
 				divider.classList.add('section-divider');
 				tableGroup.appendChild(divider);
 			}
@@ -183,40 +183,16 @@ function generateTable(svg, entity, x, y) {
 	}
 	tableGroup.appendChild(headerRect);
 
-	// Add table icon if rule matched - positioned in top-left of header
-	if (matchingRule && matchingRule.icon) {
-		const iconGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-		iconGroup.classList.add('table-icon');
-		
-		// Create FontAwesome icon using foreignObject to embed HTML
-		const iconForeignObject = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-		iconForeignObject.setAttribute('x', x + 10);
-		iconForeignObject.setAttribute('y', y + 10);
-		iconForeignObject.setAttribute('width', '32');
-		iconForeignObject.setAttribute('height', '32');
-		
-		const iconDiv = document.createElement('div');
-		iconDiv.style.width = '32px';
-		iconDiv.style.height = '32px';
-		iconDiv.style.display = 'flex';
-		iconDiv.style.alignItems = 'center';
-		iconDiv.style.justifyContent = 'center';
-		iconDiv.style.color = 'white';
-		iconDiv.style.fontSize = '20px';
-		iconDiv.innerHTML = `<i class="${matchingRule.icon}"></i>`;
-		
-		iconForeignObject.appendChild(iconDiv);
-		iconGroup.appendChild(iconForeignObject);
-		tableGroup.appendChild(iconGroup);
-	}
+	// Table icon removed - it was broken and not needed
 
 	// THIRD: Draw the header and title (these will appear ON TOP of the property groups) - all tables use same style now
 	const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-	// Shift title right if there's an icon
-	const titleX = matchingRule && matchingRule.icon ? x + tableWidth / 2 + 20 : x + tableWidth / 2;
+	// Center title normally (no icon offset needed)
+	const titleX = x + tableWidth / 2;
 	titleText.setAttribute('x', titleX);
-	titleText.setAttribute('y', y + headerHeight / 2 + 18);
+	titleText.setAttribute('y', y + headerHeight / 2 + 5); // Changed from +18 to +5 for better vertical centering
 	titleText.setAttribute('text-anchor', 'middle');
+	titleText.setAttribute('dominant-baseline', 'middle'); // Add this for proper vertical centering
 	titleText.classList.add('table-title');
 	titleText.textContent = entity.type;
 	
@@ -360,9 +336,9 @@ function renderProperty(tableGroup, property, x, propY, tableWidth, padding, ico
 			if (propertyIcon === 'FK' && property.isForeignKey) {
 				element.style.cursor = 'pointer';
 				element.addEventListener('click', () => {
-					const targetType = getNavigationTargetType(property.name, entityName);
-					if (targetType) {
-						navigateToEntity(targetType);
+					const target = getNavigationTargetType(property.name, entityName);
+					if (target) {
+						navigateToEntity(target);
 					}
 				});
 			}
@@ -390,9 +366,9 @@ function renderProperty(tableGroup, property, x, propY, tableWidth, padding, ico
 		// Add click handler for FK property names too
 		propText.style.cursor = 'pointer';
 		propText.addEventListener('click', () => {
-			const targetType = getNavigationTargetType(property.name, entityName);
-			if (targetType) {
-				navigateToEntity(targetType);
+			const target = getNavigationTargetType(property.name, entityName);
+			if (target) {
+				navigateToEntity(target);
 			}
 		});
 	} else if (isNavigationProperty(property)) {
@@ -616,4 +592,34 @@ function clearTableSelection() {
 	if (selectedTable) {
 		deselectTable();
 	}
+}
+
+function moveTable(tableGroup, x, y) {
+	const oldRect = tableGroup.querySelector('.table-box');
+	const oldX = parseFloat(oldRect.getAttribute('x'));
+	const oldY = parseFloat(oldRect.getAttribute('y'));
+	const deltaX = x - oldX;
+	const deltaY = y - oldY;
+
+	// Update all rect, text, and line elements
+	const elements = tableGroup.querySelectorAll('rect, text, line');
+	elements.forEach(element => {
+		if (element.tagName === 'line') {
+			// Handle line elements
+			const x1 = parseFloat(element.getAttribute('x1'));
+			const y1 = parseFloat(element.getAttribute('y1'));
+			const x2 = parseFloat(element.getAttribute('x2'));
+			const y2 = parseFloat(element.getAttribute('y2'));
+			element.setAttribute('x1', x1 + deltaX);
+			element.setAttribute('y1', y1 + deltaY);
+			element.setAttribute('x2', x2 + deltaX);
+			element.setAttribute('y2', y2 + deltaY);
+		} else {
+			// Handle rect and text elements
+			const currentX = parseFloat(element.getAttribute('x'));
+			const currentY = parseFloat(element.getAttribute('y'));
+			element.setAttribute('x', currentX + deltaX);
+			element.setAttribute('y', currentY + deltaY);
+		}
+	});
 }

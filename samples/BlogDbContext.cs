@@ -34,7 +34,12 @@ public class BlogDbContext : DbContext
                   .HasForeignKey(e => e.BlogId);
             entity.HasOne(e => e.Author)
                   .WithMany(e => e.Posts)
-                  .HasForeignKey(e => e.AuthorId);
+                  .HasForeignKey(e => e.AuthorId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(e => e.ReviewedBy)
+                  .WithMany()
+                  .HasForeignKey(e => e.ReviewedById)
+                  .OnDelete(DeleteBehavior.SetNull); // 0..1 relationship with optional reviewer
         });
 
         // Configure Author entity
@@ -92,10 +97,12 @@ public class Post
     // Foreign keys
     public int BlogId { get; set; }
     public int AuthorId { get; set; }
+    public int? ReviewedById { get; set; } // 0..1 relationship - post may not be reviewed yet
 
     // Navigation properties
     public virtual Blog Blog { get; set; } = null!;
     public virtual Author Author { get; set; } = null!;
+    public virtual Author? ReviewedBy { get; set; } // Author who reviewed the post (optional)
     public virtual ICollection<PostTag> PostTags { get; set; } = new List<PostTag>();
 }
 

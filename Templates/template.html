@@ -117,42 +117,55 @@
 
 		<div class="schema-container" id="schema-container">
 			<svg id="schema-svg" viewBox="0 0 20000 15000">
+				<![CDATA[
 				<defs>
 					<!-- Crow's Foot Notation Markers -->
-					<marker id="one-side" markerWidth="12" markerHeight="8" refX="12" refY="4" orient="auto" markerUnits="strokeWidth">
-						<line x1="4" y1="0" x2="4" y2="8" stroke="#2563eb" stroke-width="2" />
+					<!-- One side: single vertical line | with horizontal offset from connection point -->
+					<marker id="one-side" markerWidth="30" markerHeight="20" refX="-10" refY="10" orient="auto" overflow="visible">
+						<line x1="10" y1="5" x2="10" y2="15" stroke="#2563eb" stroke-width="2.5" />
 					</marker>
-					<marker id="one-side-highlighted" markerWidth="12" markerHeight="8" refX="12" refY="4" orient="auto" markerUnits="strokeWidth">
-						<line x1="4" y1="0" x2="4" y2="8" stroke="#764ba2" stroke-width="2" />
+					<marker id="one-side-highlighted" markerWidth="30" markerHeight="20" refX="-10" refY="10" orient="auto" overflow="visible">
+						<line x1="10" y1="5" x2="10" y2="15" stroke="#764ba2" stroke-width="2.5" />
 					</marker>
-					<marker id="many-side" markerWidth="16" markerHeight="12" refX="0" refY="6" orient="auto" markerUnits="strokeWidth">
-						<path d="M 0 0 L 8 6 L 0 12" stroke="#2563eb" stroke-width="2" fill="none" />
+					
+					<!-- Many side: crow's foot >| with horizontal offset from connection point -->
+					<marker id="many-side" markerWidth="30" markerHeight="20" refX="-10" refY="10" orient="auto" overflow="visible">
+						<path d="M 0 10 L 10 5 M 0 10 L 10 15" stroke="#2563eb" stroke-width="2.5" fill="none" />
+						<line x1="10" y1="5" x2="10" y2="15" stroke="#2563eb" stroke-width="2.5" />
 					</marker>
-					<marker id="many-side-highlighted" markerWidth="16" markerHeight="12" refX="0" refY="6" orient="auto" markerUnits="strokeWidth">
-						<path d="M 0 0 L 8 6 L 0 12" stroke="#764ba2" stroke-width="2" fill="none" />
+					<marker id="many-side-highlighted" markerWidth="30" markerHeight="20" refX="-10" refY="10" orient="auto" overflow="visible">
+						<path d="M 0 10 L 10 5 M 0 10 L 10 15" stroke="#764ba2" stroke-width="2.5" fill="none" />
+						<line x1="10" y1="5" x2="10" y2="15" stroke="#764ba2" stroke-width="2.5" />
 					</marker>
-					<marker id="one-optional-side" markerWidth="18" markerHeight="8" refX="18" refY="4" orient="auto" markerUnits="strokeWidth">
-						<circle cx="9" cy="4" r="2.5" stroke="#2563eb" stroke-width="1.5" fill="white" />
-						<line x1="4" y1="0" x2="4" y2="8" stroke="#2563eb" stroke-width="2" />
+					
+					<!-- One optional side: circle with line o| with horizontal offset -->
+					<marker id="one-optional-side" markerWidth="40" markerHeight="20" refX="-5" refY="10" orient="auto" overflow="visible">
+						<circle cx="10" cy="10" r="4" stroke="#2563eb" stroke-width="2" fill="white" />
+						<line x1="20" y1="5" x2="20" y2="15" stroke="#2563eb" stroke-width="2.5" />
 					</marker>
-					<marker id="one-optional-side-highlighted" markerWidth="18" markerHeight="8" refX="18" refY="4" orient="auto" markerUnits="strokeWidth">
-						<circle cx="9" cy="4" r="2.5" stroke="#764ba2" stroke-width="1.5" fill="white" />
-						<line x1="4" y1="0" x2="4" y2="8" stroke="#764ba2" stroke-width="2" />
+					<marker id="one-optional-side-highlighted" markerWidth="40" markerHeight="20" refX="-5" refY="10" orient="auto" overflow="visible">
+						<circle cx="10" cy="10" r="4" stroke="#764ba2" stroke-width="2" fill="white" />
+						<line x1="20" y1="5" x2="20" y2="15" stroke="#764ba2" stroke-width="2.5" />
 					</marker>
-					<marker id="many-optional-side" markerWidth="22" markerHeight="12" refX="0" refY="6" orient="auto" markerUnits="strokeWidth">
-						<circle cx="11" cy="6" r="2.5" stroke="#2563eb" stroke-width="1.5" fill="white" />
-						<path d="M 0 0 L 8 6 L 0 12" stroke="#2563eb" stroke-width="2" fill="none" />
+					
+					<!-- Many optional side: circle with crow's foot o>| with horizontal offset -->
+					<marker id="many-optional-side" markerWidth="45" markerHeight="20" refX="-5" refY="10" orient="auto" overflow="visible">
+						<circle cx="10" cy="10" r="4" stroke="#2563eb" stroke-width="2" fill="white" />
+						<path d="M 15 10 L 25 5 M 15 10 L 25 15" stroke="#2563eb" stroke-width="2.5" fill="none" />
+						<line x1="25" y1="5" x2="25" y2="15" stroke="#2563eb" stroke-width="2.5" />
 					</marker>
-					<marker id="many-optional-side-highlighted" markerWidth="22" markerHeight="12" refX="0" refY="6" orient="auto" markerUnits="strokeWidth">
-						<circle cx="11" cy="6" r="2.5" stroke="#764ba2" stroke-width="1.5" fill="white" />
-						<path d="M 0 0 L 8 6 L 0 12" stroke="#764ba2" stroke-width="2" fill="none" />
+					<marker id="many-optional-side-highlighted" markerWidth="45" markerHeight="20" refX="-5" refY="10" orient="auto" overflow="visible">
+						<circle cx="10" cy="10" r="4" stroke="#764ba2" stroke-width="2" fill="white" />
+						<path d="M 15 10 L 25 5 M 15 10 L 25 15" stroke="#764ba2" stroke-width="2.5" fill="none" />
+						<line x1="25" y1="5" x2="25" y2="15" stroke="#764ba2" stroke-width="2.5" />
 					</marker>
+					
 					<!-- Grid pattern -->
 					<pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse">
 						<circle cx="25" cy="25" r="2.5" class="grid-pattern" />
 					</pattern>
 				</defs>
-
+]]>
 				<rect id="grid-background" width="100%" height="100%" fill="url(#grid)" style="display: none;" />
 				<rect class="boundary-indicator" x="125" y="125" width="19750" height="14750" style="display: none;" id="boundary-rect" />
 				<rect id="background-pan-area" width="100%" height="100%" fill="transparent" style="cursor: grab;" />

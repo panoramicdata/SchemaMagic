@@ -7,6 +7,18 @@ public class SimpleTestDbContext : DbContext
 {
 	public DbSet<Company> Companies { get; set; }
 	public DbSet<User> Users { get; set; }
+
+	protected override void OnModelCreating(ModelBuilder modelBuilder)
+	{
+		// User self-referencing relationship for manager hierarchy
+		modelBuilder.Entity<User>()
+			.HasOne(u => u.Manager)
+			.WithMany(u => u.DirectReports)
+			.HasForeignKey(u => u.ManagerId)
+			.OnDelete(DeleteBehavior.Restrict);
+
+		base.OnModelCreating(modelBuilder);
+	}
 }
 
 /// <summary>
@@ -63,6 +75,17 @@ public class Company
 
 	[Comment("Last modification timestamp")]
 	public DateTime? UpdatedAt { get; set; }
+
+	/// <summary>
+	/// Foreign key to primary contact person (optional 0..1 relationship)
+	/// </summary>
+	[Comment("Foreign key to primary contact User - may be null for new companies")]
+	public int? PrimaryContactId { get; set; }
+
+	/// <summary>
+	/// Navigation property to primary contact user
+	/// </summary>
+	public User? PrimaryContact { get; set; }
 
 	/// <summary>
 	/// Collection of all employees working for this company

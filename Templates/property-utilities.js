@@ -5,11 +5,16 @@ function getPropertyIcon(property) {
 }
 
 function getPropertyLevelIcon(property) {
-	if (property.isInherited) return 'INH';
+	// Primary keys ALWAYS show PK, even if inherited
 	if (property.isKey) return 'PK';
+	// Then check for inherited (non-PK properties)
+	if (property.isInherited) return 'INH';
+	// Then foreign keys
 	if (property.isForeignKey) return 'FK';
+	// Then navigation properties
 	if (isNavigationProperty(property)) return 'N';
-	return null; // No property-level icon for regular properties
+	// No icon for regular properties
+	return null;
 }
 
 function getTypeIcon(type) {
@@ -95,11 +100,17 @@ function getTypeColorClass(type) {
 
 function sortProperties(properties) {
 	return properties.sort((a, b) => {
-		// Primary sort: inherited properties first
+		// FIRST: Id (case-insensitive) always comes first
+		const aIsId = a.name.toLowerCase() === 'id';
+		const bIsId = b.name.toLowerCase() === 'id';
+		if (aIsId && !bIsId) return -1;
+		if (!aIsId && bIsId) return 1;
+		
+		// SECOND: Inherited properties come before regular properties
 		if (a.isInherited && !b.isInherited) return -1;
 		if (!a.isInherited && b.isInherited) return 1;
 
-		// Secondary sort: alphabetical within each group
+		// THIRD: Alphabetical within each group
 		return a.name.localeCompare(b.name);
 	});
 }

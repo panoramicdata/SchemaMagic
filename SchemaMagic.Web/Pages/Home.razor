@@ -159,31 +159,77 @@
 
                             @if (dbContextFiles.Count > 1)
                             {
+                                <!-- Clear visual separator and instruction -->
+                                <div class="alert alert-info mb-3" role="alert">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-arrow-down-circle-fill me-2 fs-3 text-primary"></i>
+                                        <div>
+                                            <strong class="fs-5">Next Step: Choose a DbContext File</strong>
+                                            <p class="mb-0 mt-1">Select which DbContext you'd like to visualize from the dropdown below.</p>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="mb-3">
-                                    <label for="dbContextSelect" class="form-label fw-bold">
+                                    <label for="dbContextSelect" class="form-label fw-bold fs-5">
                                         <i class="bi bi-file-code"></i> Select DbContext to Analyze
+                                        <span class="badge bg-danger ms-2">Required</span>
                                     </label>
-                                    <select class="form-select form-select-lg"
+                                    <select class="form-select form-select-lg @(string.IsNullOrEmpty(selectedDbContextPath) ? "border-warning border-3" : "border-success border-2")"
                                             id="dbContextSelect"
                                             @bind="selectedDbContextPath"
                                             disabled="@isAnalyzing">
-                                        <option value="">Choose a DbContext file...</option>
+                                        <option value="">?? Choose a DbContext file...</option>
                                         @foreach (var file in dbContextFiles)
                                         {
                                             <option value="@file.FilePath">@file.FileName - @file.FilePath</option>
                                         }
                                     </select>
+                                    @if (string.IsNullOrEmpty(selectedDbContextPath))
+                                    {
+                                        <div class="form-text text-warning fw-bold">
+                                            <i class="bi bi-exclamation-triangle-fill me-1"></i>
+                                            Please select a DbContext file from the dropdown to continue
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <div class="form-text text-success">
+                                            <i class="bi bi-check-circle-fill me-1"></i>
+                                            Selected: <code>@selectedDbContextPath</code>
+                                        </div>
+                                    }
                                 </div>
 
+                                <!-- Visual indicator before button -->
+                                @if (!string.IsNullOrEmpty(selectedDbContextPath))
+                                {
+                                    <div class="alert alert-success mb-3" role="alert">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-arrow-down-circle-fill me-2 fs-3"></i>
+                                            <div>
+                                                <strong class="fs-5">Ready to Generate!</strong>
+                                                <p class="mb-0 mt-1">Click the button below to create your interactive schema.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+
                                 <div class="d-grid gap-2">
-                                    <button class="btn btn-success btn-lg"
+                                    <button class="btn btn-lg @(string.IsNullOrEmpty(selectedDbContextPath) ? "btn-secondary" : "btn-success")"
                                             type="button"
                                             @onclick="AnalyzeSchemaAsync"
-                                            disabled="@(isAnalyzing || string.IsNullOrEmpty(selectedDbContextPath))">
+                                            disabled="@(isAnalyzing || string.IsNullOrEmpty(selectedDbContextPath))"
+                                            style="@(string.IsNullOrEmpty(selectedDbContextPath) ? "opacity: 0.5; cursor: not-allowed;" : "")">
                                         @if (isAnalyzing)
                                         {
                                             <span class="spinner-border spinner-border-sm me-2" role="status"></span>
                                             <span>Analyzing Schema...</span>
+                                        }
+                                        else if (string.IsNullOrEmpty(selectedDbContextPath))
+                                        {
+                                            <i class="bi bi-lock-fill me-2"></i>
+                                            <span>Select a DbContext First</span>
                                         }
                                         else
                                         {
@@ -192,6 +238,16 @@
                                         }
                                     </button>
                                 </div>
+
+                                @if (string.IsNullOrEmpty(selectedDbContextPath))
+                                {
+                                    <div class="text-center text-muted mt-2">
+                                        <small>
+                                            <i class="bi bi-info-circle"></i>
+                                            The generate button will be enabled once you select a DbContext file
+                                        </small>
+                                    </div>
+                                }
                             }
                             else
                             {
