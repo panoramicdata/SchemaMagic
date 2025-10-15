@@ -665,9 +665,17 @@ public static partial class CoreSchemaAnalysisService
 			Console.WriteLine($"   FK properties: {string.Join(", ", entityForeignKeys)}");
 		}
 
+		// FIXED: Include ALL properties with getters - auto-implemented, expression-bodied, explicit, init-only, required, etc.
 		var propertyDeclarations = entityClass.Members
 			.OfType<PropertyDeclarationSyntax>()
-			.Where(p => p.AccessorList?.Accessors.Any(a => a.IsKind(SyntaxKind.GetAccessorDeclaration)) == true);
+			.Where(p => 
+				// Has explicit accessor list with a getter or init
+				(p.AccessorList?.Accessors.Any(a => 
+					a.Kind() == SyntaxKind.GetAccessorDeclaration || 
+					a.Kind() == SyntaxKind.InitAccessorDeclaration) == true) ||
+				// OR is an expression-bodied property (no accessor list)
+				p.ExpressionBody != null
+			);
 
 		foreach (var property in propertyDeclarations)
 		{
