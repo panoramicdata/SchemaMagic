@@ -30,8 +30,6 @@ Transform your Entity Framework DbContexts into beautiful, interactive schema di
 - 🐙 **GitHub Integration**: Analyze repositories directly without cloning
 - 🌙 **Dark Mode Support**: Automatic dark mode based on system preferences
 
-![SchemaMagic Demo](https://github.com/panoramicdata/SchemaMagic/raw/main/docs/demo.gif)
-
 ## 🚀 Quick Start
 
 ### Option 1: Web Application (No Installation)
