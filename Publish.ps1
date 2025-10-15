@@ -155,6 +155,17 @@ if ($DryRun) {
         exit 1
     }
     Write-Success "Git tag created: $tagName"
+    
+    # Push tag to remote to trigger CI/CD
+    Write-Info "Pushing tag to remote (this will trigger CI/CD pipeline)..."
+    git push origin $tagName
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to push tag to remote"
+        Write-Warning "You may need to push manually: git push origin $tagName"
+        exit 1
+    }
+    Write-Success "Tag pushed to remote - CI/CD pipeline will start automatically"
+    Write-Info "View pipeline at: https://github.com/panoramicdata/SchemaMagic/actions"
 }
 
 # Publish to NuGet if requested
@@ -196,18 +207,9 @@ if ($PublishToNuGet) {
         Write-Success "Package published to NuGet.org"
         Write-Info "View at: https://www.nuget.org/packages/SchemaMagic/$version"
     }
-}
-
-# Push tag to remote
-if ($PublishToNuGet -and -not $DryRun) {
-    Write-Info "Pushing tag to remote..."
-    git push origin $tagName
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Failed to push tag to remote. You may need to push manually:"
-        Write-Host "  git push origin $tagName" -ForegroundColor Yellow
-    } else {
-        Write-Success "Tag pushed to remote"
-    }
+} else {
+    Write-Info "Skipping NuGet publish (use -PublishToNuGet to publish)"
+    Write-Warning "Note: CI/CD pipeline will handle NuGet publishing automatically"
 }
 
 # Summary
@@ -219,12 +221,17 @@ Write-Success "Package: SchemaMagic/nupkg/SchemaMagic.$fullVersion.nupkg"
 if ($DryRun) {
     Write-Warning "DRY RUN - No changes were made"
 } else {
+    Write-Success "Tag pushed to remote - CI/CD will now:"
+    Write-Info "  1. Run all tests"
+    Write-Info "  2. Build and publish to NuGet"
+    Write-Info "  3. Create GitHub Release"
+    Write-Info "  4. Deploy web application"
+    Write-Info ""
+    Write-Info "Monitor progress at: https://github.com/panoramicdata/SchemaMagic/actions"
+    
     if ($PublishToNuGet) {
-        Write-Success "Package published to NuGet.org"
-        Write-Info "Users can install with: dotnet tool install -g SchemaMagic --version $version"
-    } else {
-        Write-Info "Package built and tagged locally"
-        Write-Info "To publish to NuGet, run: .\Publish.ps1 -PublishToNuGet -ApiKey YOUR_KEY"
+        Write-Warning "You used -PublishToNuGet flag, but CI/CD will also publish."
+        Write-Warning "This may result in duplicate publish attempts (harmless with --skip-duplicate)"
     }
 }
 

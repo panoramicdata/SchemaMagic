@@ -2,18 +2,15 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
     tags:
       - 'v*'
-  pull_request:
-    branches: [ main ]
   workflow_dispatch:
 
 env:
   DOTNET_VERSION: '9.0.x'
 
 jobs:
-  # Test job runs on all pushes and PRs
+  # Test job runs on tag push
   test:
     runs-on: ubuntu-latest
     name: Test
