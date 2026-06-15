@@ -48,37 +48,20 @@ function Write-Error { Write-Host "? $args" -ForegroundColor Red }
 Write-Header "SchemaMagic Publishing Script"
 Write-Host "==========================================" -ForegroundColor Cyan
 
-# Check if nbgv is installed
-Write-Info "Checking for Nerdbank.GitVersioning CLI..."
-$nbgvInstalled = $null -ne (Get-Command nbgv -ErrorAction SilentlyContinue)
-
-if (-not $nbgvInstalled) {
-    Write-Warning "nbgv CLI not found. Installing..."
-    dotnet tool install -g nbgv
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to install nbgv CLI"
-        exit 1
-    }
-    Write-Success "nbgv CLI installed successfully"
-}
-
-# Get version information from nbgv
+# Get version from Nerdbank.GitVersioning via the project's MSBuild targets (the
+# referenced NuGet package), so this does not depend on the global 'nbgv' CLI tool.
 Write-Info "Determining version from git history..."
-$versionInfo = nbgv get-version -f json | ConvertFrom-Json
-
-if (-not $versionInfo) {
-    Write-Error "Failed to get version information from nbgv"
+$project = Join-Path $PSScriptRoot 'SchemaMagic/SchemaMagic.csproj'
+$buildOutput = dotnet build $project -t:GetBuildVersion --getProperty:NuGetPackageVersion -nologo -v:quiet -p:TreatWarningsAsErrors=false
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "Failed to determine version from Nerdbank.GitVersioning"
     exit 1
 }
 
-$version = $versionInfo.SimpleVersion
-$fullVersion = $versionInfo.SemVer2
-$gitHeight = $versionInfo.VersionHeight
+$version = ($buildOutput | Select-Object -Last 1).ToString().Trim()
+$fullVersion = $version
 
 Write-Success "Version determined: $fullVersion"
-Write-Info "  Major.Minor: $($versionInfo.MajorMinorVersion) (from version.json)"
-Write-Info "  Patch (Git Height): $gitHeight"
-Write-Info "  Full Version: $fullVersion"
 
 # Check for uncommitted changes
 Write-Info "Checking for uncommitted changes..."
