@@ -11,14 +11,19 @@ function generateRelationships(svg) {
 
 	Object.values(entities).forEach(entity => {
 		const fromEntityName = entity.type;
-		const foreignKeys = entity.properties.filter(p => p.isForeignKey);
+		// Include inherited FK/navigation properties (e.g. an AccountId declared on an
+		// abstract base class) so relationships defined on base types are drawn too.
+		const seenPropNames = new Set();
+		const allProps = [...(entity.properties || []), ...(entity.inheritedProperties || [])]
+			.filter(p => !seenPropNames.has(p.name) && seenPropNames.add(p.name));
+		const foreignKeys = allProps.filter(p => p.isForeignKey);
 
 		if (foreignKeys.length > 0) {
 			console.log(`🔗 Entity ${fromEntityName} has ${foreignKeys.length} foreign keys:`,
 				foreignKeys.map(fk => fk.name));
 		}
 
-		entity.properties.forEach(prop => {
+		allProps.forEach(prop => {
 			if (prop.isForeignKey) {
 				attemptedCount++;
 				console.log(`🔗 Processing FK: ${fromEntityName}.${prop.name}`);

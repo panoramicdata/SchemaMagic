@@ -617,7 +617,12 @@ function extractRelationships() {
 
 	Object.values(entities).forEach(entity => {
 		const fromEntityName = entity.type;
-		entity.properties.forEach(prop => {
+		// Include inherited FK properties so relationships declared on base classes
+		// influence the layout (keeps base-linked tables near their target).
+		const seenPropNames = new Set();
+		const allProps = [...(entity.properties || []), ...(entity.inheritedProperties || [])]
+			.filter(p => !seenPropNames.has(p.name) && seenPropNames.add(p.name));
+		allProps.forEach(prop => {
 			if (prop.isForeignKey) {
 				const targetEntityName = findTargetEntity(prop.name);
 				if (targetEntityName && entities[targetEntityName]) {
