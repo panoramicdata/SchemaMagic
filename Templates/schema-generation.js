@@ -67,9 +67,9 @@ function generateSchema() {
 }
 
 function calculateTablePositions() {
-	// Always use force-directed layout by default (auto-optimize unless saved positions exist)
-	if (typeof calculateTablePositionsWithForces === 'function') {
-		return calculateTablePositionsWithForces();
+	// Always use the smart layered layout by default (auto-layout unless saved positions exist)
+	if (typeof calculateSmartTablePositions === 'function') {
+		return calculateSmartTablePositions();
 	}
 	
 	// Fallback to basic grid layout if force-directed not available

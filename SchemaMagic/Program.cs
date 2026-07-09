@@ -10,53 +10,40 @@ internal class Program
 {
 	static async Task<int> Main(string[] args)
 	{
-		var dbContextFileArgument = new Argument<FileInfo?>(
-			name: "dbcontext-file",
-			description: "Path to the DbContext C# file (local file analysis)")
+		var dbContextFileArgument = new Argument<FileInfo?>("dbcontext-file")
 		{
+			Description = "Path to the DbContext C# file (local file analysis)",
 			Arity = ArgumentArity.ZeroOrOne
 		};
 
-		var githubRepoOption = new Option<string?>(
-			name: "--github-repo",
-			description: "GitHub repository URL to analyze (e.g., https://github.com/panoramicdata/SchemaMagic)")
+		var githubRepoOption = new Option<string?>("--github-repo")
 		{
-			IsRequired = false
+			Description = "GitHub repository URL to analyze (e.g., https://github.com/panoramicdata/SchemaMagic)"
 		};
 
-		var githubTokenOption = new Option<string?>(
-			name: "--github-token",
-			description: "GitHub Personal Access Token for private repositories or higher rate limits")
+		var githubTokenOption = new Option<string?>("--github-token")
 		{
-			IsRequired = false
+			Description = "GitHub Personal Access Token for private repositories or higher rate limits"
 		};
 
-		var outputOption = new Option<string?>(
-			name: "--output",
-			description: "Output HTML file path (default: Output/{DbContext}-Schema.html)")
+		var outputOption = new Option<string?>("--output")
 		{
-			IsRequired = false
+			Description = "Output HTML file path (default: Output/{DbContext}-Schema.html)"
 		};
 
-		var guidOption = new Option<string?>(
-			name: "--guid",
-			description: "Custom document GUID to preserve localStorage state (advanced)")
+		var guidOption = new Option<string?>("--guid")
 		{
-			IsRequired = false
+			Description = "Custom document GUID to preserve localStorage state (advanced)"
 		};
 
-		var cssFileOption = new Option<FileInfo?>(
-			name: "--css-file",
-			description: "Path to custom CSS file for styling customization")
+		var cssFileOption = new Option<FileInfo?>("--css-file")
 		{
-			IsRequired = false
+			Description = "Path to custom CSS file for styling customization"
 		};
 
-		var outputDefaultCssOption = new Option<string?>(
-			name: "--output-default-css",
-			description: "Export default CSS to file for customization (e.g., --output-default-css styles.css)")
+		var outputDefaultCssOption = new Option<string?>("--output-default-css")
 		{
-			IsRequired = false
+			Description = "Export default CSS to file for customization (e.g., --output-default-css styles.css)"
 		};
 
 		var rootCommand = new RootCommand("🎯 SchemaMagic - Interactive Entity Framework Core Schema Visualizer")
@@ -116,28 +103,36 @@ More Information:
   📦 NuGet: https://www.nuget.org/packages/SchemaMagic
 ";
 
-		rootCommand.SetHandler(async (dbContextFile, githubRepo, githubToken, output, guid, cssFile, outputDefaultCss) =>
+		rootCommand.SetAction(async (parseResult, cancellationToken) =>
 		{
+			var dbContextFile = parseResult.GetValue(dbContextFileArgument);
+			var githubRepo = parseResult.GetValue(githubRepoOption);
+			var githubToken = parseResult.GetValue(githubTokenOption);
+			var output = parseResult.GetValue(outputOption);
+			var guid = parseResult.GetValue(guidOption);
+			var cssFile = parseResult.GetValue(cssFileOption);
+			var outputDefaultCss = parseResult.GetValue(outputDefaultCssOption);
+
 			try
 			{
 				// Handle CSS export first
 				if (!string.IsNullOrEmpty(outputDefaultCss))
 				{
-					var cssOutputPath = string.IsNullOrEmpty(outputDefaultCss) || outputDefaultCss == "true" 
-						? "default-schema-styles.css" 
+					var cssOutputPath = string.IsNullOrEmpty(outputDefaultCss) || outputDefaultCss == "true"
+						? "default-schema-styles.css"
 						: outputDefaultCss;
-					
+
 					await SchemaGenerator.ExportDefaultCssAsync(cssOutputPath);
 					Console.WriteLine($"📄 Default CSS exported to: {cssOutputPath}");
 					Console.WriteLine("✨ Customize this file and use --css-file to apply your changes");
-					return;
+					return 0;
 				}
 
 				// Handle GitHub repository
 				if (!string.IsNullOrEmpty(githubRepo))
 				{
 					await ProcessGitHubRepositoryAsync(githubRepo, githubToken, output, cssFile);
-					return;
+					return 0;
 				}
 
 				// Validate required argument for schema generation from file
@@ -151,7 +146,7 @@ More Information:
 					Console.WriteLine("   CSS:    schemamagic --output-default-css");
 					Console.WriteLine();
 					Console.WriteLine("💡 Use --help for full documentation");
-					return;
+					return 1;
 				}
 
 				var htmlFile = await SchemaGenerator.GenerateSchemaAsync(dbContextFile, output, guid, cssFile);
@@ -182,14 +177,17 @@ More Information:
 					Console.WriteLine($"⚠️ Could not open browser: {ex.Message}");
 					Console.WriteLine($"✨ Open manually: {htmlFile}");
 				}
+
+				return 0;
 			}
 			catch (Exception ex)
 			{
 				Console.WriteLine($"❌ Error: {ex.Message}");
+				return 1;
 			}
-		}, dbContextFileArgument, githubRepoOption, githubTokenOption, outputOption, guidOption, cssFileOption, outputDefaultCssOption);
+		});
 
-		return await rootCommand.InvokeAsync(args);
+		return await rootCommand.Parse(args).InvokeAsync();
 	}
 
 	private static async Task ProcessGitHubRepositoryAsync(string repoUrl, string? accessToken, string? outputPath, FileInfo? cssFile)

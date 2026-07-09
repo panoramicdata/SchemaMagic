@@ -15,8 +15,8 @@ let currentZoom = 0.35; // Reduced from 1 to 0.35 - start much more zoomed out
 let isPanning = false;
 let panStart = { x: 0, y: 0 };
 let svgViewBox = { x: 0, y: 0, width: 20000, height: 15000 }; // Increased from 8000x6000 to 20000x15000
-const CANVAS_WIDTH = 20000; // Increased from 8000 to 20000 (2.5x larger)
-const CANVAS_HEIGHT = 15000; // Increased from 6000 to 15000 (2.5x larger)
+let CANVAS_WIDTH = 20000; // Default size; auto-layout may expand for very large schemas
+let CANVAS_HEIGHT = 15000; // Default size; auto-layout may expand for very large schemas
 const BOUNDARY_MARGIN = 250; // Increased from 100 to 250 (2.5x larger)
 const MAX_ZOOM = 15;
 
