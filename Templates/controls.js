@@ -98,6 +98,18 @@ function toggleToolbar() {
 	// Don't save toolbar state - it should always start visible
 }
 
+function autoLayoutTables() {
+	// Recompute the smart layout from scratch (ignores saved positions)
+	// and apply it to the rendered tables
+	const positions = computeSmartLayout(Object.keys(entities));
+	applyPositionsToTables(positions);
+
+	// Persist the new positions so they survive reloads
+	saveSettings();
+
+	console.log('🪄 Auto layout applied and saved');
+}
+
 function downloadSchema() {
 	// Generate a new GUID for the downloaded document
 	const newDocumentGuid = generateGuid();
