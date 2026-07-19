@@ -46,9 +46,9 @@ internal class Program
 			Description = "Export default CSS to file for customization (e.g., --output-default-css styles.css)"
 		};
 
-		var noOpenOption = new Option<bool>("--no-open")
+		var openOption = new Option<bool>("--open")
 		{
-			Description = "Do not open the generated HTML in the default browser (useful for CI/automation)"
+			Description = "Open the generated HTML in the default browser after generation (off by default)"
 		};
 
 		var rootCommand = new RootCommand("🎯 SchemaMagic - Interactive Entity Framework Core Schema Visualizer")
@@ -60,7 +60,7 @@ internal class Program
 			guidOption,
 			cssFileOption,
 			outputDefaultCssOption,
-			noOpenOption
+			openOption
 		};
 
 		rootCommand.Description = @"
@@ -118,7 +118,7 @@ More Information:
 			var guid = parseResult.GetValue(guidOption);
 			var cssFile = parseResult.GetValue(cssFileOption);
 			var outputDefaultCss = parseResult.GetValue(outputDefaultCssOption);
-			var noOpen = parseResult.GetValue(noOpenOption);
+			var open = parseResult.GetValue(openOption);
 
 			try
 			{
@@ -138,7 +138,7 @@ More Information:
 				// Handle GitHub repository
 				if (!string.IsNullOrEmpty(githubRepo))
 				{
-					await ProcessGitHubRepositoryAsync(githubRepo, githubToken, output, cssFile, noOpen);
+					await ProcessGitHubRepositoryAsync(githubRepo, githubToken, output, cssFile, open);
 					return 0;
 				}
 
@@ -169,7 +169,7 @@ More Information:
 					Console.WriteLine($"🎨 Custom CSS applied from: {cssFile.FullName}");
 				}
 
-				if (noOpen)
+				if (!open)
 				{
 					Console.WriteLine($"✨ Open manually: {htmlFile}");
 				}
@@ -204,7 +204,7 @@ More Information:
 		return await rootCommand.Parse(args).InvokeAsync();
 	}
 
-	private static async Task ProcessGitHubRepositoryAsync(string repoUrl, string? accessToken, string? outputPath, FileInfo? cssFile, bool noOpen)
+	private static async Task ProcessGitHubRepositoryAsync(string repoUrl, string? accessToken, string? outputPath, FileInfo? cssFile, bool open)
 	{
 		Console.WriteLine("🚀 SchemaMagic - GitHub Repository Analysis");
 		Console.WriteLine("============================================================");
@@ -304,7 +304,7 @@ More Information:
 			Console.WriteLine($"📁 Source: {dbContextFile.FilePath}");
 
 			// Open in browser (only for first file if multiple)
-			if (!noOpen && analysisResult.DbContextFiles.IndexOf(dbContextFile) == 0)
+			if (open && analysisResult.DbContextFiles.IndexOf(dbContextFile) == 0)
 			{
 				Console.WriteLine("\n🌐 Opening in browser...");
 				try
