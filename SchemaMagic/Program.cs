@@ -46,6 +46,11 @@ internal class Program
 			Description = "Export default CSS to file for customization (e.g., --output-default-css styles.css)"
 		};
 
+		var noOpenOption = new Option<bool>("--no-open")
+		{
+			Description = "Do not open the generated HTML in the default browser (useful for CI/automation)"
+		};
+
 		var rootCommand = new RootCommand("🎯 SchemaMagic - Interactive Entity Framework Core Schema Visualizer")
 		{
 			dbContextFileArgument,
@@ -54,7 +59,8 @@ internal class Program
 			outputOption,
 			guidOption,
 			cssFileOption,
-			outputDefaultCssOption
+			outputDefaultCssOption,
+			noOpenOption
 		};
 
 		rootCommand.Description = @"
@@ -112,6 +118,7 @@ More Information:
 			var guid = parseResult.GetValue(guidOption);
 			var cssFile = parseResult.GetValue(cssFileOption);
 			var outputDefaultCss = parseResult.GetValue(outputDefaultCssOption);
+			var noOpen = parseResult.GetValue(noOpenOption);
 
 			try
 			{
@@ -131,7 +138,7 @@ More Information:
 				// Handle GitHub repository
 				if (!string.IsNullOrEmpty(githubRepo))
 				{
-					await ProcessGitHubRepositoryAsync(githubRepo, githubToken, output, cssFile);
+					await ProcessGitHubRepositoryAsync(githubRepo, githubToken, output, cssFile, noOpen);
 					return 0;
 				}
 
@@ -162,20 +169,27 @@ More Information:
 					Console.WriteLine($"🎨 Custom CSS applied from: {cssFile.FullName}");
 				}
 
-				Console.WriteLine("🌐 Opening in browser...");
-				try
+				if (noOpen)
 				{
-					var psi = new ProcessStartInfo
-					{
-						FileName = htmlFile,
-						UseShellExecute = true
-					};
-					Process.Start(psi);
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine($"⚠️ Could not open browser: {ex.Message}");
 					Console.WriteLine($"✨ Open manually: {htmlFile}");
+				}
+				else
+				{
+					Console.WriteLine("🌐 Opening in browser...");
+					try
+					{
+						var psi = new ProcessStartInfo
+						{
+							FileName = htmlFile,
+							UseShellExecute = true
+						};
+						Process.Start(psi);
+					}
+					catch (Exception ex)
+					{
+						Console.WriteLine($"⚠️ Could not open browser: {ex.Message}");
+						Console.WriteLine($"✨ Open manually: {htmlFile}");
+					}
 				}
 
 				return 0;
@@ -190,7 +204,7 @@ More Information:
 		return await rootCommand.Parse(args).InvokeAsync();
 	}
 
-	private static async Task ProcessGitHubRepositoryAsync(string repoUrl, string? accessToken, string? outputPath, FileInfo? cssFile)
+	private static async Task ProcessGitHubRepositoryAsync(string repoUrl, string? accessToken, string? outputPath, FileInfo? cssFile, bool noOpen)
 	{
 		Console.WriteLine("🚀 SchemaMagic - GitHub Repository Analysis");
 		Console.WriteLine("============================================================");
@@ -290,7 +304,7 @@ More Information:
 			Console.WriteLine($"📁 Source: {dbContextFile.FilePath}");
 
 			// Open in browser (only for first file if multiple)
-			if (analysisResult.DbContextFiles.IndexOf(dbContextFile) == 0)
+			if (!noOpen && analysisResult.DbContextFiles.IndexOf(dbContextFile) == 0)
 			{
 				Console.WriteLine("\n🌐 Opening in browser...");
 				try
