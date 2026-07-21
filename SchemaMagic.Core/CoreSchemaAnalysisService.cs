@@ -691,13 +691,17 @@ public static partial class CoreSchemaAnalysisService
 			// Extract comment from [Comment] attribute or XML documentation
 			var comment = ExtractPropertyComment(property);
 
+			// Extract max length from [MaxLength]/[StringLength] attributes (MS-21560)
+			var maxLength = ExtractPropertyMaxLength(property);
+
 			var propertyInfo = new PropertyInfo
 			{
 				Name = propertyName,
 				Type = propertyType, // Now includes '?' if nullable
 				IsKey = IsKeyProperty(propertyName, entityName),
 				IsForeignKey = isForeignKey,
-				Comment = comment
+				Comment = comment,
+				MaxLength = maxLength
 			};
 
 			var commentInfo = string.IsNullOrEmpty(comment) ? "" : $", Comment: \"{comment}\"";
@@ -751,6 +755,32 @@ public static partial class CoreSchemaAnalysisService
 
 				return string.IsNullOrWhiteSpace(summaryText) ? null : summaryText;
 			}
+		}
+
+		return null;
+	}
+
+	private static int? ExtractPropertyMaxLength(PropertyDeclarationSyntax property)
+	{
+		// [MaxLength(n)] takes a single length argument; [StringLength(n)] takes the maximum length
+		// as its first positional argument. Both are honoured by EF Core for the column length.
+		var lengthAttribute = property.AttributeLists
+			.SelectMany(al => al.Attributes)
+			.FirstOrDefault(a =>
+			{
+				var name = a.Name.ToString();
+				return name is "MaxLength" or "StringLength"
+					|| name.EndsWith(".MaxLength", StringComparison.Ordinal)
+					|| name.EndsWith(".StringLength", StringComparison.Ordinal);
+			});
+
+		var firstArgument = lengthAttribute?.ArgumentList?.Arguments.FirstOrDefault();
+		if (firstArgument?.Expression is LiteralExpressionSyntax literal
+			&& literal.IsKind(SyntaxKind.NumericLiteralExpression)
+			&& int.TryParse(literal.Token.ValueText, out var length)
+			&& length > 0)
+		{
+			return length;
 		}
 
 		return null;

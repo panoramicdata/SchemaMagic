@@ -161,6 +161,29 @@ function groupPropertiesWithNavigation(visibleProperties, allProperties) {
 	return grouped;
 }
 
+// Build the type text shown in the type column. Navigation collection wrappers are stripped,
+// and scalar columns with a max length (from [MaxLength]/[StringLength]) get a SQL-style
+// "(n)" suffix, e.g. "string(255)" (MS-21560).
+function getDisplayType(property) {
+	let displayType = property.type;
+
+	if (isNavigationProperty(property)) {
+		displayType = displayType
+			.replace(/^ICollection<(.+)>$/, '$1')
+			.replace(/^List<(.+)>$/, '$1');
+		return displayType;
+	}
+
+	if (property.maxLength && property.maxLength > 0) {
+		// Insert the length before any nullable marker: "string?" -> "string(255)?"
+		const isNullable = displayType.endsWith('?');
+		const base = isNullable ? displayType.slice(0, -1) : displayType;
+		displayType = `${base}(${property.maxLength})${isNullable ? '?' : ''}`;
+	}
+
+	return displayType;
+}
+
 function isNavigationProperty(property) {
 	const navPatterns = [
 		/^ICollection</,
