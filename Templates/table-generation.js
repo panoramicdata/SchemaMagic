@@ -60,13 +60,8 @@ function generateTable(svg, entity, x, y) {
 	const maxTypeLength = Math.max(
 		8, // minimum for "string"
 		...allDisplayedProperties.map(p => {
-			// Clean up type names for accurate length calculation
-			let typeText = p.type;
-			if (isNavigationProperty(p)) {
-				// For navigation properties, show clean type names
-				typeText = typeText.replace(/^ICollection<(.+)>$/, '$1').replace(/^List<(.+)>$/, '$1');
-			}
-			return typeText.length;
+			// Clean up type names for accurate length calculation (includes any "(maxLength)" suffix)
+			return getDisplayType(p).length;
 		})
 	);
 
@@ -424,13 +419,18 @@ function renderProperty(tableGroup, property, x, propY, tableWidth, padding, ico
 	const typeColorClass = getTypeColorClass(property.type);
 	typeText.classList.add(typeColorClass);
 
-	// Clean up navigation property type names for display and preserve nullables
-	let displayType = property.type;
-	if (isNavigationProperty(property)) {
-		displayType = displayType.replace(/^ICollection<(.+)>$/, '$1').replace(/^List<(.+)>$/, '$1');
-	}
+	// Clean up navigation property type names for display, add any max-length suffix, preserve nullables
+	const displayType = getDisplayType(property);
 
 	typeText.textContent = displayType;
+
+	// Surface the max length in the type tooltip too, so it is discoverable on hover
+	if (property.maxLength && property.maxLength > 0 && !isNavigationProperty(property)) {
+		const typeTitle = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+		typeTitle.textContent = `Maximum length: ${property.maxLength}`;
+		typeText.appendChild(typeTitle);
+	}
+
 	tableGroup.appendChild(typeText);
 
 	// Add type icon to the RIGHT of the type text - with corrected Y positioning
