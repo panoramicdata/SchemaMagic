@@ -160,7 +160,7 @@ jobs:
         echo "[INFO] Web App Version: $VERSION"
         
     - name: Setup Pages
-      uses: actions/configure-pages@v4
+      uses: actions/configure-pages@v6
       
     - name: Restore dependencies
       run: dotnet restore SchemaMagic.Web/SchemaMagic.Web.csproj
