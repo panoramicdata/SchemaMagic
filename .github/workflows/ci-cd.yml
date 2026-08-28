@@ -16,7 +16,7 @@ jobs:
     name: Test
     
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0  # Required for Nerdbank.GitVersioning
     
@@ -52,7 +52,7 @@ jobs:
     name: Publish to NuGet
     
     steps:
-    - uses: actions/checkout@v6
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0  # Required for Nerdbank.GitVersioning
     
@@ -138,7 +138,7 @@ jobs:
     
     steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         fetch-depth: 0  # Required for Nerdbank.GitVersioning
       
