@@ -13,6 +13,7 @@
     <Product>SchemaMagic Core</Product>
     <Description>Core library for SchemaMagic - Entity Framework Core Schema Analysis Engine</Description>
     <Copyright>© 2025 Panoramic Data Limited</Copyright>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
