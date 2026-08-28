@@ -1,12 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
-
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    
     <!-- NuGet Package Configuration -->
     <PackAsTool>true</PackAsTool>
     <ToolCommandName>schemamagic</ToolCommandName>
@@ -25,36 +23,30 @@
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>Enhanced GitHub integration, improved dark mode, automated versioning with Nerdbank.GitVersioning</PackageReleaseNotes>
     <Copyright>© 2025 Panoramic Data Limited</Copyright>
-    
     <!-- Assembly Configuration -->
     <AssemblyTitle>SchemaMagic</AssemblyTitle>
     <AssemblyDescription>Interactive HTML+SVG Database Schema Visualizer for Entity Framework Core</AssemblyDescription>
     <AssemblyCompany>Panoramic Data Limited</AssemblyCompany>
     <AssemblyProduct>SchemaMagic</AssemblyProduct>
     <AssemblyCopyright>© 2025 Panoramic Data Limited</AssemblyCopyright>
-    
     <!-- Build Configuration -->
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
-
   <ItemGroup>
-    <PackageReference Include="Nerdbank.GitVersioning" Version="3.10.85">
+    <PackageReference Include="Nerdbank.GitVersioning">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
-    <PackageReference Include="Octokit" Version="14.0.0" />
-    <PackageReference Include="System.CommandLine" Version="2.0.9" />
+    <PackageReference Include="Octokit" />
+    <PackageReference Include="System.CommandLine" />
   </ItemGroup>
-  
   <ItemGroup>
     <ProjectReference Include="..\SchemaMagic.Core\SchemaMagic.Core.csproj" />
   </ItemGroup>
-  
   <ItemGroup>
     <None Include="..\README.md" Pack="true" PackagePath="\" />
     <None Include="icon.png" Pack="true" PackagePath="\" />
   </ItemGroup>
-
 </Project>
