@@ -1,4 +1,6 @@
-﻿# SchemaMagic ✨
+[![Codacy Badge](https://app.codacy.com/project/badge/grade/SchemaMagic)](https://app.codacy.com/gh/panoramicdata/SchemaMagic/dashboard)
+
+# SchemaMagic ✨
 
 **Interactive HTML+SVG Database Schema Visualizer for Entity Framework Core**
 
