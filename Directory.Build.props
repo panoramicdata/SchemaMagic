@@ -4,5 +4,7 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <NuGetAuditMode>All</NuGetAuditMode>
     <Copyright>Copyright © Panoramic Data Limited</Copyright>
+    <Authors>Panoramic Data Limited</Authors>
+    <Company>Panoramic Data Limited</Company>
   </PropertyGroup>
 </Project>
