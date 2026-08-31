@@ -2,6 +2,7 @@
 <Project>
   <PropertyGroup>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <NoWarn>$(NoWarn);CS1591</NoWarn>
     <NuGetAuditMode>All</NuGetAuditMode>
     <Copyright>Copyright © Panoramic Data Limited</Copyright>
     <Authors>Panoramic Data Limited</Authors>

@@ -6,6 +6,9 @@ using System.Text.RegularExpressions;
 
 namespace SchemaMagic.Core;
 
+/// <summary>
+/// Analyzes Entity Framework DbContext source code and generates an interactive schema document.
+/// </summary>
 public static partial class CoreSchemaAnalysisService
 {
 	private static readonly JsonSerializerOptions _jsonSerializerOptions = new()
@@ -14,6 +17,12 @@ public static partial class CoreSchemaAnalysisService
 		PropertyNamingPolicy = JsonNamingPolicy.CamelCase
 	};
 
+	/// <summary>
+	/// Analyzes DbContext source code supplied as text.
+	/// </summary>
+	/// <param name="dbContextContent">The DbContext source code.</param>
+	/// <param name="fileName">The source file name or full path.</param>
+	/// <returns>The schema analysis result.</returns>
 	public static SchemaAnalysisResult AnalyzeDbContextContent(string dbContextContent, string fileName)
 	{
 		// For backward compatibility, extract the file path from filename if it's a full path
@@ -59,7 +68,11 @@ public static partial class CoreSchemaAnalysisService
 		}
 	}
 
-	// Add new overload that accepts the actual file path
+	/// <summary>
+	/// Analyzes a DbContext source file and related entity files discoverable from its location.
+	/// </summary>
+	/// <param name="dbContextFilePath">The full path to the DbContext source file.</param>
+	/// <returns>The schema analysis result.</returns>
 	public static SchemaAnalysisResult AnalyzeDbContextFile(string dbContextFilePath)
 	{
 		try
@@ -96,7 +109,14 @@ public static partial class CoreSchemaAnalysisService
 		}
 	}
 
-	// NEW: Analyze DbContext with entity files from GitHub
+	/// <summary>
+	/// Analyzes DbContext source code together with an explicit collection of entity source files.
+	/// </summary>
+	/// <param name="dbContextContent">The DbContext source code.</param>
+	/// <param name="dbContextFileName">The DbContext source file name.</param>
+	/// <param name="entityFileContents">Entity source code keyed by file name.</param>
+	/// <param name="documentGuid">An optional identifier used to scope document state.</param>
+	/// <returns>The schema analysis result.</returns>
 	public static SchemaAnalysisResult AnalyzeDbContextWithEntityFiles(
 		string dbContextContent,
 		string dbContextFileName,

@@ -26,6 +26,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- Embed template files as resources -->
     <EmbeddedResource Include="..\Templates\template.html" Link="Templates\template.html" />
     <EmbeddedResource Include="..\Templates\styles.css" Link="Templates\styles.css" />

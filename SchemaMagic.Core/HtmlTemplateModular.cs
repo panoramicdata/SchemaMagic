@@ -1,12 +1,23 @@
 ﻿using System.Reflection;
 using System.Text;
+using System.Collections.Concurrent;
 
 namespace SchemaMagic.Core;
 
+/// <summary>
+/// Generates self-contained HTML schema documents from embedded templates.
+/// </summary>
 public static class ModularHtmlTemplate
 {
-	private static readonly Dictionary<string, string> _templateCache = [];
+	private static readonly ConcurrentDictionary<string, string> _templateCache = [];
 
+	/// <summary>
+	/// Generates a schema document, optionally applying CSS from a file.
+	/// </summary>
+	/// <param name="entitiesJson">The serialized entity metadata.</param>
+	/// <param name="documentGuid">An optional identifier used to scope document state.</param>
+	/// <param name="customCssPath">An optional path to a CSS file whose rules override the defaults.</param>
+	/// <returns>The generated HTML document.</returns>
 	public static string Generate(string entitiesJson, string? documentGuid = null, string? customCssPath = null)
 	{
 		// Generate a new GUID if none provided
@@ -23,7 +34,13 @@ public static class ModularHtmlTemplate
 		return html;
 	}
 
-	// Static method to generate HTML content with custom CSS string
+	/// <summary>
+	/// Generates a schema document with CSS overrides supplied as text.
+	/// </summary>
+	/// <param name="entitiesJson">The serialized entity metadata.</param>
+	/// <param name="documentGuid">The identifier used to scope document state.</param>
+	/// <param name="customCss">Optional CSS rules that override the defaults.</param>
+	/// <returns>The generated HTML document.</returns>
 	public static string GenerateWithCustomCss(string entitiesJson, string documentGuid, string? customCss)
 	{
 		var html = LoadTemplate("template.html");
@@ -37,6 +54,10 @@ public static class ModularHtmlTemplate
 		return html;
 	}
 
+	/// <summary>
+	/// Gets the default stylesheet embedded in the library.
+	/// </summary>
+	/// <returns>The default CSS content.</returns>
 	public static string GetDefaultCss()
 	{
 		return LoadTemplate("styles.css");
