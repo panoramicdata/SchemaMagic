@@ -381,3 +381,4 @@ Output/*.html
 *.secret
 *.secrets
 api-keys.txt
+nuget-key.txt

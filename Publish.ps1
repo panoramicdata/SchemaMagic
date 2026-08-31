@@ -1,223 +1,127 @@
-#!/usr/bin/env pwsh
-<#
-.SYNOPSIS
-    Automates version bumping and publishing of SchemaMagic to NuGet.
-
-.DESCRIPTION
-    This script uses Nerdbank.GitVersioning (nbgv) to automatically determine the version,
-    build the package, create a git tag, and optionally publish to NuGet.
-
-.PARAMETER PublishToNuGet
-    If specified, publishes the package to NuGet.org after building.
-
-.PARAMETER ApiKey
-    NuGet API key for publishing. Can also be set via NUGET_API_KEY environment variable.
-
-.PARAMETER DryRun
-    If specified, performs all steps except actual publishing and git push.
-
-.EXAMPLE
-    .\Publish.ps1
-    # Builds package and creates local tag
-
-.EXAMPLE
-    .\Publish.ps1 -PublishToNuGet -ApiKey "your-api-key"
-    # Builds, tags, and publishes to NuGet
-
-.EXAMPLE
-    .\Publish.ps1 -DryRun
-    # Simulates the publish process without making changes
-#>
-
-[CmdletBinding()]
 param(
-    [switch]$PublishToNuGet,
-    [string]$ApiKey,
-    [switch]$DryRun
+	# Skips waiting for the release run. The tag is still pushed, but nothing confirms a package
+	# reached nuget.org — use it only if you are checking the run yourself.
+	[switch]$SkipPublishVerification
 )
 
-$ErrorActionPreference = "Stop"
+# Ensure we are on the main branch
+$branch = git rev-parse --abbrev-ref HEAD
+if ($branch -ne 'main') {
+	Write-Error "Not on main branch. Current branch: $branch"
+	exit 1
+}
 
-# Colors for output
-function Write-Header { Write-Host "?? $args" -ForegroundColor Cyan }
-function Write-Success { Write-Host "? $args" -ForegroundColor Green }
-function Write-Info { Write-Host "??  $args" -ForegroundColor Blue }
-function Write-Warning { Write-Host "??  $args" -ForegroundColor Yellow }
-function Write-Error { Write-Host "? $args" -ForegroundColor Red }
+# Ensure working tree is clean
+$status = git status --porcelain
+if ($status) {
+	Write-Error "Working tree is not clean."
+	exit 1
+}
 
-Write-Header "SchemaMagic Publishing Script"
-Write-Host "==========================================" -ForegroundColor Cyan
+# Ensure we are up to date with origin
+git fetch origin main --quiet
+$behind = git rev-list --count HEAD..origin/main
+if ($behind -gt 0) {
+	Write-Error "Local branch is behind origin/main by $behind commit(s)."
+	exit 1
+}
+
+# Checked before anything is pushed, because pushing the tag is the step that cannot be taken back.
+# Without the GitHub CLI there is no way to confirm the release run succeeded, and an unverified
+# publish is how repositories end up months behind their newest tag with nobody noticing.
+if (-not $SkipPublishVerification) {
+	$gh = Get-Command gh -ErrorAction SilentlyContinue
+	if (-not $gh) {
+		Write-Error "The GitHub CLI (gh) is required to verify that the package publishes. Install it from https://cli.github.com, or re-run with -SkipPublishVerification to publish without verification."
+		exit 1
+	}
+
+	gh auth status 2>&1 | Out-Null
+	if ($LASTEXITCODE -ne 0) {
+		Write-Error "The GitHub CLI is not authenticated. Run 'gh auth login', or re-run with -SkipPublishVerification to publish without verification."
+		exit 1
+	}
+}
 
 # Get version from Nerdbank.GitVersioning via the project's MSBuild targets (the
-# referenced NuGet package), so this does not depend on the global 'nbgv' CLI tool.
-Write-Info "Determining version from git history..."
-$project = Join-Path $PSScriptRoot 'SchemaMagic/SchemaMagic.csproj'
-$buildOutput = dotnet build $project -t:GetBuildVersion --getProperty:NuGetPackageVersion -nologo -v:quiet -p:TreatWarningsAsErrors=false
+# referenced NuGet package), so this does not depend on the global 'nbgv' CLI tool
+# being installed or on PATH.
+$packableProject = Get-ChildItem -Recurse -Filter *.csproj |
+	Where-Object { $_.FullName -notmatch '[\\/]obj[\\/]' -and (Get-Content $_.FullName -Raw) -match 'Nerdbank\.GitVersioning' } |
+	Select-Object -First 1
+if (-not $packableProject) {
+	Write-Error "Could not find a packable project referencing Nerdbank.GitVersioning."
+	exit 1
+}
+$buildOutput = dotnet build $packableProject.FullName -t:GetBuildVersion --getProperty:NuGetPackageVersion -nologo -v:quiet -p:TreatWarningsAsErrors=false
 if ($LASTEXITCODE -ne 0) {
-    Write-Error "Failed to determine version from Nerdbank.GitVersioning"
-    exit 1
+	Write-Error "Failed to determine version from Nerdbank.GitVersioning.`n$buildOutput"
+	exit 1
 }
-
 $version = ($buildOutput | Select-Object -Last 1).ToString().Trim()
-$fullVersion = $version
-
-Write-Success "Version determined: $fullVersion"
-
-# Check for uncommitted changes
-Write-Info "Checking for uncommitted changes..."
-$gitStatus = git status --porcelain
-if ($gitStatus -and -not $DryRun) {
-    Write-Error "Uncommitted changes detected. Please commit or stash your changes first."
-    Write-Host "Run 'git status' to see uncommitted changes."
-    exit 1
-}
-Write-Success "Working directory is clean"
-
-# Create tag name
-$tagName = "v$version"
-Write-Info "Tag will be: $tagName"
+Write-Host "Version: $version"
 
 # Check if tag already exists
-$existingTag = git tag -l $tagName
+$existingTag = git tag -l $version
 if ($existingTag) {
-    Write-Warning "Tag $tagName already exists locally"
-    $remoteTag = git ls-remote --tags origin $tagName
-    if ($remoteTag) {
-        Write-Error "Tag $tagName already exists on remote. Version has already been published."
-        Write-Info "To publish a new version, update version.json or make additional commits."
-        exit 1
-    }
+	Write-Error "Tag $version already exists."
+	exit 1
 }
 
-# Clean previous builds
-Write-Info "Cleaning previous builds..."
-if (Test-Path "SchemaMagic/bin") {
-    Remove-Item "SchemaMagic/bin" -Recurse -Force
-}
-if (Test-Path "SchemaMagic/obj") {
-    Remove-Item "SchemaMagic/obj" -Recurse -Force
-}
-if (Test-Path "SchemaMagic/nupkg") {
-    Remove-Item "SchemaMagic/nupkg" -Recurse -Force
-}
-Write-Success "Build directories cleaned"
+# Create and push tag
+git tag $version
+git push origin $version
+Write-Host "Tag $version pushed."
 
-# Build the package
-Write-Header "Building Package"
-Write-Info "Building SchemaMagic v$fullVersion..."
-
-dotnet pack SchemaMagic/SchemaMagic.csproj `
-    -c Release `
-    -o SchemaMagic/nupkg `
-    /p:PackageVersion=$fullVersion `
-    /p:Version=$fullVersion
-
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "Package build failed"
-    exit 1
+if ($SkipPublishVerification) {
+	Write-Warning "Not waiting for the release run (-SkipPublishVerification). Nothing has confirmed that a package reached nuget.org."
+	exit 0
 }
 
-Write-Success "Package built successfully"
+# The repository the run belongs to, read from the remote rather than assumed.
+$originUrl = git remote get-url origin
+$repoFullName = ($originUrl -replace '^.*github\.com[:/]', '') -replace '\.git$', ''
 
-# List generated packages
-$packages = Get-ChildItem "SchemaMagic/nupkg" -Filter "*.nupkg"
-Write-Info "Generated packages:"
-foreach ($pkg in $packages) {
-    $sizeKB = [math]::Round($pkg.Length / 1KB, 2)
-    Write-Host "  ?? $($pkg.Name) ($sizeKB KB)" -ForegroundColor White
+Write-Host "Waiting for the release run for $version..."
+
+# The run takes a few seconds to appear after the tag push.
+$runId = $null
+for ($attempt = 1; $attempt -le 12 -and -not $runId; $attempt++) {
+	Start-Sleep -Seconds 5
+	$runListJson = gh run list --repo $repoFullName --branch $version --limit 1 --json databaseId 2>$null
+	if ($LASTEXITCODE -eq 0 -and $runListJson) {
+		$runList = $runListJson | ConvertFrom-Json
+		if ($runList.Count -gt 0) { $runId = $runList[0].databaseId }
+	}
 }
 
-# Create git tag
-if ($DryRun) {
-    Write-Warning "[DRY RUN] Would create tag: $tagName"
-} else {
-    Write-Info "Creating git tag: $tagName..."
-    git tag -a $tagName -m "Release version $version"
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to create git tag"
-        exit 1
-    }
-    Write-Success "Git tag created: $tagName"
-    
-    # Push tag to remote to trigger CI/CD
-    Write-Info "Pushing tag to remote (this will trigger CI/CD pipeline)..."
-    git push origin $tagName
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to push tag to remote"
-        Write-Warning "You may need to push manually: git push origin $tagName"
-        exit 1
-    }
-    Write-Success "Tag pushed to remote - CI/CD pipeline will start automatically"
-    Write-Info "View pipeline at: https://github.com/panoramicdata/SchemaMagic/actions"
+if (-not $runId) {
+	Write-Error "Tag $version was pushed but no run appeared for it. Check https://github.com/$repoFullName/actions — the workflow may not trigger on tags."
+	exit 1
 }
 
-# Publish to NuGet if requested
-if ($PublishToNuGet) {
-    Write-Header "Publishing to NuGet"
-    
-    # Get API key
-    if (-not $ApiKey) {
-        $ApiKey = $env:NUGET_API_KEY
-    }
-    
-    if (-not $ApiKey) {
-        Write-Error "NuGet API key not provided. Use -ApiKey parameter or set NUGET_API_KEY environment variable."
-        exit 1
-    }
-    
-    $nupkgFile = Get-ChildItem "SchemaMagic/nupkg" -Filter "SchemaMagic.$fullVersion.nupkg" | Select-Object -First 1
-    
-    if (-not $nupkgFile) {
-        Write-Error "Package file not found: SchemaMagic.$fullVersion.nupkg"
-        exit 1
-    }
-    
-    if ($DryRun) {
-        Write-Warning "[DRY RUN] Would publish package: $($nupkgFile.Name)"
-    } else {
-        Write-Info "Publishing $($nupkgFile.Name) to NuGet.org..."
-        
-        dotnet nuget push $nupkgFile.FullName `
-            --api-key $ApiKey `
-            --source https://api.nuget.org/v3/index.json `
-            --skip-duplicate
-        
-        if ($LASTEXITCODE -ne 0) {
-            Write-Error "Failed to publish package to NuGet"
-            exit 1
-        }
-        
-        Write-Success "Package published to NuGet.org"
-        Write-Info "View at: https://www.nuget.org/packages/SchemaMagic/$version"
-    }
-} else {
-    Write-Info "Skipping NuGet publish (use -PublishToNuGet to publish)"
-    Write-Warning "Note: CI/CD pipeline will handle NuGet publishing automatically"
+Write-Host "Run: https://github.com/$repoFullName/actions/runs/$runId"
+gh run watch $runId --repo $repoFullName --exit-status --interval 20
+$runExitCode = $LASTEXITCODE
+
+if ($runExitCode -ne 0) {
+	Write-Host ""
+	Write-Host "The release run did not succeed: https://github.com/$repoFullName/actions/runs/$runId" -ForegroundColor Red
+
+	# A refused job — an exhausted Actions budget, for instance — fails before any step runs, so it
+	# has no failed step to report. The check-run annotation is the only place the reason appears.
+	$jobId = gh api "repos/$repoFullName/actions/runs/$runId/jobs" --jq '.jobs[0].id' 2>$null
+	if ($LASTEXITCODE -eq 0 -and $jobId) {
+		$annotation = gh api "repos/$repoFullName/check-runs/$jobId/annotations" --jq '.[0].message' 2>$null
+		if ($LASTEXITCODE -eq 0 -and $annotation) {
+			Write-Host "Reason: $annotation" -ForegroundColor Red
+		}
+	}
+
+	Write-Host ""
+	Write-Host "Tag $version is pushed but no package was published. Once the cause is fixed:" -ForegroundColor Yellow
+	Write-Host "  gh run rerun $runId --repo $repoFullName --failed" -ForegroundColor Cyan
+	exit 1
 }
 
-# Summary
-Write-Header "Summary"
-Write-Success "Version: $fullVersion"
-Write-Success "Tag: $tagName"
-Write-Success "Package: SchemaMagic/nupkg/SchemaMagic.$fullVersion.nupkg"
-
-if ($DryRun) {
-    Write-Warning "DRY RUN - No changes were made"
-} else {
-    Write-Success "Tag pushed to remote - CI/CD will now:"
-    Write-Info "  1. Run all tests"
-    Write-Info "  2. Build and publish to NuGet"
-    Write-Info "  3. Create GitHub Release"
-    Write-Info "  4. Deploy web application"
-    Write-Info ""
-    Write-Info "Monitor progress at: https://github.com/panoramicdata/SchemaMagic/actions"
-    
-    if ($PublishToNuGet) {
-        Write-Warning "You used -PublishToNuGet flag, but CI/CD will also publish."
-        Write-Warning "This may result in duplicate publish attempts (harmless with --skip-duplicate)"
-    }
-}
-
-Write-Host ""
-Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "?? Publish process complete!" -ForegroundColor Green
+Write-Host "Package $version published." -ForegroundColor Green
