@@ -17,6 +17,8 @@
     <RepositoryUrl>https://github.com/panoramicdata/SchemaMagic</RepositoryUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <NeutralResourcesLanguage>en</NeutralResourcesLanguage>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
