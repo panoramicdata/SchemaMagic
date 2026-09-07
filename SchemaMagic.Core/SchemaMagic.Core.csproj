@@ -15,6 +15,7 @@
     <Copyright>© 2025 Panoramic Data Limited</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/panoramicdata/SchemaMagic</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/panoramicdata/SchemaMagic</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <NeutralResourcesLanguage>en</NeutralResourcesLanguage>
     <IncludeSymbols>true</IncludeSymbols>
