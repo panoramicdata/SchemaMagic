@@ -201,11 +201,9 @@ public class GitHubService
 				{
 					// Prioritize files in common entity directories
 					var path = item.Path.ToLower();
-					if (path.Contains("/models/")) return 0;
-					if (path.Contains("/entities/")) return 1;
-					if (path.Contains("/domain/")) return 2;
-					if (path.Contains("/data/")) return 3;
-					return 4;
+					var priorityDirectories = new[] { "/models/", "/entities/", "/domain/", "/data/" };
+					var priority = Array.FindIndex(priorityDirectories, directory => path.Contains(directory));
+					return priority < 0 ? priorityDirectories.Length : priority;
 				})
 				.ThenBy(item => item.Path)
 				.Take(500) // Limit to prevent too many API calls
@@ -218,7 +216,9 @@ public class GitHubService
 			{
 				// Stop if we found all entities
 				if (remainingEntities.Count == 0)
+				{
 					break;
+				}
 
 				try
 				{
@@ -350,7 +350,9 @@ public class GitHubService
 		{
 			var uri = new Uri(url);
 			if (uri.Host != "github.com")
+			{
 				return null;
+			}
 
 			var segments = uri.AbsolutePath.Trim('/').Split('/');
 			if (segments.Length >= 2)

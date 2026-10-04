@@ -59,7 +59,7 @@ if ($LASTEXITCODE -ne 0) {
 	exit 1
 }
 $version = ($buildOutput | Select-Object -Last 1).ToString().Trim()
-Write-Host "Version: $version"
+Write-Information "Version: $version" -InformationAction Continue
 
 # Check if tag already exists
 $existingTag = git tag -l $version
@@ -71,7 +71,7 @@ if ($existingTag) {
 # Create and push tag
 git tag $version
 git push origin $version
-Write-Host "Tag $version pushed."
+Write-Information "Tag $version pushed." -InformationAction Continue
 
 if ($SkipPublishVerification) {
 	Write-Warning "Not waiting for the release run (-SkipPublishVerification). Nothing has confirmed that a package reached nuget.org."
@@ -82,7 +82,7 @@ if ($SkipPublishVerification) {
 $originUrl = git remote get-url origin
 $repoFullName = ($originUrl -replace '^.*github\.com[:/]', '') -replace '\.git$', ''
 
-Write-Host "Waiting for the release run for $version..."
+Write-Information "Waiting for the release run for $version..." -InformationAction Continue
 
 # The run takes a few seconds to appear after the tag push.
 $runId = $null
@@ -100,13 +100,13 @@ if (-not $runId) {
 	exit 1
 }
 
-Write-Host "Run: https://github.com/$repoFullName/actions/runs/$runId"
+Write-Information "Run: https://github.com/$repoFullName/actions/runs/$runId" -InformationAction Continue
 gh run watch $runId --repo $repoFullName --exit-status --interval 20
 $runExitCode = $LASTEXITCODE
 
 if ($runExitCode -ne 0) {
-	Write-Host ""
-	Write-Host "The release run did not succeed: https://github.com/$repoFullName/actions/runs/$runId" -ForegroundColor Red
+	Write-Information "" -InformationAction Continue
+	Write-Information "The release run did not succeed: https://github.com/$repoFullName/actions/runs/$runId" -InformationAction Continue
 
 	# A refused job — an exhausted Actions budget, for instance — fails before any step runs, so it
 	# has no failed step to report. The check-run annotation is the only place the reason appears.
@@ -114,14 +114,14 @@ if ($runExitCode -ne 0) {
 	if ($LASTEXITCODE -eq 0 -and $jobId) {
 		$annotation = gh api "repos/$repoFullName/check-runs/$jobId/annotations" --jq '.[0].message' 2>$null
 		if ($LASTEXITCODE -eq 0 -and $annotation) {
-			Write-Host "Reason: $annotation" -ForegroundColor Red
+			Write-Information "Reason: $annotation" -InformationAction Continue
 		}
 	}
 
-	Write-Host ""
-	Write-Host "Tag $version is pushed but no package was published. Once the cause is fixed:" -ForegroundColor Yellow
-	Write-Host "  gh run rerun $runId --repo $repoFullName --failed" -ForegroundColor Cyan
+	Write-Information "" -InformationAction Continue
+	Write-Information "Tag $version is pushed but no package was published. Once the cause is fixed:" -InformationAction Continue
+	Write-Information "  gh run rerun $runId --repo $repoFullName --failed" -InformationAction Continue
 	exit 1
 }
 
-Write-Host "Package $version published." -ForegroundColor Green
+Write-Information "Package $version published." -InformationAction Continue

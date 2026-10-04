@@ -122,12 +122,7 @@ public class GitHubService(HttpClient httpClient)
 		{
 			throw new InvalidOperationException("GitHub API rate limit exceeded. Please provide a Personal Access Token for higher limits, or try again later.");
 		}
-		catch (InvalidOperationException)
-		{
-			// Re-throw our own exceptions
-			throw;
-		}
-		catch (Exception ex)
+		catch (Exception ex) when (ex is not InvalidOperationException)
 		{
 			throw new InvalidOperationException($"Error accessing GitHub repository: {ex.Message}");
 		}
@@ -229,7 +224,9 @@ public class GitHubService(HttpClient httpClient)
 		{
 			var uri = new Uri(url);
 			if (uri.Host != "github.com")
+			{
 				return null;
+			}
 
 			var segments = uri.AbsolutePath.Trim('/').Split('/');
 			if (segments.Length >= 2)

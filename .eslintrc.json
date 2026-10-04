@@ -1,0 +1,15 @@
+{
+	"root": true,
+	"env": { "browser": true, "es2021": true, "serviceworker": true },
+	"parserOptions": { "ecmaVersion": 2021 },
+	"extends": ["eslint:recommended"],
+	"overrides": [
+		{
+			"files": ["Templates/*.js"],
+			"rules": {
+				"no-undef": "off",
+				"no-unused-vars": "off"
+			}
+		}
+	]
+}

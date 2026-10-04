@@ -155,7 +155,7 @@ public class User
 	public bool IsActive { get; set; } = true;
 
 	[Comment("Email verification status - true when user confirms email")]
-	public bool EmailVerified { get; set; } = false;
+	public bool EmailVerified { get; set; }
 
 	/// <summary>
 	/// Timestamp of the user's last successful login

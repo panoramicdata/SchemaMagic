@@ -1,10 +1,10 @@
 // Schema generation and table positioning
 function generateSchema() {
-	console.log('??? Starting schema generation...');
-	const svg = document.getElementById('schema-svg');
-	
+	console.log("??? Starting schema generation...");
+	const svg = document.getElementById("schema-svg");
+
 	if (!svg) {
-		console.error('? SVG element not found!');
+		console.error("? SVG element not found!");
 		return;
 	}
 
@@ -12,35 +12,42 @@ function generateSchema() {
 	const currentSelection = selectedTable;
 
 	// Remove existing content but keep selection overlays (they're part of table groups)
-	const existingContent = svg.querySelectorAll('.table-group, .relationship-line');
+	const existingContent = svg.querySelectorAll(
+		".table-group, .relationship-line",
+	);
 	console.log(`?? Removing ${existingContent.length} existing elements`);
-	existingContent.forEach(el => el.remove());
+	existingContent.forEach((el) => el.remove());
 
-	if (typeof entities === 'undefined') {
-		console.error('? Entities not defined!');
+	if (typeof entities === "undefined") {
+		console.error("? Entities not defined!");
 		return;
 	}
 
 	const entityCount = Object.keys(entities).length;
-	console.log(`?? Processing ${entityCount} entities:`, Object.keys(entities));
+	console.log(
+		`?? Processing ${entityCount} entities:`,
+		Object.keys(entities),
+	);
 
 	const tablePositions = calculateTablePositions();
-	console.log('?? Table positions calculated:', tablePositions);
+	console.log("?? Table positions calculated:", tablePositions);
 
 	let tablesGenerated = 0;
 	Object.keys(entities).forEach((entityName) => {
 		try {
 			const entity = entities[entityName];
 			const position = tablePositions[entityName];
-			
+
 			if (!position) {
 				console.warn(`?? No position found for entity: ${entityName}`);
 				return;
 			}
-			
+
 			generateTable(svg, entity, position.x, position.y);
 			tablesGenerated++;
-			console.log(`? Generated table for ${entityName} at (${position.x}, ${position.y})`);
+			console.log(
+				`? Generated table for ${entityName} at (${position.x}, ${position.y})`,
+			);
 		} catch (e) {
 			console.error(`? Failed to generate table for ${entityName}:`, e);
 		}
@@ -51,9 +58,9 @@ function generateSchema() {
 	if (showRelationships) {
 		try {
 			generateRelationships(svg);
-			console.log('?? Relationships generated');
+			console.log("?? Relationships generated");
 		} catch (e) {
-			console.error('? Failed to generate relationships:', e);
+			console.error("? Failed to generate relationships:", e);
 		}
 	}
 
@@ -63,15 +70,15 @@ function generateSchema() {
 	}
 
 	updateButtonStates();
-	console.log('? Schema generation completed');
+	console.log("? Schema generation completed");
 }
 
 function calculateTablePositions() {
 	// Always use the smart layered layout by default (auto-layout unless saved positions exist)
-	if (typeof calculateSmartTablePositions === 'function') {
+	if (typeof calculateSmartTablePositions === "function") {
 		return calculateSmartTablePositions();
 	}
-	
+
 	// Fallback to basic grid layout if force-directed not available
 	return calculateBasicGridLayout();
 }
@@ -85,7 +92,7 @@ function calculateBasicGridLayout() {
 			savedPositions = JSON.parse(saved);
 		}
 	} catch (e) {
-		console.warn('Failed to load saved positions:', e);
+		console.warn("Failed to load saved positions:", e);
 	}
 
 	const positions = {};
@@ -93,17 +100,17 @@ function calculateBasicGridLayout() {
 
 	if (savedPositions) {
 		// Use saved positions if available, but snap to grid if enabled
-		entityNames.forEach(entityName => {
+		entityNames.forEach((entityName) => {
 			if (savedPositions[entityName]) {
 				let x = savedPositions[entityName].x;
 				let y = savedPositions[entityName].y;
-				
+
 				// Snap to grid if enabled
 				if (snapToGrid) {
 					x = Math.round(x / 20) * 20;
 					y = Math.round(y / 20) * 20;
 				}
-				
+
 				positions[entityName] = { x, y };
 			} else {
 				// Default position for new entities, snapped to grid
