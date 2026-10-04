@@ -552,7 +552,6 @@ public static partial class CoreSchemaAnalysisService
 				catch (Exception)
 				{
 					// Silently skip files that can't be parsed
-					continue;
 				}
 			}
 		}
@@ -567,7 +566,9 @@ public static partial class CoreSchemaAnalysisService
 	private static string? FindSolutionDirectory(string? startDirectory)
 	{
 		if (string.IsNullOrEmpty(startDirectory))
+		{
 			return null;
+		}
 
 		var currentDirectory = new DirectoryInfo(startDirectory);
 

@@ -6,21 +6,21 @@ let legendVisible = true;
 
 function updateButtonStates() {
 	// Update all button states to reflect current settings
-	const relationshipsBtn = document.getElementById('relationships-btn');
-	const navPropsBtn = document.getElementById('nav-props-btn');
-	const inheritedPropsBtn = document.getElementById('inherited-props-btn');
-	const fullHeightBtn = document.getElementById('full-height-btn');
-	const snapGridBtn = document.getElementById('snap-grid-btn');
-	const legendToggleBtn = document.getElementById('legend-toggle-btn');
+	const relationshipsBtn = document.getElementById("relationships-btn");
+	const navPropsBtn = document.getElementById("nav-props-btn");
+	const inheritedPropsBtn = document.getElementById("inherited-props-btn");
+	const fullHeightBtn = document.getElementById("full-height-btn");
+	const snapGridBtn = document.getElementById("snap-grid-btn");
+	const legendToggleBtn = document.getElementById("legend-toggle-btn");
 
 	// Helper function to update toggle indicator
 	const updateToggleIndicator = (button, isActive) => {
 		if (button) {
-			const indicator = button.querySelector('.toggle-indicator');
+			const indicator = button.querySelector(".toggle-indicator");
 			if (indicator) {
-				indicator.style.opacity = isActive ? '1' : '0';
+				indicator.style.opacity = isActive ? "1" : "0";
 			}
-			button.classList.toggle('active', isActive);
+			button.classList.toggle("active", isActive);
 		}
 	};
 
@@ -39,9 +39,9 @@ function updateButtonStates() {
 	// Snap to grid button
 	updateToggleIndicator(snapGridBtn, snapToGrid);
 	// Also update grid background visibility
-	const gridBg = document.getElementById('grid-background');
+	const gridBg = document.getElementById("grid-background");
 	if (gridBg) {
-		gridBg.style.display = snapToGrid ? 'block' : 'none';
+		gridBg.style.display = snapToGrid ? "block" : "none";
 	}
 
 	// Legend toggle button
@@ -81,9 +81,9 @@ function toggleSnapToGrid() {
 
 function toggleLegend() {
 	legendVisible = !legendVisible;
-	const legend = document.getElementById('legend');
+	const legend = document.getElementById("legend");
 	if (legend) {
-		legend.style.display = legendVisible ? 'block' : 'none';
+		legend.style.display = legendVisible ? "block" : "none";
 	}
 	updateButtonStates();
 	saveSettings();
@@ -91,9 +91,9 @@ function toggleLegend() {
 
 function toggleToolbar() {
 	toolbarVisible = !toolbarVisible;
-	const toolbar = document.getElementById('toolbar');
+	const toolbar = document.getElementById("toolbar");
 	if (toolbar) {
-		toolbar.style.display = toolbarVisible ? 'flex' : 'none';
+		toolbar.style.display = toolbarVisible ? "flex" : "none";
 	}
 	// Don't save toolbar state - it should always start visible
 }
@@ -107,7 +107,7 @@ function autoLayoutTables() {
 	// Persist the new positions so they survive reloads
 	saveSettings();
 
-	console.log('🪄 Auto layout applied and saved');
+	console.log("🪄 Auto layout applied and saved");
 }
 
 function downloadSchema() {
@@ -130,42 +130,46 @@ function downloadSchema() {
 			showInheritedProperties,
 			fullHeightMode,
 			snapToGrid,
-			legendVisible
+			legendVisible,
 		},
 
 		// Capture selected table if any
 		selectedTable,
-		showOnlySelectedRelations
+		showOnlySelectedRelations,
 	};
 
 	// Extract current table positions
-	document.querySelectorAll('.table-group').forEach(table => {
-		const entityName = table.getAttribute('data-entity');
-		const rect = table.querySelector('.table-box');
+	document.querySelectorAll(".table-group").forEach((table) => {
+		const entityName = table.getAttribute("data-entity");
+		const rect = table.querySelector(".table-box");
 		currentState.tablePositions[entityName] = {
-			x: parseFloat(rect.getAttribute('x')),
-			y: parseFloat(rect.getAttribute('y'))
+			x: parseFloat(rect.getAttribute("x")),
+			y: parseFloat(rect.getAttribute("y")),
 		};
 	});
 
 	// Get the complete HTML document including DOCTYPE
-	const doctype = document.doctype ?
-		`<!DOCTYPE ${document.doctype.name}${document.doctype.publicId ? ` PUBLIC "${document.doctype.publicId}"` : ''}${document.doctype.systemId ? ` "${document.doctype.systemId}"` : ''}>` :
-		'<!DOCTYPE html>';
+	const doctype = document.doctype
+		? `<!DOCTYPE ${document.doctype.name}${document.doctype.publicId ? ` PUBLIC "${document.doctype.publicId}"` : ""}${document.doctype.systemId ? ` "${document.doctype.systemId}"` : ""}>`
+		: "<!DOCTYPE html>";
 
-	const currentHtml = doctype + '\n' + document.documentElement.outerHTML;
+	const currentHtml = doctype + "\n" + document.documentElement.outerHTML;
 
 	// Create a modified version that embeds the current state with new GUID
-	const modifiedHtml = embedCurrentStateIntoHtml(currentHtml, currentState, newDocumentGuid);
+	const modifiedHtml = embedCurrentStateIntoHtml(
+		currentHtml,
+		currentState,
+		newDocumentGuid,
+	);
 
 	// Create a blob and download link
-	const blob = new Blob([modifiedHtml], { type: 'text/html' });
+	const blob = new Blob([modifiedHtml], { type: "text/html" });
 	const url = URL.createObjectURL(blob);
 
 	// Create download link with descriptive filename
-	const link = document.createElement('a');
+	const link = document.createElement("a");
 	link.href = url;
-	const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
+	const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, "-");
 	const zoomLevel = Math.round(currentZoom * 100);
 	link.download = `schema-customized-${timestamp}-zoom${zoomLevel}%.html`;
 
@@ -177,15 +181,20 @@ function downloadSchema() {
 	// Clean up
 	URL.revokeObjectURL(url);
 
-	console.log(`📥 Downloaded schema with new GUID: ${newDocumentGuid} (includes DOCTYPE for Standards Mode)`);
+	console.log(
+		`📥 Downloaded schema with new GUID: ${newDocumentGuid} (includes DOCTYPE for Standards Mode)`,
+	);
 }
 
 function generateGuid() {
-	return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-		const r = Math.random() * 16 | 0;
-		const v = c == 'x' ? r : (r & 0x3 | 0x8);
-		return v.toString(16);
-	});
+	return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(
+		/[xy]/g,
+		function (c) {
+			const r = (Math.random() * 16) | 0;
+			const v = c == "x" ? r : (r & 0x3) | 0x8;
+			return v.toString(16);
+		},
+	);
 }
 
 function embedCurrentStateIntoHtml(html, state, newDocumentGuid) {
@@ -195,11 +204,14 @@ function embedCurrentStateIntoHtml(html, state, newDocumentGuid) {
 	html = html.replace(guidRegex, newGuidDeclaration);
 
 	// Find the entities JSON in the HTML - improve the regex to be more robust
-	const entitiesRegex = /const entities = (\{[\s\S]*?\});(?=\s*\/\/|\s*const|\s*let|\s*var|\s*function|\s*document|\s*$)/;
+	const entitiesRegex =
+		/const entities = (\{[\s\S]*?\});(?=\s*\/\/|\s*const|\s*let|\s*var|\s*function|\s*document|\s*$)/;
 	const match = html.match(entitiesRegex);
 
 	if (!match) {
-		console.warn('Could not find entities JSON in HTML, downloading without entities - document may not be fully interactive');
+		console.warn(
+			"Could not find entities JSON in HTML, downloading without entities - document may not be fully interactive",
+		);
 		// Continue anyway - the state injection might still make it partially functional
 	}
 
@@ -209,101 +221,105 @@ function embedCurrentStateIntoHtml(html, state, newDocumentGuid) {
 
 	// Create a localStorage implementation that starts with embedded data but allows full editing
 	const stateInjectionScript =
-		'// Fully editable downloaded document with embedded initial state\n' +
-		'(function() {\n' +
-		'	const embeddedStateBase64 = \'' + stateBase64 + '\';\n' +
-		'	const newDocumentGuid = \'' + newDocumentGuid + '\';\n' +
-		'	\n' +
-		'	try {\n' +
-		'		// Decode the embedded state\n' +
-		'		const stateJson = decodeURIComponent(escape(atob(embeddedStateBase64)));\n' +
-		'		const embeddedState = JSON.parse(stateJson);\n' +
-		'		\n' +
-		'		// Create the new document-specific localStorage keys\n' +
-		'		const newStorageKeys = {\n' +
-		'			tablePositions: `schemaMagic_${newDocumentGuid}_tablePositions`,\n' +
-		'			viewSettings: `schemaMagic_${newDocumentGuid}_viewSettings`,\n' +
-		'			viewBox: `schemaMagic_${newDocumentGuid}_viewBox`\n' +
-		'		};\n' +
-		'		\n' +
-		'		// Initialize localStorage with embedded state for new document GUID\n' +
-		'		// This creates a fully functional localStorage setup\n' +
-		'		if (embeddedState.tablePositions) {\n' +
-		'			localStorage.setItem(newStorageKeys.tablePositions, JSON.stringify(embeddedState.tablePositions));\n' +
-		'		}\n' +
-		'		if (embeddedState.settings) {\n' +
-		'			localStorage.setItem(newStorageKeys.viewSettings, JSON.stringify(embeddedState.settings));\n' +
-		'		}\n' +
-		'		if (embeddedState.viewBox) {\n' +
-		'			localStorage.setItem(newStorageKeys.viewBox, JSON.stringify(embeddedState.viewBox));\n' +
-		'		}\n' +
-		'		\n' +
-		'		// No need to override localStorage - the new GUID will work with normal localStorage\n' +
-		'		console.log(\'📦 Downloaded document initialized with embedded state as localStorage\');\n' +
-		'		console.log(\'🆔 New document GUID:\', newDocumentGuid);\n' +
-		'		console.log(\'✏️ Document is fully editable - changes will be saved to localStorage\');\n' +
-		'		console.log(\'📊 Embedded state:\', {\n' +
-		'			tableCount: Object.keys(embeddedState.tablePositions || {}).length,\n' +
-		'			zoom: embeddedState.zoom,\n' +
-		'			settings: embeddedState.settings\n' +
-		'		});\n' +
-		'		\n' +
-		'	} catch (error) {\n' +
-		'		console.error(\'❌ Failed to initialize embedded state:\', error);\n' +
-		'		console.log(\'🔄 Document will start with default layout and be fully editable\');\n' +
-		'	}\n' +
-		'})();\n' +
-		'\n' +
-		'// Restore state and ensure normal functionality after DOM is loaded\n' +
-		'document.addEventListener(\'DOMContentLoaded\', function() {\n' +
-		'	setTimeout(function() {\n' +
-		'		try {\n' +
-		'			// Load settings normally - localStorage now contains the embedded data\n' +
-		'			loadSettings();\n' +
-		'			\n' +
-		'			// Generate schema - this will use saved positions or auto-optimize if none exist\n' +
-		'			generateSchema();\n' +
-		'			\n' +
-		'			// Update button states to reflect loaded settings\n' +
-		'			updateButtonStates();\n' +
-		'			\n' +
-		'			// Restore view state if available\n' +
-		'			const savedViewBox = localStorage.getItem(STORAGE_KEYS.viewBox);\n' +
-		'			if (savedViewBox) {\n' +
-		'				try {\n' +
-		'					const viewBoxData = JSON.parse(savedViewBox);\n' +
-		'					if (viewBoxData.zoom) {\n' +
-		'						currentZoom = viewBoxData.zoom;\n' +
-		'					}\n' +
-		'					if (viewBoxData.viewBox) {\n' +
-		'						svgViewBox = { ...viewBoxData.viewBox };\n' +
-		'						updateViewBox();\n' +
-		'					}\n' +
-		'				} catch (e) {\n' +
-		'					console.warn(\'Could not restore view state:\', e);\n' +
-		'				}\n' +
-		'			}\n' +
-		'			\n' +
-		'			// Ensure event handlers are properly set up\n' +
-		'			setupEventListeners();\n' +
-		'			\n' +
-		'			console.log(\'✅ Downloaded document fully restored and ready for editing\');\n' +
-		'			console.log(\'💾 All changes will be saved to localStorage with GUID:\', DOCUMENT_GUID);\n' +
-		'			\n' +
-		'		} catch (error) {\n' +
-		'			console.error(\'❌ Failed to restore downloaded document state:\', error);\n' +
-		'			console.log(\'🔄 Falling back to default state - document is still fully functional\');\n' +
-		'			// Try to set up basic functionality even if restore fails\n' +
-		'			try {\n' +
-		'				setupEventListeners();\n' +
-		'				generateSchema();\n' +
-		'				updateButtonStates();\n' +
-		'			} catch (fallbackError) {\n' +
-		'				console.error(\'❌ Fallback initialization also failed:\', fallbackError);\n' +
-		'			}\n' +
-		'		}\n' +
-		'	}, 100);\n' +
-		'});';
+		"// Fully editable downloaded document with embedded initial state\n" +
+		"(function() {\n" +
+		"	const embeddedStateBase64 = '" +
+		stateBase64 +
+		"';\n" +
+		"	const newDocumentGuid = '" +
+		newDocumentGuid +
+		"';\n" +
+		"	\n" +
+		"	try {\n" +
+		"		// Decode the embedded state\n" +
+		"		const stateJson = decodeURIComponent(escape(atob(embeddedStateBase64)));\n" +
+		"		const embeddedState = JSON.parse(stateJson);\n" +
+		"		\n" +
+		"		// Create the new document-specific localStorage keys\n" +
+		"		const newStorageKeys = {\n" +
+		"			tablePositions: `schemaMagic_${newDocumentGuid}_tablePositions`,\n" +
+		"			viewSettings: `schemaMagic_${newDocumentGuid}_viewSettings`,\n" +
+		"			viewBox: `schemaMagic_${newDocumentGuid}_viewBox`\n" +
+		"		};\n" +
+		"		\n" +
+		"		// Initialize localStorage with embedded state for new document GUID\n" +
+		"		// This creates a fully functional localStorage setup\n" +
+		"		if (embeddedState.tablePositions) {\n" +
+		"			localStorage.setItem(newStorageKeys.tablePositions, JSON.stringify(embeddedState.tablePositions));\n" +
+		"		}\n" +
+		"		if (embeddedState.settings) {\n" +
+		"			localStorage.setItem(newStorageKeys.viewSettings, JSON.stringify(embeddedState.settings));\n" +
+		"		}\n" +
+		"		if (embeddedState.viewBox) {\n" +
+		"			localStorage.setItem(newStorageKeys.viewBox, JSON.stringify(embeddedState.viewBox));\n" +
+		"		}\n" +
+		"		\n" +
+		"		// No need to override localStorage - the new GUID will work with normal localStorage\n" +
+		"		console.log('📦 Downloaded document initialized with embedded state as localStorage');\n" +
+		"		console.log('🆔 New document GUID:', newDocumentGuid);\n" +
+		"		console.log('✏️ Document is fully editable - changes will be saved to localStorage');\n" +
+		"		console.log('📊 Embedded state:', {\n" +
+		"			tableCount: Object.keys(embeddedState.tablePositions || {}).length,\n" +
+		"			zoom: embeddedState.zoom,\n" +
+		"			settings: embeddedState.settings\n" +
+		"		});\n" +
+		"		\n" +
+		"	} catch (error) {\n" +
+		"		console.error('❌ Failed to initialize embedded state:', error);\n" +
+		"		console.log('🔄 Document will start with default layout and be fully editable');\n" +
+		"	}\n" +
+		"})();\n" +
+		"\n" +
+		"// Restore state and ensure normal functionality after DOM is loaded\n" +
+		"document.addEventListener('DOMContentLoaded', function() {\n" +
+		"	setTimeout(function() {\n" +
+		"		try {\n" +
+		"			// Load settings normally - localStorage now contains the embedded data\n" +
+		"			loadSettings();\n" +
+		"			\n" +
+		"			// Generate schema - this will use saved positions or auto-optimize if none exist\n" +
+		"			generateSchema();\n" +
+		"			\n" +
+		"			// Update button states to reflect loaded settings\n" +
+		"			updateButtonStates();\n" +
+		"			\n" +
+		"			// Restore view state if available\n" +
+		"			const savedViewBox = localStorage.getItem(STORAGE_KEYS.viewBox);\n" +
+		"			if (savedViewBox) {\n" +
+		"				try {\n" +
+		"					const viewBoxData = JSON.parse(savedViewBox);\n" +
+		"					if (viewBoxData.zoom) {\n" +
+		"						currentZoom = viewBoxData.zoom;\n" +
+		"					}\n" +
+		"					if (viewBoxData.viewBox) {\n" +
+		"						svgViewBox = { ...viewBoxData.viewBox };\n" +
+		"						updateViewBox();\n" +
+		"					}\n" +
+		"				} catch (e) {\n" +
+		"					console.warn('Could not restore view state:', e);\n" +
+		"				}\n" +
+		"			}\n" +
+		"			\n" +
+		"			// Ensure event handlers are properly set up\n" +
+		"			setupEventListeners();\n" +
+		"			\n" +
+		"			console.log('✅ Downloaded document fully restored and ready for editing');\n" +
+		"			console.log('💾 All changes will be saved to localStorage with GUID:', DOCUMENT_GUID);\n" +
+		"			\n" +
+		"		} catch (error) {\n" +
+		"			console.error('❌ Failed to restore downloaded document state:', error);\n" +
+		"			console.log('🔄 Falling back to default state - document is still fully functional');\n" +
+		"			// Try to set up basic functionality even if restore fails\n" +
+		"			try {\n" +
+		"				setupEventListeners();\n" +
+		"				generateSchema();\n" +
+		"				updateButtonStates();\n" +
+		"			} catch (fallbackError) {\n" +
+		"				console.error('❌ Fallback initialization also failed:', fallbackError);\n" +
+		"			}\n" +
+		"		}\n" +
+		"	}, 100);\n" +
+		"});";
 
 	// ⚠️ CRITICAL: DO NOT CHANGE THE LINE BELOW! ⚠️
 	// The scriptEndTag MUST be '/script>' NOT the full closing tag with < bracket
@@ -313,18 +329,22 @@ function embedCurrentStateIntoHtml(html, state, newDocumentGuid) {
 	// tag terminates the script block even when it appears inside quotes or comments.
 	// Using '/script>' (without the < bracket) avoids this issue entirely.
 	// 🚨 NEVER "fix" this to include the opening < bracket! 🚨
-	const scriptEndTag = '/script>';
+	const scriptEndTag = "/script>";
 	const scriptEndIndex = html.lastIndexOf(scriptEndTag);
 
 	if (scriptEndIndex === -1) {
-		console.warn('Could not find script tag to inject state, downloading without state');
+		console.warn(
+			"Could not find script tag to inject state, downloading without state",
+		);
 		return html;
 	}
 
 	// Insert the state initialization script before the closing script tag.
 	const modifiedHtml =
 		html.substring(0, scriptEndIndex - 1) +
-		'\n\t\t' + stateInjectionScript + '\n\t' +
+		"\n\t\t" +
+		stateInjectionScript +
+		"\n\t" +
 		html.substring(scriptEndIndex - 1);
 
 	return modifiedHtml;

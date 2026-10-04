@@ -6,7 +6,7 @@ using SchemaMagic.Core;
 
 namespace SchemaMagic;
 
-internal class Program
+internal static class Program
 {
 	static async Task<int> Main(string[] args)
 	{
@@ -109,7 +109,7 @@ More Information:
   📦 NuGet: https://www.nuget.org/packages/SchemaMagic
 ";
 
-		rootCommand.SetAction(async (parseResult, cancellationToken) =>
+		rootCommand.SetAction(async (parseResult, _) =>
 		{
 			var dbContextFile = parseResult.GetValue(dbContextFileArgument);
 			var githubRepo = parseResult.GetValue(githubRepoOption);

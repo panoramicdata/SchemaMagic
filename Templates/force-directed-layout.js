@@ -12,15 +12,15 @@
 // ========================================
 
 const LAYOUT_CONFIG = {
-	columnGap: 550,          // Horizontal corridor between columns (room for orthogonal edge routing + crow's feet)
-	rowGap: 130,             // Vertical space between stacked tables in a column
-	componentGap: 700,       // Space between separate connected components
-	singletonGap: 150,       // Grid spacing between unconnected tables
-	orderingSweeps: 8,       // Barycenter crossing-reduction passes
-	alignmentPasses: 12,     // Vertical neighbor-alignment relaxation passes
-	minColumnHeight: 3000,   // Never split a column shorter than this
-	maxColumnHeight: 13000,  // Hard cap: split taller columns into side-by-side banks
-	gridSize: 50,            // Snap-to-grid size
+	columnGap: 550, // Horizontal corridor between columns (room for orthogonal edge routing + crow's feet)
+	rowGap: 130, // Vertical space between stacked tables in a column
+	componentGap: 700, // Space between separate connected components
+	singletonGap: 150, // Grid spacing between unconnected tables
+	orderingSweeps: 8, // Barycenter crossing-reduction passes
+	alignmentPasses: 12, // Vertical neighbor-alignment relaxation passes
+	minColumnHeight: 3000, // Never split a column shorter than this
+	maxColumnHeight: 13000, // Hard cap: split taller columns into side-by-side banks
+	gridSize: 50, // Snap-to-grid size
 };
 
 /**
@@ -32,11 +32,18 @@ function calculateSmartTablePositions() {
 	const entityNames = Object.keys(entities);
 
 	if (hasSavedDocumentState()) {
-		console.log(`📄 Document ${DOCUMENT_GUID}: Using saved positions (no auto-layout)`);
-		return convertSavedToStandardFormat(loadSavedDocumentPositions(), entityNames);
+		console.log(
+			`📄 Document ${DOCUMENT_GUID}: Using saved positions (no auto-layout)`,
+		);
+		return convertSavedToStandardFormat(
+			loadSavedDocumentPositions(),
+			entityNames,
+		);
 	}
 
-	console.log(`🎯 Document ${DOCUMENT_GUID}: No saved state found, computing smart layout...`);
+	console.log(
+		`🎯 Document ${DOCUMENT_GUID}: No saved state found, computing smart layout...`,
+	);
 	return computeSmartLayout(entityNames);
 }
 
@@ -55,7 +62,7 @@ function loadSavedDocumentPositions() {
 			return JSON.parse(saved);
 		}
 	} catch (e) {
-		console.warn('Failed to load saved document positions:', e);
+		console.warn("Failed to load saved document positions:", e);
 	}
 	return null;
 }
@@ -66,7 +73,7 @@ function loadSavedDocumentPositions() {
 function convertSavedToStandardFormat(savedPositions, entityNames) {
 	const positions = {};
 
-	entityNames.forEach(entityName => {
+	entityNames.forEach((entityName) => {
 		let x, y;
 		if (savedPositions && savedPositions[entityName]) {
 			x = savedPositions[entityName].x;
@@ -98,7 +105,9 @@ function computeSmartLayout(entityNames) {
 	const relationships = extractRelationships();
 	const graph = buildLayoutGraph(entityNames, relationships);
 	const dims = {};
-	entityNames.forEach(name => { dims[name] = getTableDimensions(name); });
+	entityNames.forEach((name) => {
+		dims[name] = getTableDimensions(name);
+	});
 
 	// Split into connected components (deterministic order)
 	const components = findConnectedComponents(entityNames, graph);
@@ -106,7 +115,7 @@ function computeSmartLayout(entityNames) {
 	const blocks = [];
 	const singletons = [];
 
-	components.forEach(component => {
+	components.forEach((component) => {
 		if (component.length === 1) {
 			singletons.push(component[0]);
 		} else {
@@ -120,7 +129,9 @@ function computeSmartLayout(entityNames) {
 		blocks.push(layoutSingletonGrid(singletons, dims));
 	}
 
-	console.log(`🧩 Smart layout: ${components.length} components (${singletons.length} unconnected tables)`);
+	console.log(
+		`🧩 Smart layout: ${components.length} components (${singletons.length} unconnected tables)`,
+	);
 
 	// Pack component blocks into a compact overall arrangement
 	const packed = packBlocks(blocks);
@@ -135,13 +146,21 @@ function computeSmartLayout(entityNames) {
  */
 function buildLayoutGraph(entityNames, relationships) {
 	const adjacency = {};
-	entityNames.forEach(name => { adjacency[name] = new Map(); });
+	entityNames.forEach((name) => {
+		adjacency[name] = new Map();
+	});
 
-	relationships.forEach(rel => {
+	relationships.forEach((rel) => {
 		if (rel.from === rel.to) return; // self-loops don't influence placement
 		if (!adjacency[rel.from] || !adjacency[rel.to]) return;
-		adjacency[rel.from].set(rel.to, (adjacency[rel.from].get(rel.to) || 0) + 1);
-		adjacency[rel.to].set(rel.from, (adjacency[rel.to].get(rel.from) || 0) + 1);
+		adjacency[rel.from].set(
+			rel.to,
+			(adjacency[rel.from].get(rel.to) || 0) + 1,
+		);
+		adjacency[rel.to].set(
+			rel.from,
+			(adjacency[rel.to].get(rel.from) || 0) + 1,
+		);
 	});
 
 	return adjacency;
@@ -155,7 +174,7 @@ function findConnectedComponents(entityNames, graph) {
 	const components = [];
 	const sortedNames = [...entityNames].sort();
 
-	sortedNames.forEach(start => {
+	sortedNames.forEach((start) => {
 		if (visited.has(start)) return;
 
 		const component = [];
@@ -166,7 +185,7 @@ function findConnectedComponents(entityNames, graph) {
 			const node = queue.shift();
 			component.push(node);
 			const neighbors = [...graph[node].keys()].sort();
-			neighbors.forEach(neighbor => {
+			neighbors.forEach((neighbor) => {
 				if (!visited.has(neighbor)) {
 					visited.add(neighbor);
 					queue.push(neighbor);
@@ -190,10 +209,12 @@ function layoutComponent(nodes, graph, dims) {
 	// --- 1. Layer assignment (columns) ---
 	const layerOf = assignLayers(nodes, graph);
 	let layerCount = 0;
-	nodes.forEach(n => { layerCount = Math.max(layerCount, layerOf[n] + 1); });
+	nodes.forEach((n) => {
+		layerCount = Math.max(layerCount, layerOf[n] + 1);
+	});
 
 	const layers = Array.from({ length: layerCount }, () => []);
-	[...nodes].sort().forEach(n => layers[layerOf[n]].push(n));
+	[...nodes].sort().forEach((n) => layers[layerOf[n]].push(n));
 
 	// --- 2. Crossing reduction (barycenter ordering sweeps) ---
 	orderLayers(layers, graph);
@@ -206,7 +227,7 @@ function layoutComponent(nodes, graph, dims) {
 	const columnX = [];
 	let cumX = 0;
 	columns.forEach((column, index) => {
-		const colWidth = Math.max(...column.map(n => dims[n].width));
+		const colWidth = Math.max(...column.map((n) => dims[n].width));
 		columnX[index] = { x: cumX, width: colWidth };
 		cumX += colWidth + LAYOUT_CONFIG.columnGap;
 	});
@@ -217,11 +238,13 @@ function layoutComponent(nodes, graph, dims) {
 	columns.forEach((column, colIndex) => {
 		const stackHeight = columnStackHeight(column, dims);
 		let y = -stackHeight / 2;
-		column.forEach(name => {
+		column.forEach((name) => {
 			const d = dims[name];
 			pos[name] = {
-				x: columnX[colIndex].x + (columnX[colIndex].width - d.width) / 2,
-				y: y
+				x:
+					columnX[colIndex].x +
+					(columnX[colIndex].width - d.width) / 2,
+				y: y,
 			};
 			columnOf[name] = colIndex;
 			y += d.height + LAYOUT_CONFIG.rowGap;
@@ -235,18 +258,21 @@ function layoutComponent(nodes, graph, dims) {
 	for (let pass = 0; pass < LAYOUT_CONFIG.alignmentPasses; pass++) {
 		const forward = pass % 2 === 0;
 		const allowReorder = pass < LAYOUT_CONFIG.alignmentPasses / 2;
-		const indices = forward ?
-			columns.map((_, i) => i) :
-			columns.map((_, i) => columns.length - 1 - i);
+		const indices = forward
+			? columns.map((_, i) => i)
+			: columns.map((_, i) => columns.length - 1 - i);
 
-		indices.forEach(colIndex => {
+		indices.forEach((colIndex) => {
 			relaxColumn(columns[colIndex], graph, dims, pos, allowReorder);
 		});
 	}
 
 	// --- 5. Normalize to (0, 0) and measure ---
-	let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-	nodes.forEach(name => {
+	let minX = Infinity,
+		minY = Infinity,
+		maxX = -Infinity,
+		maxY = -Infinity;
+	nodes.forEach((name) => {
 		const d = dims[name];
 		minX = Math.min(minX, pos[name].x);
 		minY = Math.min(minY, pos[name].y);
@@ -255,10 +281,10 @@ function layoutComponent(nodes, graph, dims) {
 	});
 
 	const positions = {};
-	nodes.forEach(name => {
+	nodes.forEach((name) => {
 		positions[name] = {
 			x: pos[name].x - minX,
-			y: pos[name].y - minY
+			y: pos[name].y - minY,
 		};
 	});
 
@@ -275,21 +301,24 @@ function assignLayers(nodes, graph) {
 	const sorted = [...nodes].sort();
 
 	// Deterministic starting point: highest weighted degree
-	const weightedDegree = name => {
+	const weightedDegree = (name) => {
 		let sum = 0;
-		graph[name].forEach(weight => { sum += weight; });
+		graph[name].forEach((weight) => {
+			sum += weight;
+		});
 		return sum;
 	};
 	let start = sorted[0];
-	sorted.forEach(n => {
+	sorted.forEach((n) => {
 		if (weightedDegree(n) > weightedDegree(start)) start = n;
 	});
 
 	// Double BFS: farthest node from the hub is a pseudo-peripheral root
 	const firstPass = bfsDistances(start, graph);
 	let root = start;
-	sorted.forEach(n => {
-		if (firstPass[n] !== undefined && firstPass[n] > (firstPass[root] || 0)) root = n;
+	sorted.forEach((n) => {
+		if (firstPass[n] !== undefined && firstPass[n] > (firstPass[root] || 0))
+			root = n;
 	});
 
 	return bfsDistances(root, graph);
@@ -305,7 +334,7 @@ function bfsDistances(root, graph) {
 	while (queue.length > 0) {
 		const node = queue.shift();
 		const neighbors = [...graph[node].keys()].sort();
-		neighbors.forEach(neighbor => {
+		neighbors.forEach((neighbor) => {
 			if (dist[neighbor] === undefined) {
 				dist[neighbor] = dist[node] + 1;
 				queue.push(neighbor);
@@ -324,12 +353,15 @@ function bfsDistances(root, graph) {
 function orderLayers(layers, graph) {
 	// Current index of each node within its layer
 	const indexOf = {};
-	const refreshIndices = layer => layer.forEach((n, i) => { indexOf[n] = i; });
+	const refreshIndices = (layer) =>
+		layer.forEach((n, i) => {
+			indexOf[n] = i;
+		});
 	layers.forEach(refreshIndices);
 
 	const sortByBarycenter = (layer, referenceLayer) => {
 		const referenceSet = new Set(referenceLayer);
-		const keyed = layer.map(name => {
+		const keyed = layer.map((name) => {
 			let weightSum = 0;
 			let weightedIndexSum = 0;
 			graph[name].forEach((weight, neighbor) => {
@@ -339,12 +371,16 @@ function orderLayers(layers, graph) {
 				}
 			});
 			// Tables with no partners in the reference layer keep their position
-			const barycenter = weightSum > 0 ? weightedIndexSum / weightSum : indexOf[name];
+			const barycenter =
+				weightSum > 0 ? weightedIndexSum / weightSum : indexOf[name];
 			return { name, barycenter };
 		});
 
-		keyed.sort((a, b) => a.barycenter - b.barycenter || a.name.localeCompare(b.name));
-		const reordered = keyed.map(k => k.name);
+		keyed.sort(
+			(a, b) =>
+				a.barycenter - b.barycenter || a.name.localeCompare(b.name),
+		);
+		const reordered = keyed.map((k) => k.name);
 		layer.length = 0;
 		layer.push(...reordered);
 		refreshIndices(layer);
@@ -384,17 +420,21 @@ function columnStackHeight(column, dims) {
 function splitTallLayers(layers, dims) {
 	// Aim for a roughly 4:3 component; cap column height accordingly
 	let totalArea = 0;
-	layers.forEach(layer => layer.forEach(name => {
-		totalArea += (dims[name].width + LAYOUT_CONFIG.columnGap) * (dims[name].height + LAYOUT_CONFIG.rowGap);
-	}));
+	layers.forEach((layer) =>
+		layer.forEach((name) => {
+			totalArea +=
+				(dims[name].width + LAYOUT_CONFIG.columnGap) *
+				(dims[name].height + LAYOUT_CONFIG.rowGap);
+		}),
+	);
 	const idealHeight = Math.sqrt(totalArea * 0.75); // height of a 4:3 rectangle with this area
 	const maxColumnHeight = Math.min(
 		Math.max(LAYOUT_CONFIG.minColumnHeight, idealHeight),
-		LAYOUT_CONFIG.maxColumnHeight
+		LAYOUT_CONFIG.maxColumnHeight,
 	);
 
 	const columns = [];
-	layers.forEach(layer => {
+	layers.forEach((layer) => {
 		const stackHeight = columnStackHeight(layer, dims);
 		if (stackHeight <= maxColumnHeight || layer.length <= 1) {
 			columns.push([...layer]);
@@ -409,7 +449,7 @@ function splitTallLayers(layers, dims) {
 		}
 	});
 
-	return columns.filter(c => c.length > 0);
+	return columns.filter((c) => c.length > 0);
 }
 
 /**
@@ -420,7 +460,7 @@ function splitTallLayers(layers, dims) {
  * least-squares block placement.
  */
 function relaxColumn(column, graph, dims, pos, allowReorder) {
-	const entries = column.map(name => {
+	const entries = column.map((name) => {
 		const d = dims[name];
 		let weightSum = 0;
 		let weightedCenterSum = 0;
@@ -433,24 +473,30 @@ function relaxColumn(column, graph, dims, pos, allowReorder) {
 		});
 
 		const currentCenter = pos[name].y + d.height / 2;
-		const desiredCenter = weightSum > 0 ? weightedCenterSum / weightSum : currentCenter;
+		const desiredCenter =
+			weightSum > 0 ? weightedCenterSum / weightSum : currentCenter;
 
 		return {
 			name,
 			desiredTop: desiredCenter - d.height / 2,
 			size: d.height + LAYOUT_CONFIG.rowGap,
-			weight: Math.max(weightSum, 0.1)
+			weight: Math.max(weightSum, 0.1),
 		};
 	});
 
 	if (allowReorder) {
-		entries.sort((a, b) => a.desiredTop - b.desiredTop || a.name.localeCompare(b.name));
+		entries.sort(
+			(a, b) =>
+				a.desiredTop - b.desiredTop || a.name.localeCompare(b.name),
+		);
 		column.length = 0;
-		column.push(...entries.map(e => e.name));
+		column.push(...entries.map((e) => e.name));
 	}
 
 	const tops = placeSequence1D(entries);
-	column.forEach((name, i) => { pos[name].y = tops[i]; });
+	column.forEach((name, i) => {
+		pos[name].y = tops[i];
+	});
 }
 
 /**
@@ -462,12 +508,12 @@ function relaxColumn(column, graph, dims, pos, allowReorder) {
 function placeSequence1D(entries) {
 	const blocks = [];
 
-	entries.forEach(entry => {
+	entries.forEach((entry) => {
 		let block = {
 			desiredTop: entry.desiredTop,
 			weight: entry.weight,
 			size: entry.size,
-			entries: [entry]
+			entries: [entry],
 		};
 
 		// Merge with previous blocks while they would overlap
@@ -478,12 +524,14 @@ function placeSequence1D(entries) {
 			blocks.pop();
 			const combinedWeight = last.weight + block.weight;
 			const combinedDesired =
-				(last.desiredTop * last.weight + (block.desiredTop - last.size) * block.weight) / combinedWeight;
+				(last.desiredTop * last.weight +
+					(block.desiredTop - last.size) * block.weight) /
+				combinedWeight;
 			block = {
 				desiredTop: combinedDesired,
 				weight: combinedWeight,
 				size: last.size + block.size,
-				entries: [...last.entries, ...block.entries]
+				entries: [...last.entries, ...block.entries],
 			};
 		}
 
@@ -491,9 +539,9 @@ function placeSequence1D(entries) {
 	});
 
 	const tops = [];
-	blocks.forEach(block => {
+	blocks.forEach((block) => {
 		let y = block.desiredTop;
-		block.entries.forEach(entry => {
+		block.entries.forEach((entry) => {
 			tops.push(y);
 			y += entry.size;
 		});
@@ -517,7 +565,7 @@ function layoutSingletonGrid(singletons, dims) {
 		const row = singletons.slice(rowStart, rowStart + columnsCount);
 		let x = 0;
 		let rowHeight = 0;
-		row.forEach(name => {
+		row.forEach((name) => {
 			positions[name] = { x, y };
 			x += dims[name].width + LAYOUT_CONFIG.singletonGap;
 			rowHeight = Math.max(rowHeight, dims[name].height);
@@ -536,13 +584,23 @@ function layoutSingletonGrid(singletons, dims) {
 function packBlocks(blocks) {
 	if (blocks.length === 0) return { positions: {}, width: 0, height: 0 };
 
-	const sorted = [...blocks].sort((a, b) => b.height - a.height || b.width - a.width);
+	const sorted = [...blocks].sort(
+		(a, b) => b.height - a.height || b.width - a.width,
+	);
 
 	const totalArea = sorted.reduce(
-		(sum, b) => sum + (b.width + LAYOUT_CONFIG.componentGap) * (b.height + LAYOUT_CONFIG.componentGap), 0);
+		(sum, b) =>
+			sum +
+			(b.width + LAYOUT_CONFIG.componentGap) *
+				(b.height + LAYOUT_CONFIG.componentGap),
+		0,
+	);
 	const canvasAspect = CANVAS_WIDTH / CANVAS_HEIGHT;
-	const maxBlockWidth = Math.max(...sorted.map(b => b.width));
-	const targetWidth = Math.max(maxBlockWidth, Math.sqrt(totalArea * canvasAspect));
+	const maxBlockWidth = Math.max(...sorted.map((b) => b.width));
+	const targetWidth = Math.max(
+		maxBlockWidth,
+		Math.sqrt(totalArea * canvasAspect),
+	);
 
 	const positions = {};
 	let shelfX = 0;
@@ -551,7 +609,7 @@ function packBlocks(blocks) {
 	let totalWidth = 0;
 	let totalHeight = 0;
 
-	sorted.forEach(block => {
+	sorted.forEach((block) => {
 		if (shelfX > 0 && shelfX + block.width > targetWidth) {
 			// Wrap to next shelf
 			shelfY += shelfHeight + LAYOUT_CONFIG.componentGap;
@@ -559,10 +617,10 @@ function packBlocks(blocks) {
 			shelfHeight = 0;
 		}
 
-		Object.keys(block.positions).forEach(name => {
+		Object.keys(block.positions).forEach((name) => {
 			positions[name] = {
 				x: block.positions[name].x + shelfX,
-				y: block.positions[name].y + shelfY
+				y: block.positions[name].y + shelfY,
 			};
 		});
 
@@ -584,16 +642,30 @@ function finalizePositions(packed) {
 	const neededWidth = packed.width + BOUNDARY_MARGIN * 2;
 	const neededHeight = packed.height + BOUNDARY_MARGIN * 2;
 	if (neededWidth > CANVAS_WIDTH || neededHeight > CANVAS_HEIGHT) {
-		CANVAS_WIDTH = Math.max(CANVAS_WIDTH, Math.ceil(neededWidth / 1000) * 1000);
-		CANVAS_HEIGHT = Math.max(CANVAS_HEIGHT, Math.ceil(neededHeight / 1000) * 1000);
-		console.log(`🖼️ Expanded canvas to ${CANVAS_WIDTH}×${CANVAS_HEIGHT} to fit the layout`);
+		CANVAS_WIDTH = Math.max(
+			CANVAS_WIDTH,
+			Math.ceil(neededWidth / 1000) * 1000,
+		);
+		CANVAS_HEIGHT = Math.max(
+			CANVAS_HEIGHT,
+			Math.ceil(neededHeight / 1000) * 1000,
+		);
+		console.log(
+			`🖼️ Expanded canvas to ${CANVAS_WIDTH}×${CANVAS_HEIGHT} to fit the layout`,
+		);
 	}
 
-	const offsetX = Math.max(BOUNDARY_MARGIN, (CANVAS_WIDTH - packed.width) / 2);
-	const offsetY = Math.max(BOUNDARY_MARGIN, (CANVAS_HEIGHT - packed.height) / 2);
+	const offsetX = Math.max(
+		BOUNDARY_MARGIN,
+		(CANVAS_WIDTH - packed.width) / 2,
+	);
+	const offsetY = Math.max(
+		BOUNDARY_MARGIN,
+		(CANVAS_HEIGHT - packed.height) / 2,
+	);
 
 	const result = {};
-	Object.keys(packed.positions).forEach(name => {
+	Object.keys(packed.positions).forEach((name) => {
 		let x = packed.positions[name].x + offsetX;
 		let y = packed.positions[name].y + offsetY;
 
@@ -605,7 +677,9 @@ function finalizePositions(packed) {
 		result[name] = { x: Math.round(x), y: Math.round(y) };
 	});
 
-	console.log(`📐 Smart layout complete: ${Object.keys(result).length} tables in ${Math.round(packed.width)}×${Math.round(packed.height)}px`);
+	console.log(
+		`📐 Smart layout complete: ${Object.keys(result).length} tables in ${Math.round(packed.width)}×${Math.round(packed.height)}px`,
+	);
 	return result;
 }
 
@@ -615,28 +689,34 @@ function finalizePositions(packed) {
 function extractRelationships() {
 	const relationships = [];
 
-	Object.values(entities).forEach(entity => {
+	Object.values(entities).forEach((entity) => {
 		const fromEntityName = entity.type;
 		// Include inherited FK properties so relationships declared on base classes
 		// influence the layout (keeps base-linked tables near their target).
 		const seenPropNames = new Set();
-		const allProps = [...(entity.properties || []), ...(entity.inheritedProperties || [])]
-			.filter(p => !seenPropNames.has(p.name) && seenPropNames.add(p.name));
-		allProps.forEach(prop => {
+		const allProps = [
+			...(entity.properties || []),
+			...(entity.inheritedProperties || []),
+		].filter(
+			(p) => !seenPropNames.has(p.name) && seenPropNames.add(p.name),
+		);
+		allProps.forEach((prop) => {
 			if (prop.isForeignKey) {
 				const targetEntityName = findTargetEntity(prop.name);
 				if (targetEntityName && entities[targetEntityName]) {
 					relationships.push({
 						from: fromEntityName,
 						to: targetEntityName,
-						property: prop.name
+						property: prop.name,
 					});
 				}
 			}
 		});
 	});
 
-	console.log(`🔗 Extracted ${relationships.length} relationships from ${Object.keys(entities).length} entities`);
+	console.log(
+		`🔗 Extracted ${relationships.length} relationships from ${Object.keys(entities).length} entities`,
+	);
 	return relationships;
 }
 
@@ -650,35 +730,40 @@ function getTableDimensions(entityName) {
 	if (!entity) return { width: 1000, height: 500 };
 
 	const properties = entity.properties || [];
-	const inheritedProps = showInheritedProperties ? (entity.inheritedProperties || []) : [];
+	const inheritedProps = showInheritedProperties
+		? entity.inheritedProperties || []
+		: [];
 	const allProperties = [...inheritedProps, ...properties];
 
-	const visibleProperties = showNavigationProperties ?
-		allProperties :
-		allProperties.filter(p => !isNavigationProperty(p));
+	const visibleProperties = showNavigationProperties
+		? allProperties
+		: allProperties.filter((p) => !isNavigationProperty(p));
 
 	const rowHeight = 55;
 	const headerHeight = 88;
-	const inheritanceHeight = (entity.baseType && showInheritedProperties) ? 50 : 0;
+	const inheritanceHeight =
+		entity.baseType && showInheritedProperties ? 50 : 0;
 	const padding = 30;
 	const minWidth = 1000;
 	const iconWidth = 60;
 
 	const maxNameLength = Math.max(
 		entity.type.length,
-		...visibleProperties.map(p => p.name.length),
-		0
+		...visibleProperties.map((p) => p.name.length),
+		0,
 	);
 
 	const maxTypeLength = Math.max(
 		8,
-		...visibleProperties.map(p => {
+		...visibleProperties.map((p) => {
 			let typeText = p.type;
 			if (isNavigationProperty(p)) {
-				typeText = typeText.replace(/^ICollection<(.+)>$/, '$1').replace(/^List<(.+)>$/, '$1');
+				typeText = typeText
+					.replace(/^ICollection<(.+)>$/, "$1")
+					.replace(/^List<(.+)>$/, "$1");
 			}
 			return typeText.length;
-		})
+		}),
 	);
 
 	const nameColumnWidth = Math.max(200, maxNameLength * 18);
@@ -688,11 +773,19 @@ function getTableDimensions(entityName) {
 
 	const width = Math.max(
 		minWidth,
-		iconWidth + nameColumnWidth + typeColumnWidth + typeIconSpace + spacingBuffer + (padding * 2)
+		iconWidth +
+			nameColumnWidth +
+			typeColumnWidth +
+			typeIconSpace +
+			spacingBuffer +
+			padding * 2,
 	);
 
-	const visibleRows = fullHeightMode ? visibleProperties.length : Math.min(visibleProperties.length, 15);
-	const height = headerHeight + inheritanceHeight + (visibleRows * rowHeight) + padding;
+	const visibleRows = fullHeightMode
+		? visibleProperties.length
+		: Math.min(visibleProperties.length, 15);
+	const height =
+		headerHeight + inheritanceHeight + visibleRows * rowHeight + padding;
 
 	return { width, height: Math.max(height, 200) };
 }
@@ -703,14 +796,14 @@ function getTableDimensions(entityName) {
 function getCurrentTablePositions() {
 	const positions = {};
 
-	document.querySelectorAll('.table-group').forEach(tableGroup => {
-		const entityName = tableGroup.getAttribute('data-entity');
-		const rect = tableGroup.querySelector('.table-box');
+	document.querySelectorAll(".table-group").forEach((tableGroup) => {
+		const entityName = tableGroup.getAttribute("data-entity");
+		const rect = tableGroup.querySelector(".table-box");
 
 		if (rect && entityName) {
 			positions[entityName] = {
-				x: parseFloat(rect.getAttribute('x')),
-				y: parseFloat(rect.getAttribute('y'))
+				x: parseFloat(rect.getAttribute("x")),
+				y: parseFloat(rect.getAttribute("y")),
 			};
 		}
 	});
@@ -722,8 +815,10 @@ function getCurrentTablePositions() {
  * Apply computed positions to existing tables and refresh relationship lines
  */
 function applyPositionsToTables(positions) {
-	Object.keys(positions).forEach(entityName => {
-		const tableGroup = document.querySelector(`[data-entity="${entityName}"]`);
+	Object.keys(positions).forEach((entityName) => {
+		const tableGroup = document.querySelector(
+			`[data-entity="${entityName}"]`,
+		);
 		if (tableGroup && positions[entityName]) {
 			const newPos = positions[entityName];
 			moveTable(tableGroup, newPos.x, newPos.y);

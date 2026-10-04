@@ -80,10 +80,6 @@ public partial class SchemaGenerator(FileInfo dbContextFile, string? outputPath 
 		Console.WriteLine("============================================================");
 		Console.WriteLine($"🔍 Processing DbContext: {Path.GetFileName(_dbContextPath)}");
 
-		// Read DbContext content
-		var sourceCode = File.ReadAllText(_dbContextPath);
-		var fileName = Path.GetFileName(_dbContextPath);
-
 		// Use the Core library for analysis with the actual file path for better entity discovery
 		var result = CoreSchemaAnalysisService.AnalyzeDbContextFile(_dbContextPath);
 
@@ -120,8 +116,8 @@ public partial class SchemaGenerator(FileInfo dbContextFile, string? outputPath 
 		{
 			var customCss = File.ReadAllText(_customCssPath);
 			var entitiesJson = JsonSerializer.Serialize(result.Entities, _jsonSerializerOptions);
-			var documentGuid = _documentGuid ?? Guid.NewGuid().ToString();
-			htmlContent = ModularHtmlTemplate.GenerateWithCustomCss(entitiesJson, documentGuid, customCss);
+			var customCssGuid = _documentGuid ?? Guid.NewGuid().ToString();
+			htmlContent = ModularHtmlTemplate.GenerateWithCustomCss(entitiesJson, customCssGuid, customCss);
 		}
 		else
 		{
