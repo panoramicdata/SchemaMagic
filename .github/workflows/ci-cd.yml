@@ -160,7 +160,7 @@ jobs:
         echo "[INFO] Web App Version: $VERSION"
         
     - name: Setup Pages
-      uses: actions/configure-pages@v5
+      uses: actions/configure-pages@v6
       
     - name: Restore dependencies
       run: dotnet restore SchemaMagic.Web/SchemaMagic.Web.csproj
@@ -219,10 +219,10 @@ jobs:
         echo "DEPLOY_DIR=$DEPLOY_DIR" >> $GITHUB_ENV
         
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v3
+      uses: actions/upload-pages-artifact@v5
       with:
         path: ${{ env.DEPLOY_DIR }}
         
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v4
+      uses: actions/deploy-pages@v5
