@@ -20,6 +20,7 @@
     <NeutralResourcesLanguage>en</NeutralResourcesLanguage>
     <IncludeSymbols>true</IncludeSymbols>
     <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <PackageIcon>Logo.png</PackageIcon>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
@@ -47,5 +48,8 @@
     <EmbeddedResource Include="..\Templates\table-interaction.js" Link="Templates\table-interaction.js" />
     <EmbeddedResource Include="..\Templates\relationships.js" Link="Templates\relationships.js" />
     <EmbeddedResource Include="..\Templates\controls.js" Link="Templates\controls.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Logo.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>
