@@ -76,7 +76,7 @@ jobs:
     # comparable across the estate.
     - name: Run tests with coverage
       run: >-
-        ./SchemaMagic.Tests/bin/Debug/net10.0/SchemaMagic.Tests
+        ./SchemaMagic.Tests/bin/Debug/net11.0/SchemaMagic.Tests
         --coverage
         --coverage-settings ${{ github.workspace }}/coverage.config
         --coverage-output-format cobertura
@@ -90,7 +90,7 @@ jobs:
       uses: codacy/codacy-coverage-reporter-action@v1
       with:
         project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
-        coverage-reports: SchemaMagic.Tests/bin/Debug/net10.0/TestResults/coverage.cobertura.xml
+        coverage-reports: SchemaMagic.Tests/bin/Debug/net11.0/TestResults/coverage.cobertura.xml
 
     - name: Upload coverage artifact
       if: always()
@@ -98,7 +98,7 @@ jobs:
       uses: actions/upload-artifact@v7
       with:
         name: coverage
-        path: SchemaMagic.Tests/bin/Debug/net10.0/TestResults/coverage.cobertura.xml
+        path: SchemaMagic.Tests/bin/Debug/net11.0/TestResults/coverage.cobertura.xml
         retention-days: 7
 
   publish:
