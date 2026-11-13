@@ -4,6 +4,8 @@
 
 **Interactive HTML+SVG Database Schema Visualizer for Entity Framework Core**
 
+Supports .NET 11.0.
+
 Transform your Entity Framework DbContexts into beautiful, interactive schema diagrams with just one command - from local files or GitHub repositories.
 
 [![NuGet Version](https://img.shields.io/nuget/v/SchemaMagic.svg)](https://www.nuget.org/packages/SchemaMagic)
@@ -270,7 +272,7 @@ SchemaMagic/
 
 ## 📋 Requirements
 
-- **.NET 9.0 or later** (for CLI tool and development)
+- **.NET 11.0 or later** (for CLI tool and development)
 - **Entity Framework Core DbContext files** (any version)
 - **Modern web browser** for viewing generated HTML
 - **Git** (for version management during development)

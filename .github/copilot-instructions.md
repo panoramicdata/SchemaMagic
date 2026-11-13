@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-SchemaMagic is a .NET 9 command-line tool that analyzes Entity Framework Core DbContext files and generates interactive HTML schema visualizations. The tool creates drag-and-drop entity relationship diagrams that help developers understand and explore database schemas.
+SchemaMagic is a .NET 11.0 command-line tool that analyzes Entity Framework Core DbContext files and generates interactive HTML schema visualizations. The tool creates drag-and-drop entity relationship diagrams that help developers understand and explore database schemas.
 
 ## Test Run Results ?
 

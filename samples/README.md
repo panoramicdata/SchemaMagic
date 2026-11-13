@@ -87,7 +87,7 @@ Each sample will generate a self-contained HTML file that you can open in any mo
 If you encounter issues with the samples:
 
 1. **Check file paths**: Ensure you're running from the correct directory
-2. **Verify .NET version**: Samples use .NET 9 features
+2. **Verify .NET version**: Samples use .NET 11.0 features
 3. **Check output**: Look for generated HTML files in the current directory
 4. **Browser compatibility**: Use a modern browser (Chrome, Firefox, Edge, Safari)
 
