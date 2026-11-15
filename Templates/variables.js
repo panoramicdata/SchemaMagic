@@ -496,19 +496,44 @@ function saveTableGroupingRulesToStorage() {
 	console.log("Saved table grouping rules:", tableGroupingRules.length);
 }
 
-// Rules are user-editable, so patterns are bounded and screened for nested quantifiers before compiling
+// Rule patterns are a safe subset of regex syntax and are matched without RegExp:
+// "|" separates alternatives, ".*" is a wildcard, "^" and "$" anchor an alternative.
+// Any other character is matched literally, ignoring case.
 const MAX_RULE_PATTERN_LENGTH = 200;
-const NESTED_QUANTIFIER = /\([^)]*[+*][^)]*\)[+*{]/;
+
+function matchesAlternative(alternative, name) {
+	const anchoredStart = alternative.startsWith("^");
+	const anchoredEnd = alternative.endsWith("$");
+	const body = alternative.slice(anchoredStart ? 1 : 0, anchoredEnd ? -1 : undefined);
+	const parts = body.split(".*");
+
+	let position = 0;
+	for (let i = 0; i < parts.length; i++) {
+		const found = name.indexOf(parts[i], position);
+		const mustStart = i === 0 && anchoredStart;
+		if (found < 0 || (mustStart && found !== 0)) {
+			return false;
+		}
+		position = found + parts[i].length;
+	}
+
+	const last = parts[parts.length - 1];
+	return !anchoredEnd || name.endsWith(last);
+}
+
 function compileRulePattern(pattern) {
 	if (typeof pattern !== "string" || pattern.length > MAX_RULE_PATTERN_LENGTH) {
 		throw new Error("Pattern is not a string or is too long");
 	}
-	if (NESTED_QUANTIFIER.test(pattern)) {
-		throw new Error("Pattern contains nested quantifiers");
-	}
-	return new RegExp(pattern, "i");
-}
 
+	const alternatives = pattern.toLowerCase().split("|");
+	return {
+		test: (name) => {
+			const lowered = String(name).toLowerCase();
+			return alternatives.some((alternative) => matchesAlternative(alternative, lowered));
+		},
+	};
+}
 // Get the matching rule for a table name
 function getMatchingRule(tableName) {
 	for (const rule of tableGroupingRules) {
