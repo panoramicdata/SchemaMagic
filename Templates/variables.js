@@ -501,26 +501,33 @@ function saveTableGroupingRulesToStorage() {
 // Any other character is matched literally, ignoring case.
 const MAX_RULE_PATTERN_LENGTH = 200;
 
-function matchesAlternative(alternative, name) {
-	const anchoredStart = alternative.startsWith("^");
-	const anchoredEnd = alternative.endsWith("$");
-	const body = alternative.slice(anchoredStart ? 1 : 0, anchoredEnd ? -1 : undefined);
-	const parts = body.split(".*");
-
+// Finds each wildcard-separated part in order; returns the end position or -1
+function matchPartsInOrder(parts, name, mustStartAtZero) {
 	let position = 0;
 	for (let i = 0; i < parts.length; i++) {
 		const found = name.indexOf(parts[i], position);
-		const mustStart = i === 0 && anchoredStart;
-		if (found < 0 || (mustStart && found !== 0)) {
-			return false;
+		if (found < 0 || (i === 0 && mustStartAtZero && found !== 0)) {
+			return -1;
 		}
 		position = found + parts[i].length;
 	}
-
-	const last = parts[parts.length - 1];
-	return !anchoredEnd || name.endsWith(last);
+	return position;
 }
 
+function matchesAlternative(alternative, name) {
+	const anchoredStart = alternative.startsWith("^");
+	const anchoredEnd = alternative.endsWith("$");
+	const body = alternative.slice(
+		anchoredStart ? 1 : 0,
+		anchoredEnd ? -1 : undefined,
+	);
+	const parts = body.split(".*");
+
+	if (matchPartsInOrder(parts, name, anchoredStart) < 0) {
+		return false;
+	}
+	return !anchoredEnd || name.endsWith(parts[parts.length - 1]);
+}
 function compileRulePattern(pattern) {
 	if (typeof pattern !== "string" || pattern.length > MAX_RULE_PATTERN_LENGTH) {
 		throw new Error("Pattern is not a string or is too long");
