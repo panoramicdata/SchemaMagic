@@ -1,4 +1,4 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Text;
 using System.Collections.Concurrent;
 
@@ -127,6 +127,7 @@ public static class ModularHtmlTemplate
 			"event-listeners.js",
 			"pan-zoom.js",
 			"settings.js",
+			"layout-metrics.js",
 			"force-directed-layout.js",
 			"schema-generation.js",
 			"table-generation.js",

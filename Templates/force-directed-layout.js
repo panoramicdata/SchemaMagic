@@ -23,6 +23,10 @@ const LAYOUT_CONFIG = {
 	gridSize: 50, // Snap-to-grid size
 };
 
+function snapToLayoutGrid(value) {
+	return Math.round(value / LAYOUT_CONFIG.gridSize) * LAYOUT_CONFIG.gridSize;
+}
+
 /**
  * Entry point used by schema-generation.js.
  * Uses saved positions when the document has been customized,
@@ -33,7 +37,7 @@ function calculateSmartTablePositions() {
 
 	if (hasSavedDocumentState()) {
 		console.log(
-			`📄 Document ${DOCUMENT_GUID}: Using saved positions (no auto-layout)`,
+			"Using saved positions (no auto-layout)",
 		);
 		return convertSavedToStandardFormat(
 			loadSavedDocumentPositions(),
@@ -42,7 +46,7 @@ function calculateSmartTablePositions() {
 	}
 
 	console.log(
-		`🎯 Document ${DOCUMENT_GUID}: No saved state found, computing smart layout...`,
+		"No saved state found, computing smart layout for document", DOCUMENT_GUID,
 	);
 	return computeSmartLayout(entityNames);
 }
@@ -85,8 +89,8 @@ function convertSavedToStandardFormat(savedPositions, entityNames) {
 		}
 
 		if (snapToGrid) {
-			x = Math.round(x / LAYOUT_CONFIG.gridSize) * LAYOUT_CONFIG.gridSize;
-			y = Math.round(y / LAYOUT_CONFIG.gridSize) * LAYOUT_CONFIG.gridSize;
+			x = snapToLayoutGrid(x);
+			y = snapToLayoutGrid(y);
 		}
 
 		positions[entityName] = { x, y };
@@ -130,7 +134,7 @@ function computeSmartLayout(entityNames) {
 	}
 
 	console.log(
-		`🧩 Smart layout: ${components.length} components (${singletons.length} unconnected tables)`,
+		"Smart layout components:", components.length, "unconnected tables:", singletons.length,
 	);
 
 	// Pack component blocks into a compact overall arrangement
@@ -651,7 +655,7 @@ function finalizePositions(packed) {
 			Math.ceil(neededHeight / 1000) * 1000,
 		);
 		console.log(
-			`🖼️ Expanded canvas to ${CANVAS_WIDTH}×${CANVAS_HEIGHT} to fit the layout`,
+			"Expanded canvas to fit the layout:", CANVAS_WIDTH, CANVAS_HEIGHT,
 		);
 	}
 
@@ -670,162 +674,15 @@ function finalizePositions(packed) {
 		let y = packed.positions[name].y + offsetY;
 
 		if (snapToGrid) {
-			x = Math.round(x / LAYOUT_CONFIG.gridSize) * LAYOUT_CONFIG.gridSize;
-			y = Math.round(y / LAYOUT_CONFIG.gridSize) * LAYOUT_CONFIG.gridSize;
+			x = snapToLayoutGrid(x);
+			y = snapToLayoutGrid(y);
 		}
 
 		result[name] = { x: Math.round(x), y: Math.round(y) };
 	});
 
 	console.log(
-		`📐 Smart layout complete: ${Object.keys(result).length} tables in ${Math.round(packed.width)}×${Math.round(packed.height)}px`,
+		"Smart layout complete for tables:", Object.keys(result).length,
 	);
 	return result;
-}
-
-/**
- * Extract FK relationships from entity data for layout calculations
- */
-function extractRelationships() {
-	const relationships = [];
-
-	Object.values(entities).forEach((entity) => {
-		const fromEntityName = entity.type;
-		// Include inherited FK properties so relationships declared on base classes
-		// influence the layout (keeps base-linked tables near their target).
-		const seenPropNames = new Set();
-		const allProps = [
-			...(entity.properties || []),
-			...(entity.inheritedProperties || []),
-		].filter(
-			(p) => !seenPropNames.has(p.name) && seenPropNames.add(p.name),
-		);
-		allProps.forEach((prop) => {
-			if (prop.isForeignKey) {
-				const targetEntityName = findTargetEntity(prop.name);
-				if (targetEntityName && entities[targetEntityName]) {
-					relationships.push({
-						from: fromEntityName,
-						to: targetEntityName,
-						property: prop.name,
-					});
-				}
-			}
-		});
-	});
-
-	console.log(
-		`🔗 Extracted ${relationships.length} relationships from ${Object.keys(entities).length} entities`,
-	);
-	return relationships;
-}
-
-/**
- * Estimate table dimensions BEFORE rendering.
- * Mirrors the sizing math in table-generation.js (generateTable) exactly,
- * so layout spacing matches what actually gets drawn.
- */
-function getTableDimensions(entityName) {
-	const entity = entities[entityName];
-	if (!entity) return { width: 1000, height: 500 };
-
-	const properties = entity.properties || [];
-	const inheritedProps = showInheritedProperties
-		? entity.inheritedProperties || []
-		: [];
-	const allProperties = [...inheritedProps, ...properties];
-
-	const visibleProperties = showNavigationProperties
-		? allProperties
-		: allProperties.filter((p) => !isNavigationProperty(p));
-
-	const rowHeight = 55;
-	const headerHeight = 88;
-	const inheritanceHeight =
-		entity.baseType && showInheritedProperties ? 50 : 0;
-	const padding = 30;
-	const minWidth = 1000;
-	const iconWidth = 60;
-
-	const maxNameLength = Math.max(
-		entity.type.length,
-		...visibleProperties.map((p) => p.name.length),
-		0,
-	);
-
-	const maxTypeLength = Math.max(
-		8,
-		...visibleProperties.map((p) => {
-			let typeText = p.type;
-			if (isNavigationProperty(p)) {
-				typeText = typeText
-					.replace(/^ICollection<(.+)>$/, "$1")
-					.replace(/^List<(.+)>$/, "$1");
-			}
-			return typeText.length;
-		}),
-	);
-
-	const nameColumnWidth = Math.max(200, maxNameLength * 18);
-	const typeColumnWidth = Math.max(150, maxTypeLength * 15);
-	const typeIconSpace = 50;
-	const spacingBuffer = 100;
-
-	const width = Math.max(
-		minWidth,
-		iconWidth +
-			nameColumnWidth +
-			typeColumnWidth +
-			typeIconSpace +
-			spacingBuffer +
-			padding * 2,
-	);
-
-	const visibleRows = fullHeightMode
-		? visibleProperties.length
-		: Math.min(visibleProperties.length, 15);
-	const height =
-		headerHeight + inheritanceHeight + visibleRows * rowHeight + padding;
-
-	return { width, height: Math.max(height, 200) };
-}
-
-/**
- * Get current table positions from DOM
- */
-function getCurrentTablePositions() {
-	const positions = {};
-
-	document.querySelectorAll(".table-group").forEach((tableGroup) => {
-		const entityName = tableGroup.getAttribute("data-entity");
-		const rect = tableGroup.querySelector(".table-box");
-
-		if (rect && entityName) {
-			positions[entityName] = {
-				x: parseFloat(rect.getAttribute("x")),
-				y: parseFloat(rect.getAttribute("y")),
-			};
-		}
-	});
-
-	return positions;
-}
-
-/**
- * Apply computed positions to existing tables and refresh relationship lines
- */
-function applyPositionsToTables(positions) {
-	Object.keys(positions).forEach((entityName) => {
-		const tableGroup = document.querySelector(
-			`[data-entity="${entityName}"]`,
-		);
-		if (tableGroup && positions[entityName]) {
-			const newPos = positions[entityName];
-			moveTable(tableGroup, newPos.x, newPos.y);
-		}
-	});
-
-	if (showRelationships) {
-		updateRelationships();
-	}
 }

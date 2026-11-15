@@ -1,368 +1,331 @@
-﻿// Table generation and rendering
-function generateTable(svg, entity, x, y) {
-	const properties = entity.properties || [];
+// Table generation and rendering
+const TABLE_METRICS = {
+	rowHeight: 55,
+	headerHeight: 88,
+	inheritanceHeight: 50,
+	padding: 30,
+	minWidth: 1000,
+	iconWidth: 60,
+	typeIconSpace: 50,
+	spacingBuffer: 100,
+	tableIconSpace: 40,
+	collapsedRowLimit: 15,
+	maxTitleFontSize: 80,
+	minTitleFontSize: 32,
+};
+
+function createTextElement(attributes, className, text) {
+	const element = createSvgElement("text", attributes, className);
+	if (text !== undefined) {
+		element.textContent = text;
+	}
+	return element;
+}
+
+function appendTitleTooltip(element, comment) {
+	if (comment) {
+		const title = createSvgElement("title", {});
+		title.textContent = comment;
+		element.appendChild(title);
+	}
+}
+
+function collectGroupedProperties(entity) {
 	const inheritedProps = showInheritedProperties
 		? entity.inheritedProperties || []
 		: [];
-
-	// Get the matching grouping rule for this table
-	const matchingRule = getMatchingRule(entity.type);
-	console.log(
-		`📊 Table "${entity.type}" matched rule: ${matchingRule ? matchingRule.name : "none"}`,
-	);
-
-	// Combine and mark inherited properties
 	const allProperties = [
 		...inheritedProps.map((p) => ({ ...p, isInherited: true })),
-		...properties.map((p) => ({ ...p, isInherited: false })),
+		...(entity.properties || []).map((p) => ({ ...p, isInherited: false })),
 	];
 
-	// Sort properties: inherited first (alphabetically), then regular (alphabetically)
 	const sortedProperties = sortProperties(allProperties);
-
-	// Filter visible properties based on navigation toggle
 	const visibleProperties = showNavigationProperties
 		? sortedProperties
 		: sortedProperties.filter((p) => !isNavigationProperty(p));
 
-	// Group properties with their related navigation properties
-	const groupedProperties = groupPropertiesWithNavigation(
-		visibleProperties,
-		sortedProperties,
+	return groupPropertiesWithNavigation(visibleProperties, sortedProperties);
+}
+
+function flattenGroupedProperties(groupedProperties) {
+	return groupedProperties.flatMap((item) =>
+		item.type === "group" ? item.properties : [item.property],
 	);
+}
 
-	const rowHeight = 55; // Increased from 22 to 55 (2.5x larger)
-	const headerHeight = 88; // Increased from 35 to 88 (2.5x larger)
-	const inheritanceHeight =
-		entity.baseType && showInheritedProperties ? 50 : 0; // Increased from 20 to 50 (2.5x larger)
-	const padding = 30; // Increased from 12 to 30 (2.5x larger)
-	const minWidth = 1000; // Increased from 400 to 1000 (2.5x larger)
-	const iconWidth = 60; // Increased from 24 to 60 (2.5x larger)
+function computeTableWidth(maxNameLength, maxTypeLength) {
+	const m = TABLE_METRICS;
+	const nameColumnWidth = Math.max(200, maxNameLength * 18);
+	const typeColumnWidth = Math.max(150, maxTypeLength * 15);
 
-	// Calculate actual displayed rows for proper height calculation
-	let totalDisplayRows = 0;
-	groupedProperties.forEach((item) => {
-		if (item.type === "group") {
-			totalDisplayRows += item.properties.length;
-		} else {
-			totalDisplayRows += 1;
-		}
-	});
-
-	// Calculate width based on ACTUAL content that will be displayed
-	const allDisplayedProperties = [];
-	groupedProperties.forEach((item) => {
-		if (item.type === "group") {
-			allDisplayedProperties.push(...item.properties);
-		} else {
-			allDisplayedProperties.push(item.property);
-		}
-	});
-
-	// Calculate the maximum lengths for proper width allocation
-	const maxNameLength = Math.max(
-		entity.type.length,
-		...allDisplayedProperties.map((p) => p.name.length),
-	);
-
-	const maxTypeLength = Math.max(
-		8, // minimum for "string"
-		...allDisplayedProperties.map((p) => {
-			// Clean up type names for accurate length calculation (includes any "(maxLength)" suffix)
-			return getDisplayType(p).length;
-		}),
-	);
-
-	// Calculate table width with optimized spacing and space for type icons
-	const nameColumnWidth = Math.max(200, maxNameLength * 18); // Increased from 80 and 7 to 200 and 18 (2.5x larger)
-	const typeColumnWidth = Math.max(150, maxTypeLength * 15); // Increased from 60 and 6 to 150 and 15 (2.5x larger)
-	const typeIconSpace = 50; // Increased from 20 to 50 (2.5x larger)
-	const spacingBuffer = 100; // Increased from 40 to 100 (2.5x larger)
-
-	// Add space for table icon in header
-	const tableIconSpace = 40;
-
-	const tableWidth = Math.max(
-		minWidth,
-		iconWidth +
+	return Math.max(
+		m.minWidth,
+		m.iconWidth +
 			nameColumnWidth +
 			typeColumnWidth +
-			typeIconSpace +
-			spacingBuffer +
-			padding * 2,
+			m.typeIconSpace +
+			m.spacingBuffer +
+			m.padding * 2,
 	);
+}
 
-	// For full height mode, use actual total rows, otherwise limit to 15
+function calculateTableWidth(entity, displayedProperties) {
+	const maxNameLength = Math.max(
+		entity.type.length,
+		...displayedProperties.map((p) => p.name.length),
+	);
+	// Includes any "(maxLength)" suffix
+	const maxTypeLength = Math.max(
+		8,
+		...displayedProperties.map((p) => getDisplayType(p).length),
+	);
+	return computeTableWidth(maxNameLength, maxTypeLength);
+}
+
+function calculateTableLayout(entity) {
+	const m = TABLE_METRICS;
+	const groupedProperties = collectGroupedProperties(entity);
+	const displayedProperties = flattenGroupedProperties(groupedProperties);
+	const totalDisplayRows = displayedProperties.length;
+
+	const inheritanceHeight =
+		entity.baseType && showInheritedProperties ? m.inheritanceHeight : 0;
 	const maxVisibleRows = fullHeightMode
 		? totalDisplayRows
-		: Math.min(totalDisplayRows, 15);
-	const calculatedHeight =
-		headerHeight + inheritanceHeight + maxVisibleRows * rowHeight + padding;
-	const tableHeight = calculatedHeight;
+		: Math.min(totalDisplayRows, m.collapsedRowLimit);
 
-	const tableGroup = document.createElementNS(
-		"http://www.w3.org/2000/svg",
-		"g",
-	);
-	tableGroup.classList.add("table-group");
-	tableGroup.setAttribute("data-entity", entity.type);
-
-	// Apply custom background color if rule matched
-	const tableRect = document.createElementNS(
-		"http://www.w3.org/2000/svg",
-		"rect",
-	);
-	tableRect.setAttribute("x", x);
-	tableRect.setAttribute("y", y);
-	tableRect.setAttribute("width", tableWidth);
-	tableRect.setAttribute("height", tableHeight);
-	tableRect.classList.add("table-box");
-	if (matchingRule) {
-		tableRect.style.fill = matchingRule.color + "10"; // 10% opacity for background
-		tableRect.style.stroke = matchingRule.color;
-	}
-	tableGroup.appendChild(tableRect);
-
-	// SECOND: Render property group backgrounds and section dividers
-	const propertiesToShow = getPropertiesToShow(
-		groupedProperties,
+	return {
+		matchingRule: getMatchingRule(entity.type),
+		totalDisplayRows,
 		maxVisibleRows,
+		inheritanceHeight,
+		tableWidth: calculateTableWidth(entity, displayedProperties),
+		tableHeight:
+			m.headerHeight +
+			inheritanceHeight +
+			maxVisibleRows * m.rowHeight +
+			m.padding,
+		propertiesToShow: getPropertiesToShow(groupedProperties, maxVisibleRows),
+	};
+}
+
+function appendSectionDivider(tableGroup, x, currentY, tableWidth) {
+	tableGroup.appendChild(
+		createSvgElement(
+			"line",
+			{
+				x1: x + 10,
+				y1: currentY - 5,
+				x2: x + tableWidth - 10,
+				y2: currentY - 5,
+			},
+			"section-divider",
+		),
 	);
-	let currentY = y + headerHeight + inheritanceHeight;
+}
+
+function appendGroupBackground(tableGroup, item, x, currentY, tableWidth) {
+	const rowHeight = TABLE_METRICS.rowHeight;
+	const groupRect = createSvgElement(
+		"rect",
+		{
+			x: x + 5,
+			y: currentY - 10,
+			width: tableWidth - 10,
+			height: item.properties.length * rowHeight + 10,
+		},
+		"property-group",
+	);
+	if (item.properties[0].isInherited) {
+		groupRect.classList.add("inherited-section");
+	}
+	tableGroup.appendChild(groupRect);
+
+	const isForeignKeyGroup =
+		item.properties.length === 2 &&
+		item.properties[0].isForeignKey &&
+		isNavigationProperty(item.properties[1]);
+	if (isForeignKeyGroup) {
+		tableGroup.appendChild(
+			createSvgElement(
+				"line",
+				{
+					x1: x + 25,
+					y1: currentY + 10,
+					x2: x + 25,
+					y2: currentY + rowHeight + 10,
+				},
+				"fk-nav-connector",
+			),
+		);
+	}
+}
+
+// Property group backgrounds and section dividers sit below the text
+function appendPropertyBackgrounds(tableGroup, layout, x, y) {
+	const m = TABLE_METRICS;
+	let currentY = y + m.headerHeight + layout.inheritanceHeight;
 	let lastPropertyWasInherited = false;
 
-	propertiesToShow.forEach((item, index) => {
-		if (item.type === "group") {
-			// Check if we need a section divider
-			const firstProp = item.properties[0];
-			if (lastPropertyWasInherited && !firstProp.isInherited) {
-				// Add section divider line - adjusted Y position to be closer to properties
-				const divider = document.createElementNS(
-					"http://www.w3.org/2000/svg",
-					"line",
-				);
-				divider.setAttribute("x1", x + 10);
-				divider.setAttribute("y1", currentY - 5); // Changed from -10 to -5 to move it down
-				divider.setAttribute("x2", x + tableWidth - 10);
-				divider.setAttribute("y2", currentY - 5); // Changed from -10 to -5 to move it down
-				divider.classList.add("section-divider");
-				tableGroup.appendChild(divider);
-			}
+	layout.propertiesToShow.forEach((item) => {
+		const properties = item.type === "group" ? item.properties : [item.property];
 
-			// Draw group background with proper positioning
-			const groupRect = document.createElementNS(
-				"http://www.w3.org/2000/svg",
-				"rect",
-			);
-			groupRect.setAttribute("x", x + 5);
-			groupRect.setAttribute("y", currentY - 10);
-			groupRect.setAttribute("width", tableWidth - 10);
-			groupRect.setAttribute(
-				"height",
-				item.properties.length * rowHeight + 10,
-			);
-			groupRect.classList.add("property-group");
-			if (firstProp.isInherited) {
-				groupRect.classList.add("inherited-section");
-			}
-			tableGroup.appendChild(groupRect);
-
-			// Add connecting line for FK-NAV groups
-			if (
-				item.properties.length === 2 &&
-				item.properties[0].isForeignKey &&
-				isNavigationProperty(item.properties[1])
-			) {
-				const connectLine = document.createElementNS(
-					"http://www.w3.org/2000/svg",
-					"line",
-				);
-				connectLine.setAttribute("x1", x + 25);
-				connectLine.setAttribute("y1", currentY + 10);
-				connectLine.setAttribute("x2", x + 25);
-				connectLine.setAttribute("y2", currentY + rowHeight + 10);
-				connectLine.classList.add("fk-nav-connector");
-				tableGroup.appendChild(connectLine);
-			}
-
-			currentY += item.properties.length * rowHeight;
-			lastPropertyWasInherited =
-				item.properties[item.properties.length - 1].isInherited;
-		} else {
-			// Check if we need a section divider
-			if (lastPropertyWasInherited && !item.property.isInherited) {
-				// Add section divider line - adjusted Y position to be closer to properties
-				const divider = document.createElementNS(
-					"http://www.w3.org/2000/svg",
-					"line",
-				);
-				divider.setAttribute("x1", x + 10);
-				divider.setAttribute("y1", currentY - 5); // Changed from -10 to -5 to move it down
-				divider.setAttribute("x2", x + tableWidth - 10);
-				divider.setAttribute("y2", currentY - 5); // Changed from -10 to -5 to move it down
-				divider.classList.add("section-divider");
-				tableGroup.appendChild(divider);
-			}
-
-			currentY += rowHeight;
-			lastPropertyWasInherited = item.property.isInherited;
+		if (lastPropertyWasInherited && !properties[0].isInherited) {
+			appendSectionDivider(tableGroup, x, currentY, layout.tableWidth);
 		}
-	});
+		if (item.type === "group") {
+			appendGroupBackground(tableGroup, item, x, currentY, layout.tableWidth);
+		}
 
-	// Apply custom header color if rule matched
-	const headerRect = document.createElementNS(
-		"http://www.w3.org/2000/svg",
+		currentY += properties.length * m.rowHeight;
+		lastPropertyWasInherited = properties[properties.length - 1].isInherited;
+	});
+}
+
+// Estimated width is roughly 0.6 * fontSize * characters for Segoe UI Bold
+function calculateTitleFontSize(characterCount, availableWidth) {
+	let fontSize = TABLE_METRICS.maxTitleFontSize;
+	while (
+		fontSize > TABLE_METRICS.minTitleFontSize &&
+		0.6 * fontSize * characterCount > availableWidth
+	) {
+		fontSize -= 2;
+	}
+	return fontSize;
+}
+
+function appendHeader(tableGroup, entity, layout, x, y) {
+	const m = TABLE_METRICS;
+	const rule = layout.matchingRule;
+
+	const headerRect = createSvgElement(
 		"rect",
+		{ x, y, width: layout.tableWidth, height: m.headerHeight },
+		"table-header",
 	);
-	headerRect.setAttribute("x", x);
-	headerRect.setAttribute("y", y);
-	headerRect.setAttribute("width", tableWidth);
-	headerRect.setAttribute("height", headerHeight);
-	headerRect.classList.add("table-header");
-	if (matchingRule) {
-		headerRect.style.fill = matchingRule.color;
+	if (rule) {
+		headerRect.style.fill = rule.color;
 	}
 	tableGroup.appendChild(headerRect);
 
-	// Table icon removed - it was broken and not needed
-
-	// THIRD: Draw the header and title (these will appear ON TOP of the property groups) - all tables use same style now
-	const titleText = document.createElementNS(
-		"http://www.w3.org/2000/svg",
-		"text",
+	const titleText = createTextElement(
+		{
+			x: x + layout.tableWidth / 2,
+			y: y + m.headerHeight / 2 + 5,
+			"text-anchor": "middle",
+			"dominant-baseline": "middle",
+		},
+		"table-title",
+		entity.type,
 	);
-	// Center title normally (no icon offset needed)
-	const titleX = x + tableWidth / 2;
-	titleText.setAttribute("x", titleX);
-	titleText.setAttribute("y", y + headerHeight / 2 + 5); // Changed from +18 to +5 for better vertical centering
-	titleText.setAttribute("text-anchor", "middle");
-	titleText.setAttribute("dominant-baseline", "middle"); // Add this for proper vertical centering
-	titleText.classList.add("table-title");
-	titleText.textContent = entity.type;
+	appendTitleTooltip(titleText, entity.comment);
 
-	// Add tooltip if table comment exists
-	if (entity.comment) {
-		const title = document.createElementNS(
-			"http://www.w3.org/2000/svg",
-			"title",
-		);
-		title.textContent = entity.comment;
-		titleText.appendChild(title);
-	}
-
-	// Dynamic font sizing: start with double the normal size and scale down if needed
-	const baseFontSize = 40; // Current base font size
-	const maxFontSize = 80; // Double the base for better readability when zoomed out
-	const minFontSize = 32; // Minimum readable size
 	const availableWidth =
-		tableWidth -
-		padding * 2 -
-		(matchingRule && matchingRule.icon ? tableIconSpace : 0); // Leave some padding on sides
-
-	// Estimate text width: approximately 0.6 * fontSize * characterCount for Segoe UI Bold
-	let optimalFontSize = maxFontSize;
-	const characterCount = entity.type.length;
-
-	while (optimalFontSize > minFontSize) {
-		const estimatedTextWidth = 0.6 * optimalFontSize * characterCount;
-		if (estimatedTextWidth <= availableWidth) {
-			break;
-		}
-		optimalFontSize -= 2; // Reduce by 2px increments for fine control
-	}
-
-	titleText.style.fontSize = `${optimalFontSize}px`;
+		layout.tableWidth - m.padding * 2 - (rule && rule.icon ? m.tableIconSpace : 0);
+	const fontSize = calculateTitleFontSize(entity.type.length, availableWidth);
+	titleText.style.fontSize = `${fontSize}px`;
 	tableGroup.appendChild(titleText);
 
-	console.log(
-		`📝 Title "${entity.type}": ${characterCount} chars, optimal font: ${optimalFontSize}px, available width: ${availableWidth}px`,
-	);
-
-	// Add inheritance indicator (only if showing inherited properties)
 	if (entity.baseType && showInheritedProperties) {
-		const inheritanceText = document.createElementNS(
-			"http://www.w3.org/2000/svg",
-			"text",
+		tableGroup.appendChild(
+			createTextElement(
+				{
+					x: x + layout.tableWidth / 2,
+					y: y + m.headerHeight + 35,
+					"text-anchor": "middle",
+				},
+				"inheritance-text",
+				"inherits from " + entity.baseType,
+			),
 		);
-		inheritanceText.setAttribute("x", x + tableWidth / 2);
-		inheritanceText.setAttribute("y", y + headerHeight + 35); // Increased from 14 to 35 (2.5x larger)
-		inheritanceText.setAttribute("text-anchor", "middle");
-		inheritanceText.classList.add("inheritance-text");
-		inheritanceText.textContent = "inherits from " + entity.baseType;
-		tableGroup.appendChild(inheritanceText);
 	}
+}
 
-	// FOURTH: Render all property text (these will appear on top)
-	currentY = y + headerHeight + inheritanceHeight;
-	let rowCount = 0;
+// Property text is added last so it appears on top of the backgrounds
+function appendPropertyRows(tableGroup, layout, x, y, entityType) {
+	const m = TABLE_METRICS;
+	let currentY = y + m.headerHeight + layout.inheritanceHeight;
 
-	propertiesToShow.forEach((item, index) => {
-		if (item.type === "group") {
-			// Render each property in the group
-			item.properties.forEach((property, propIndex) => {
-				const propY = currentY + propIndex * rowHeight + 40; // Increased from 16 to 40 (2.5x larger)
-				renderProperty(
-					tableGroup,
-					property,
-					x,
-					propY,
-					tableWidth,
-					padding,
-					iconWidth,
-					entity.type,
-				);
+	layout.propertiesToShow.forEach((item) => {
+		const properties = item.type === "group" ? item.properties : [item.property];
+		const context = {
+			x,
+			tableWidth: layout.tableWidth,
+			entityName: entityType,
+		};
+
+		properties.forEach((property, index) => {
+			renderProperty(tableGroup, property, {
+				...context,
+				propY: currentY + index * m.rowHeight + 40,
 			});
-
-			currentY += item.properties.length * rowHeight;
-			rowCount += item.properties.length;
-		} else {
-			const propY = currentY + 40; // Increased from 16 to 40 (2.5x larger)
-			renderProperty(
-				tableGroup,
-				item.property,
-				x,
-				propY,
-				tableWidth,
-				padding,
-				iconWidth,
-				entity.type,
-			);
-			currentY += rowHeight;
-			rowCount += 1;
-		}
+		});
+		currentY += properties.length * m.rowHeight;
 	});
 
-	// Add ellipsis if there are more properties
-	if (!fullHeightMode && totalDisplayRows > maxVisibleRows) {
-		const ellipsisY = currentY + 15; // Increased from 6 to 15 (2.5x larger)
-		const ellipsisText = document.createElementNS(
-			"http://www.w3.org/2000/svg",
-			"text",
-		);
-		ellipsisText.setAttribute("x", x + tableWidth / 2);
-		ellipsisText.setAttribute("y", ellipsisY);
-		ellipsisText.setAttribute("text-anchor", "middle");
-		ellipsisText.classList.add("property-text");
-		ellipsisText.textContent =
-			"... (+" + (totalDisplayRows - maxVisibleRows) + " more)";
-		ellipsisText.style.fontSize = "28px"; // Increased from 11px to 28px (2.5x larger)
-		ellipsisText.style.fill = "#9ca3af";
-		tableGroup.appendChild(ellipsisText);
-	}
+	return currentY;
+}
 
-	// FIFTH: Create selection overlay LAST (always present but hidden) - this ensures it renders on top
-	const selectionOverlay = document.createElementNS(
-		"http://www.w3.org/2000/svg",
-		"rect",
+function appendEllipsis(tableGroup, layout, x, currentY) {
+	if (fullHeightMode || layout.totalDisplayRows <= layout.maxVisibleRows) return;
+
+	const ellipsisText = createTextElement(
+		{ x: x + layout.tableWidth / 2, y: currentY + 15, "text-anchor": "middle" },
+		"property-text",
+		"... (+" + (layout.totalDisplayRows - layout.maxVisibleRows) + " more)",
 	);
-	selectionOverlay.setAttribute("x", x);
-	selectionOverlay.setAttribute("y", y);
-	selectionOverlay.setAttribute("width", tableWidth);
-	selectionOverlay.setAttribute("height", tableHeight);
-	selectionOverlay.classList.add("selection-overlay");
-	selectionOverlay.setAttribute("data-entity", entity.type);
-	selectionOverlay.style.display = "none"; // Hidden by default
-	tableGroup.appendChild(selectionOverlay);
+	ellipsisText.style.fontSize = "28px";
+	ellipsisText.style.fill = "#9ca3af";
+	tableGroup.appendChild(ellipsisText);
+}
+
+// The selection overlay is created last (hidden) so it renders on top
+function appendSelectionOverlay(tableGroup, entity, layout, x, y) {
+	const overlay = createSvgElement(
+		"rect",
+		{
+			x,
+			y,
+			width: layout.tableWidth,
+			height: layout.tableHeight,
+			"data-entity": entity.type,
+		},
+		"selection-overlay",
+	);
+	overlay.style.display = "none";
+	tableGroup.appendChild(overlay);
+}
+
+function createTableGroup(entity, layout, x, y) {
+	const tableGroup = createSvgElement(
+		"g",
+		{ "data-entity": entity.type },
+		"table-group",
+	);
+
+	const tableRect = createSvgElement(
+		"rect",
+		{ x, y, width: layout.tableWidth, height: layout.tableHeight },
+		"table-box",
+	);
+	if (layout.matchingRule) {
+		// The "10" suffix gives the background 10% opacity
+		tableRect.style.fill = layout.matchingRule.color + "10";
+		tableRect.style.stroke = layout.matchingRule.color;
+	}
+	tableGroup.appendChild(tableRect);
+	return tableGroup;
+}
+
+function generateTable(svg, entity, x, y) {
+	const layout = calculateTableLayout(entity);
+	const tableGroup = createTableGroup(entity, layout, x, y);
+
+	appendPropertyBackgrounds(tableGroup, layout, x, y);
+	appendHeader(tableGroup, entity, layout, x, y);
+	const endY = appendPropertyRows(tableGroup, layout, x, y, entity.type);
+	appendEllipsis(tableGroup, layout, x, endY);
+	appendSelectionOverlay(tableGroup, entity, layout, x, y);
 
 	setupTableInteraction(tableGroup, entity.type);
 	svg.appendChild(tableGroup);
@@ -373,220 +336,155 @@ function getPropertiesToShow(groupedProperties, maxVisibleRows) {
 	let currentRowCount = 0;
 
 	for (const item of groupedProperties) {
-		if (item.type === "group") {
-			const remainingRows = maxVisibleRows - currentRowCount;
-			if (remainingRows <= 0) break;
+		const size = item.type === "group" ? item.properties.length : 1;
+		const remainingRows = maxVisibleRows - currentRowCount;
+		if (remainingRows <= 0) break;
 
-			if (item.properties.length <= remainingRows) {
-				// Include entire group
-				result.push(item);
-				currentRowCount += item.properties.length;
-			} else {
-				// Partially include group
-				result.push({
-					type: "group",
-					properties: item.properties.slice(0, remainingRows),
-				});
-				currentRowCount = maxVisibleRows;
-				break;
-			}
-		} else {
-			if (currentRowCount >= maxVisibleRows) break;
+		if (size <= remainingRows) {
 			result.push(item);
-			currentRowCount += 1;
+			currentRowCount += size;
+		} else {
+			// Only a group can be partly shown
+			result.push({
+				type: "group",
+				properties: item.properties.slice(0, remainingRows),
+			});
+			break;
 		}
 	}
 
 	return result;
 }
 
-function renderProperty(
-	tableGroup,
-	property,
-	x,
-	propY,
-	tableWidth,
-	padding,
-	iconWidth,
-	entityName,
-) {
-	// Fixed left position for all property names (consistent alignment)
-	const propertyNameX = x + iconWidth + 10; // Increased from 4 to 10 (2.5x larger)
+function makeClickable(element, resolveTarget) {
+	element.style.cursor = "pointer";
+	element.addEventListener("click", () => {
+		const target = resolveTarget();
+		if (target) {
+			navigateToEntity(target);
+		}
+	});
+}
 
-	// Only show property-level icons (PK, FK, N, INH) to the left of name
-	const propertyIcon = getPropertyLevelIcon(property);
-
-	if (propertyIcon) {
-		const iconElements = createPropertyIcon(propertyIcon, x + 10, propY); // Increased from 4 to 10 (2.5x larger)
-		iconElements.forEach((element) => {
+function renderLevelIcons(tableGroup, property, context, propertyIcon) {
+	createPropertyIcon(propertyIcon, context.x + 10, context.propY).forEach(
+		(element) => {
 			tableGroup.appendChild(element);
 
-			// Add click handler for FK icons - navigate to related entity
 			if (propertyIcon === "FK" && property.isForeignKey) {
-				element.style.cursor = "pointer";
-				element.addEventListener("click", () => {
-					const target = getNavigationTargetType(
-						property.name,
-						entityName,
-					);
-					if (target) {
-						navigateToEntity(target);
-					}
-				});
-			}
-
-			// Add click handler for Navigation icons - navigate to related entity
-			if (propertyIcon === "N" && isNavigationProperty(property)) {
-				element.style.cursor = "pointer";
-				element.addEventListener("click", () =>
-					navigateToEntity(property.type),
+				makeClickable(element, () =>
+					getNavigationTargetType(property.name, context.entityName),
 				);
 			}
-		});
-	}
-
-	// Property name positioned at consistent left position
-	const propText = document.createElementNS(
-		"http://www.w3.org/2000/svg",
-		"text",
+			if (propertyIcon === "N" && isNavigationProperty(property)) {
+				makeClickable(element, () => property.type);
+			}
+		},
 	);
-	propText.setAttribute("x", propertyNameX);
-	propText.setAttribute("y", propY);
-	propText.classList.add("property-text");
+}
 
+function applyPropertyNameStyle(propText, property, entityName) {
 	if (property.isInherited) {
 		propText.classList.add("property-inherited");
 	} else if (property.isKey) {
 		propText.classList.add("property-key");
 	} else if (property.isForeignKey) {
 		propText.classList.add("property-foreign-key");
-		// Add click handler for FK property names too
-		propText.style.cursor = "pointer";
-		propText.addEventListener("click", () => {
-			const target = getNavigationTargetType(property.name, entityName);
-			if (target) {
-				navigateToEntity(target);
-			}
-		});
+		makeClickable(propText, () =>
+			getNavigationTargetType(property.name, entityName),
+		);
 	} else if (isNavigationProperty(property)) {
 		propText.classList.add("property-navigation");
-		propText.style.cursor = "pointer";
-		propText.addEventListener("click", () =>
-			navigateToEntity(property.type),
-		);
-	}
-
-	propText.textContent = property.name;
-
-	// Add tooltip if comment exists
-	if (property.comment) {
-		const title = document.createElementNS(
-			"http://www.w3.org/2000/svg",
-			"title",
-		);
-		title.textContent = property.comment;
-		propText.appendChild(title);
-	}
-
-	tableGroup.appendChild(propText);
-
-	// Add underline for navigation properties since SVG doesn't support text-decoration properly
-	if (isNavigationProperty(property)) {
-		// Estimate text width based on character count and font size
-		const estimatedTextWidth = property.name.length * 19; // Increased from 7.5 to 19 (2.5x larger)
-		const underline = document.createElementNS(
-			"http://www.w3.org/2000/svg",
-			"line",
-		);
-		underline.setAttribute("x1", propertyNameX);
-		underline.setAttribute("y1", propY + 5); // Increased from 2 to 5 (2.5x larger)
-		underline.setAttribute("x2", propertyNameX + estimatedTextWidth);
-		underline.setAttribute("y2", propY + 5); // Increased from 2 to 5 (2.5x larger)
-		underline.setAttribute("stroke", "#059669");
-		underline.setAttribute("stroke-width", "2.5"); // Increased from 1 to 2.5 (2.5x larger)
-		underline.classList.add("navigation-underline");
-		underline.style.cursor = "pointer";
-		underline.addEventListener("click", () =>
-			navigateToEntity(property.type),
-		);
-		tableGroup.appendChild(underline);
-	}
-
-	// Property type (right-aligned with proper spacing and color coding)
-	const typeText = document.createElementNS(
-		"http://www.w3.org/2000/svg",
-		"text",
-	);
-
-	// For navigation properties, always show the navigation arrow icon
-	const typeIcon = isNavigationProperty(property)
-		? { iconType: "Navigation", isNullable: property.type.endsWith("?") }
-		: getTypeIcon(property.type);
-
-	const typeTextX = typeIcon
-		? x + tableWidth - padding - 50
-		: x + tableWidth - padding; // Increased from 20 to 50 (2.5x larger)
-
-	typeText.setAttribute("x", typeTextX);
-	typeText.setAttribute("y", propY);
-	typeText.setAttribute("text-anchor", "end"); // Right-align the type text
-	typeText.classList.add("property-text", "property-type");
-
-	// Add type-specific color class
-	const typeColorClass = getTypeColorClass(property.type);
-	typeText.classList.add(typeColorClass);
-
-	// Clean up navigation property type names for display, add any max-length suffix, preserve nullables
-	const displayType = getDisplayType(property);
-
-	typeText.textContent = displayType;
-
-	// Surface the max length in the type tooltip too, so it is discoverable on hover
-	if (
-		property.maxLength &&
-		property.maxLength > 0 &&
-		!isNavigationProperty(property)
-	) {
-		const typeTitle = document.createElementNS(
-			"http://www.w3.org/2000/svg",
-			"title",
-		);
-		typeTitle.textContent = `Maximum length: ${property.maxLength}`;
-		typeText.appendChild(typeTitle);
-	}
-
-	tableGroup.appendChild(typeText);
-
-	// Add type icon to the RIGHT of the type text - with corrected Y positioning
-	if (typeIcon) {
-		const typeIconElements = createPropertyIcon(
-			typeIcon,
-			x + tableWidth - padding - 40,
-			propY,
-		); // Increased from 16 to 40 (2.5x larger)
-		typeIconElements.forEach((element) => {
-			tableGroup.appendChild(element);
-
-			// Add click handler for navigation property type icons
-			if (isNavigationProperty(property)) {
-				element.style.cursor = "pointer";
-				element.addEventListener("click", () =>
-					navigateToEntity(property.type),
-				);
-			}
-		});
+		makeClickable(propText, () => property.type);
 	}
 }
 
-// Helper function to get navigation target type from FK property name
+// SVG does not support text-decoration properly, so navigation names get a drawn underline
+function appendNavigationUnderline(tableGroup, property, nameX, propY) {
+	const underline = createSvgElement(
+		"line",
+		{
+			x1: nameX,
+			y1: propY + 5,
+			x2: nameX + property.name.length * 19,
+			y2: propY + 5,
+			stroke: "#059669",
+			"stroke-width": "2.5",
+		},
+		"navigation-underline",
+	);
+	makeClickable(underline, () => property.type);
+	tableGroup.appendChild(underline);
+}
+
+function renderPropertyName(tableGroup, property, context) {
+	const nameX = context.x + TABLE_METRICS.iconWidth + 10;
+	const propText = createTextElement(
+		{ x: nameX, y: context.propY },
+		"property-text",
+		property.name,
+	);
+	applyPropertyNameStyle(propText, property, context.entityName);
+	appendTitleTooltip(propText, property.comment);
+	tableGroup.appendChild(propText);
+
+	if (isNavigationProperty(property)) {
+		appendNavigationUnderline(tableGroup, property, nameX, context.propY);
+	}
+}
+
+function renderPropertyType(tableGroup, property, context) {
+	const padding = TABLE_METRICS.padding;
+	const isNavigation = isNavigationProperty(property);
+	// Navigation properties always show the navigation arrow icon
+	const typeIcon = isNavigation
+		? { iconType: "Navigation", isNullable: property.type.endsWith("?") }
+		: getTypeIcon(property.type);
+
+	const typeText = createTextElement(
+		{
+			x: context.x + context.tableWidth - padding - 50,
+			y: context.propY,
+			"text-anchor": "end",
+		},
+		"property-text",
+		getDisplayType(property),
+	);
+	typeText.classList.add("property-type", getTypeColorClass(property.type));
+
+	if (property.maxLength && property.maxLength > 0 && !isNavigation) {
+		appendTitleTooltip(typeText, `Maximum length: ${property.maxLength}`);
+	}
+	tableGroup.appendChild(typeText);
+
+	createPropertyIcon(
+		typeIcon,
+		context.x + context.tableWidth - padding - 40,
+		context.propY,
+	).forEach((element) => {
+		tableGroup.appendChild(element);
+		if (isNavigation) {
+			makeClickable(element, () => property.type);
+		}
+	});
+}
+
+function renderProperty(tableGroup, property, context) {
+	const propertyIcon = getPropertyLevelIcon(property);
+	if (propertyIcon) {
+		renderLevelIcons(tableGroup, property, context, propertyIcon);
+	}
+
+	renderPropertyName(tableGroup, property, context);
+	renderPropertyType(tableGroup, property, context);
+}
+
+// Navigation target type for a foreign key property
 function getNavigationTargetType(fkPropertyName, entityName) {
-	// Remove 'Id' suffix to get the expected navigation property name
 	const navPropName = fkPropertyName.replace(/Id$/, "");
 
-	// Look up the entity data from our global entities array
-	const entityData = entities.find((e) => e.type === entityName);
+	const entityData = entities[entityName];
 	if (entityData) {
-		// Look for a navigation property with the expected name
 		const allProps = [
 			...(entityData.properties || []),
 			...(entityData.inheritedProperties || []),
@@ -594,169 +492,11 @@ function getNavigationTargetType(fkPropertyName, entityName) {
 		const navProp = allProps.find(
 			(p) => p.name === navPropName && isNavigationProperty(p),
 		);
-
 		if (navProp) {
 			return navProp.type;
 		}
 	}
 
-	// Fallback: assume it follows naming convention
+	// Assume the naming convention when no navigation property is found
 	return navPropName + "Model";
-}
-
-// Table interaction setup - handles selection and deselection
-function setupTableInteraction(tableGroup, entityType) {
-	// Add click handler to the entire table group
-	tableGroup.addEventListener("click", function (e) {
-		e.stopPropagation(); // Prevent event bubbling to background
-
-		// Check if user clicked on an interactive element (navigation links, icons, etc.)
-		const clickedElement = e.target;
-
-		// More specific check for interactive elements that should not trigger table selection
-		const isInteractiveElement =
-			clickedElement.style.cursor === "pointer" &&
-			// FK or Navigation property links
-			(clickedElement.classList.contains("property-foreign-key") ||
-				clickedElement.classList.contains("property-navigation") ||
-				clickedElement.classList.contains("navigation-underline") ||
-				// Property icons that have navigation functionality
-				((clickedElement.tagName === "circle" ||
-					clickedElement.tagName === "rect" ||
-					clickedElement.tagName === "text") &&
-					clickedElement.parentElement &&
-					clickedElement.parentElement.style.cursor === "pointer"));
-
-		// If clicked on interactive element, let it handle its own action
-		if (isInteractiveElement) {
-			return;
-		}
-
-		// Handle table selection/deselection
-		if (selectedTable === entityType) {
-			// If this table is already selected, deselect it
-			deselectTable();
-		} else {
-			// Otherwise, select this table
-			selectTable(entityType);
-		}
-	});
-
-	// Add hover effect for better user experience
-	tableGroup.addEventListener("mouseenter", function () {
-		if (selectedTable !== entityType) {
-			tableGroup.style.cursor = "pointer";
-		}
-	});
-
-	tableGroup.addEventListener("mouseleave", function () {
-		tableGroup.style.cursor = "default";
-	});
-}
-
-// Select a table and update visual state
-function selectTable(entityType) {
-	// Clear any previously selected table
-	clearTableSelection();
-
-	// Set new selected table
-	selectedTable = entityType;
-	showOnlySelectedRelations = true;
-
-	// Find and highlight the selected table
-	const tableGroup = document.querySelector(`[data-entity="${entityType}"]`);
-	if (tableGroup) {
-		// Add selected class to table group for CSS styling
-		tableGroup.classList.add("selected");
-
-		const selectionOverlay = tableGroup.querySelector(".selection-overlay");
-		if (selectionOverlay) {
-			selectionOverlay.style.display = "block";
-		}
-
-		// Add selected class to table box for additional styling if needed
-		const tableBox = tableGroup.querySelector(".table-box");
-		if (tableBox) {
-			tableBox.classList.add("selected");
-		}
-	}
-
-	// Update relationships to show only selected table's relationships
-	updateRelationships();
-
-	console.log(`📋 Selected table: ${entityType}`);
-}
-
-// Deselect the currently selected table
-function deselectTable() {
-	if (selectedTable) {
-		const entityType = selectedTable;
-
-		// Clear selection state
-		selectedTable = null;
-		showOnlySelectedRelations = false;
-
-		// Remove visual selection indicators
-		const tableGroup = document.querySelector(
-			`[data-entity="${entityType}"]`,
-		);
-		if (tableGroup) {
-			// Remove selected class from table group
-			tableGroup.classList.remove("selected");
-
-			const selectionOverlay =
-				tableGroup.querySelector(".selection-overlay");
-			if (selectionOverlay) {
-				selectionOverlay.style.display = "none";
-			}
-
-			// Remove selected class from table box
-			const tableBox = tableGroup.querySelector(".table-box");
-			if (tableBox) {
-				tableBox.classList.remove("selected");
-			}
-		}
-
-		// Update relationships to show all relationships again
-		updateRelationships();
-
-		console.log(`📋 Deselected table: ${entityType}`);
-	}
-}
-
-// Clear all table selections (used by other functions)
-function clearTableSelection() {
-	if (selectedTable) {
-		deselectTable();
-	}
-}
-
-function moveTable(tableGroup, x, y) {
-	const oldRect = tableGroup.querySelector(".table-box");
-	const oldX = parseFloat(oldRect.getAttribute("x"));
-	const oldY = parseFloat(oldRect.getAttribute("y"));
-	const deltaX = x - oldX;
-	const deltaY = y - oldY;
-
-	// Update all rect, text, and line elements
-	const elements = tableGroup.querySelectorAll("rect, text, line");
-	elements.forEach((element) => {
-		if (element.tagName === "line") {
-			// Handle line elements
-			const x1 = parseFloat(element.getAttribute("x1"));
-			const y1 = parseFloat(element.getAttribute("y1"));
-			const x2 = parseFloat(element.getAttribute("x2"));
-			const y2 = parseFloat(element.getAttribute("y2"));
-			element.setAttribute("x1", x1 + deltaX);
-			element.setAttribute("y1", y1 + deltaY);
-			element.setAttribute("x2", x2 + deltaX);
-			element.setAttribute("y2", y2 + deltaY);
-		} else {
-			// Handle rect and text elements
-			const currentX = parseFloat(element.getAttribute("x"));
-			const currentY = parseFloat(element.getAttribute("y"));
-			element.setAttribute("x", currentX + deltaX);
-			element.setAttribute("y", currentY + deltaY);
-		}
-	});
 }

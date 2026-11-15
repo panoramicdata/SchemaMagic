@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net11.0</TargetFramework>
@@ -40,6 +40,7 @@
     <EmbeddedResource Include="..\Templates\event-listeners.js" Link="Templates\event-listeners.js" />
     <EmbeddedResource Include="..\Templates\pan-zoom.js" Link="Templates\pan-zoom.js" />
     <EmbeddedResource Include="..\Templates\settings.js" Link="Templates\settings.js" />
+    <EmbeddedResource Include="..\Templates\layout-metrics.js" Link="Templates\layout-metrics.js" />
     <EmbeddedResource Include="..\Templates\force-directed-layout.js" Link="Templates\force-directed-layout.js" />
     <EmbeddedResource Include="..\Templates\schema-generation.js" Link="Templates\schema-generation.js" />
     <EmbeddedResource Include="..\Templates\table-generation.js" Link="Templates\table-generation.js" />
