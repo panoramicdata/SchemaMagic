@@ -51,6 +51,11 @@
     <EmbeddedResource Include="..\Templates\controls.js" Link="Templates\controls.js" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="SchemaMagic" />
+    <InternalsVisibleTo Include="SchemaMagic.Web" />
+    <InternalsVisibleTo Include="SchemaMagic.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <None Include="Logo.png" Pack="true" PackagePath="\" />
   </ItemGroup>
 </Project>

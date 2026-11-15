@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 
 namespace SchemaMagic.Examples;
@@ -20,106 +21,58 @@ public class TestDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Configure many-to-many relationships
-        modelBuilder.Entity<TaskTag>()
-            .HasKey(tt => new { tt.TaskId, tt.TagId });
+        ConfigureManyToMany(modelBuilder);
+        ConfigureOrganizationRelationships(modelBuilder);
+        ConfigureWorkRelationships(modelBuilder);
+    }
 
-        modelBuilder.Entity<TaskTag>()
-            .HasOne(tt => tt.Task)
-            .WithMany(t => t.TaskTags)
-            .HasForeignKey(tt => tt.TaskId);
+    private static void ConfigureManyToMany(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<TaskTag>().HasKey(tt => new { tt.TaskId, tt.TagId });
+        OneToMany<TaskTag, Task>(modelBuilder, tt => tt.Task, t => t.TaskTags, tt => tt.TaskId);
+        OneToMany<TaskTag, Tag>(modelBuilder, tt => tt.Tag, t => t.TaskTags, tt => tt.TagId);
 
-        modelBuilder.Entity<TaskTag>()
-            .HasOne(tt => tt.Tag)
-            .WithMany(t => t.TaskTags)
-            .HasForeignKey(tt => tt.TagId);
+        modelBuilder.Entity<UserProject>().HasKey(up => new { up.UserId, up.ProjectId });
+        OneToMany<UserProject, User>(modelBuilder, up => up.User, u => u.UserProjects, up => up.UserId);
+        OneToMany<UserProject, Project>(modelBuilder, up => up.Project, p => p.UserProjects, up => up.ProjectId);
+    }
 
-        modelBuilder.Entity<UserProject>()
-            .HasKey(up => new { up.UserId, up.ProjectId });
+    private static void ConfigureOrganizationRelationships(ModelBuilder modelBuilder)
+    {
+        OneToMany<Department, Company>(modelBuilder, d => d.Company, c => c.Departments, d => d.CompanyId);
+        OneToMany<User, Department>(modelBuilder, u => u.Department, d => d.Employees, u => u.DepartmentId);
+        OneToMany<Project, Company>(modelBuilder, p => p.Company, c => c.Projects, p => p.CompanyId);
+        OneToMany<Project, User>(modelBuilder, p => p.ProjectManager, u => u.ManagedProjects, p => p.ProjectManagerId);
+    }
 
-        modelBuilder.Entity<UserProject>()
-            .HasOne(up => up.User)
-            .WithMany(u => u.UserProjects)
-            .HasForeignKey(up => up.UserId);
+    private static void ConfigureWorkRelationships(ModelBuilder modelBuilder)
+    {
+        OneToMany<Task, Project>(modelBuilder, t => t.Project, p => p.Tasks, t => t.ProjectId);
+        OneToMany<Task, User>(modelBuilder, t => t.AssignedTo, u => u.AssignedTasks, t => t.AssignedToId);
+        OneToMany<Task, User>(modelBuilder, t => t.CreatedBy, u => u.CreatedTasks, t => t.CreatedById);
+        OneToMany<Document, Project>(modelBuilder, d => d.Project, p => p.Documents, d => d.ProjectId);
+        OneToMany<Document, User>(modelBuilder, d => d.UploadedBy, u => u.UploadedDocuments, d => d.UploadedById);
+        OneToMany<Comment, Task>(modelBuilder, c => c.Task, t => t.Comments, c => c.TaskId);
+        OneToMany<Comment, User>(modelBuilder, c => c.Author, u => u.Comments, c => c.AuthorId);
+        OneToMany<Attachment, Comment>(modelBuilder, a => a.Comment, c => c.Attachments, a => a.CommentId);
+        OneToMany<Attachment, User>(modelBuilder, a => a.UploadedBy, u => u.UploadedAttachments, a => a.UploadedById);
+        OneToMany<AuditLog, User>(modelBuilder, a => a.User, u => u.AuditLogs, a => a.UserId);
+    }
 
-        modelBuilder.Entity<UserProject>()
-            .HasOne(up => up.Project)
-            .WithMany(p => p.UserProjects)
-            .HasForeignKey(up => up.ProjectId);
-
-        // Configure foreign key relationships
-        modelBuilder.Entity<Department>()
-            .HasOne(d => d.Company)
-            .WithMany(c => c.Departments)
-            .HasForeignKey(d => d.CompanyId);
-
-        modelBuilder.Entity<User>()
-            .HasOne(u => u.Department)
-            .WithMany(d => d.Employees)
-            .HasForeignKey(u => u.DepartmentId);
-
-        modelBuilder.Entity<Project>()
-            .HasOne(p => p.Company)
-            .WithMany(c => c.Projects)
-            .HasForeignKey(p => p.CompanyId);
-
-        modelBuilder.Entity<Project>()
-            .HasOne(p => p.ProjectManager)
-            .WithMany(u => u.ManagedProjects)
-            .HasForeignKey(p => p.ProjectManagerId);
-
-        modelBuilder.Entity<Task>()
-            .HasOne(t => t.Project)
-            .WithMany(p => p.Tasks)
-            .HasForeignKey(t => t.ProjectId);
-
-        modelBuilder.Entity<Task>()
-            .HasOne(t => t.AssignedTo)
-            .WithMany(u => u.AssignedTasks)
-            .HasForeignKey(t => t.AssignedToId);
-
-        modelBuilder.Entity<Task>()
-            .HasOne(t => t.CreatedBy)
-            .WithMany(u => u.CreatedTasks)
-            .HasForeignKey(t => t.CreatedById);
-
-        modelBuilder.Entity<Document>()
-            .HasOne(d => d.Project)
-            .WithMany(p => p.Documents)
-            .HasForeignKey(d => d.ProjectId);
-
-        modelBuilder.Entity<Document>()
-            .HasOne(d => d.UploadedBy)
-            .WithMany(u => u.UploadedDocuments)
-            .HasForeignKey(d => d.UploadedById);
-
-        modelBuilder.Entity<Comment>()
-            .HasOne(c => c.Task)
-            .WithMany(t => t.Comments)
-            .HasForeignKey(c => c.TaskId);
-
-        modelBuilder.Entity<Comment>()
-            .HasOne(c => c.Author)
-            .WithMany(u => u.Comments)
-            .HasForeignKey(c => c.AuthorId);
-
-        modelBuilder.Entity<Attachment>()
-            .HasOne(a => a.Comment)
-            .WithMany(c => c.Attachments)
-            .HasForeignKey(a => a.CommentId);
-
-        modelBuilder.Entity<Attachment>()
-            .HasOne(a => a.UploadedBy)
-            .WithMany(u => u.UploadedAttachments)
-            .HasForeignKey(a => a.UploadedById);
-
-        modelBuilder.Entity<AuditLog>()
-            .HasOne(a => a.User)
-            .WithMany(u => u.AuditLogs)
-            .HasForeignKey(a => a.UserId);
+    private static void OneToMany<TDependent, TPrincipal>(
+        ModelBuilder modelBuilder,
+        Expression<Func<TDependent, TPrincipal?>> navigation,
+        Expression<Func<TPrincipal, IEnumerable<TDependent>?>> inverse,
+        Expression<Func<TDependent, object?>> foreignKey)
+        where TDependent : class
+        where TPrincipal : class
+    {
+        modelBuilder.Entity<TDependent>()
+            .HasOne(navigation)
+            .WithMany(inverse)
+            .HasForeignKey(foreignKey);
     }
 }
-
 /// <summary>
 /// Represents a business organization that manages departments and projects
 /// </summary>

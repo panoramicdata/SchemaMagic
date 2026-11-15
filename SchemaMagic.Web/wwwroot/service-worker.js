@@ -2,7 +2,7 @@
 // offline support. See https://aka.ms/blazor-offline-considerations
 
 self.importScripts("./service-worker-assets.js");
-self.addEventListener("install", (event) => event.waitUntil(onInstall(event)));
+self.addEventListener("install", (event) => event.waitUntil(onInstall()));
 self.addEventListener("fetch", (event) => event.respondWith(onFetch(event)));
 
 const cacheNamePrefix = "schemamagic-web-cache-";
@@ -25,7 +25,7 @@ const offlineAssetsInclude = [
 ];
 const offlineAssetsExclude = [/^service-worker\.js$/];
 
-async function onInstall(event) {
+async function onInstall() {
 	console.info("Service worker: Install");
 
 	// Fetch and cache all matching items from the assets manifest
