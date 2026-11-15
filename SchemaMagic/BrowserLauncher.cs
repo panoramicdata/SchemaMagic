@@ -14,7 +14,14 @@ internal static class BrowserLauncher
 				throw new FileNotFoundException("Only an existing .html file can be opened.", fullPath);
 			}
 
-			using var process = Process.Start(CreateStartInfo(fullPath));
+			// Only an escaped file URI of the validated path is ever passed as an argument
+			var fileUri = new Uri(fullPath);
+			if (!fileUri.IsFile)
+			{
+				throw new ArgumentException("Only local files can be opened.", nameof(htmlFile));
+			}
+
+			using var process = Process.Start(CreateStartInfo(fileUri.AbsoluteUri));
 		}
 		catch (Exception ex)
 		{
@@ -23,14 +30,15 @@ internal static class BrowserLauncher
 		}
 	}
 
-	private static ProcessStartInfo CreateStartInfo(string fullPath)
+	private static ProcessStartInfo CreateStartInfo(string fileUri)
 	{
-		var startInfo = new ProcessStartInfo
-		{
-			FileName = OperatingSystem.IsWindows() ? "explorer.exe" : OperatingSystem.IsMacOS() ? "open" : "xdg-open",
-			UseShellExecute = false
-		};
-		startInfo.ArgumentList.Add(fullPath);
+		var startInfo = OperatingSystem.IsWindows()
+			? new ProcessStartInfo("explorer.exe")
+			: OperatingSystem.IsMacOS()
+				? new ProcessStartInfo("open")
+				: new ProcessStartInfo("xdg-open");
+		startInfo.UseShellExecute = false;
+		startInfo.ArgumentList.Add(fileUri);
 		return startInfo;
 	}
 }
