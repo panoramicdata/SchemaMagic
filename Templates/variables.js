@@ -496,18 +496,31 @@ function saveTableGroupingRulesToStorage() {
 	console.log(`?? Saved ${tableGroupingRules.length} table grouping rules`);
 }
 
+// Rules are user-editable, so patterns are bounded and screened for nested quantifiers before compiling
+const MAX_RULE_PATTERN_LENGTH = 200;
+const NESTED_QUANTIFIER = /\([^)]*[+*][^)]*\)[+*{]/;
+function compileRulePattern(pattern) {
+	if (typeof pattern !== "string" || pattern.length > MAX_RULE_PATTERN_LENGTH) {
+		throw new Error("Pattern is not a string or is too long");
+	}
+	if (NESTED_QUANTIFIER.test(pattern)) {
+		throw new Error("Pattern contains nested quantifiers");
+	}
+	return new RegExp(pattern, "i");
+}
+
 // Get the matching rule for a table name
 function getMatchingRule(tableName) {
 	for (const rule of tableGroupingRules) {
 		if (!rule.enabled) continue;
 
 		try {
-			const regex = new RegExp(rule.pattern, "i"); // Case-insensitive
+			const regex = compileRulePattern(rule.pattern);
 			if (regex.test(tableName)) {
 				return rule;
 			}
 		} catch (e) {
-			console.warn(`Invalid regex pattern: ${rule.pattern}`, e);
+			console.warn("Invalid regex pattern:", rule.pattern, e);
 		}
 	}
 	return null; // No match found

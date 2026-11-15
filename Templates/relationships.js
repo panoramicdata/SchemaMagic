@@ -1,4 +1,4 @@
-﻿// Relationship lines generation and management with Crow's Foot notation
+// Relationship lines generation and management with Crow's Foot notation
 function generateRelationships(svg) {
 	if (!showRelationships) {
 		console.log("🔗 Relationships disabled - skipping generation");
@@ -26,7 +26,7 @@ function generateRelationships(svg) {
 
 		if (foreignKeys.length > 0) {
 			console.log(
-				`🔗 Entity ${fromEntityName} has ${foreignKeys.length} foreign keys:`,
+				"Entity", fromEntityName, "has foreign keys:", foreignKeys.length,
 				foreignKeys.map((fk) => fk.name),
 			);
 		}

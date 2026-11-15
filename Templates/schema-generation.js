@@ -25,7 +25,7 @@ function generateSchema() {
 
 	const entityCount = Object.keys(entities).length;
 	console.log(
-		`?? Processing ${entityCount} entities:`,
+		"Processing entities:", entityCount,
 		Object.keys(entities),
 	);
 
@@ -46,10 +46,10 @@ function generateSchema() {
 			generateTable(svg, entity, position.x, position.y);
 			tablesGenerated++;
 			console.log(
-				`? Generated table for ${entityName} at (${position.x}, ${position.y})`,
+				"Generated table for", entityName, "at", position.x, position.y,
 			);
 		} catch (e) {
-			console.error(`? Failed to generate table for ${entityName}:`, e);
+			console.error("Failed to generate table for", entityName, e);
 		}
 	});
 
