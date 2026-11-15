@@ -1,8 +1,4 @@
-﻿using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 
 namespace SchemaMagic.Core;
 
@@ -23,91 +19,39 @@ public static partial class CoreSchemaAnalysisService
 	/// <param name="dbContextContent">The DbContext source code.</param>
 	/// <param name="fileName">The source file name or full path.</param>
 	/// <returns>The schema analysis result.</returns>
-	public static SchemaAnalysisResult AnalyzeDbContextContent(string dbContextContent, string fileName)
-	{
-		// For backward compatibility, extract the file path from filename if it's a full path
-		var filePath = Path.IsPathRooted(fileName) ? fileName : Path.GetTempFileName();
-
-		// If it's not a full path, we'll create a temp file but this won't have proper directory structure
-		if (!Path.IsPathRooted(fileName))
-		{
-			File.WriteAllText(filePath, dbContextContent);
-		}
-
-		try
-		{
-			var entities = ExtractEntitiesFromFile(filePath, dbContextContent);
-
-			// Clean up temp file if we created one
-			if (!Path.IsPathRooted(fileName) && File.Exists(filePath))
-			{
-				File.Delete(filePath);
-			}
-
-			var entitiesJson = JsonSerializer.Serialize(entities, _jsonSerializerOptions);
-			var documentGuid = Guid.NewGuid().ToString();
-			var htmlContent = ModularHtmlTemplate.Generate(entitiesJson, documentGuid, null);
-
-			return new SchemaAnalysisResult
-			{
-				Success = true,
-				HtmlContent = htmlContent,
-				EntitiesFound = entities.Count,
-				DocumentGuid = documentGuid,
-				Entities = entities
-			};
-		}
-		catch (Exception ex)
-		{
-			return new SchemaAnalysisResult
-			{
-				Success = false,
-				ErrorMessage = ex.Message,
-				EntitiesFound = 0
-			};
-		}
-	}
+	public static SchemaAnalysisResult AnalyzeDbContextContent(string dbContextContent, string fileName) =>
+		RunAnalysis(() => ExtractEntitiesFromContent(dbContextContent, fileName), null);
 
 	/// <summary>
 	/// Analyzes a DbContext source file and related entity files discoverable from its location.
 	/// </summary>
 	/// <param name="dbContextFilePath">The full path to the DbContext source file.</param>
 	/// <returns>The schema analysis result.</returns>
-	public static SchemaAnalysisResult AnalyzeDbContextFile(string dbContextFilePath)
-	{
-		try
-		{
-			if (!File.Exists(dbContextFilePath))
+	public static SchemaAnalysisResult AnalyzeDbContextFile(string dbContextFilePath) =>
+		RunAnalysis(
+			() =>
 			{
-				throw new FileNotFoundException($"DbContext file not found: {dbContextFilePath}");
-			}
+				if (!File.Exists(dbContextFilePath))
+				{
+					throw new FileNotFoundException($"DbContext file not found: {dbContextFilePath}");
+				}
 
-			var sourceCode = File.ReadAllText(dbContextFilePath);
-			var entities = ExtractEntitiesFromFile(dbContextFilePath, sourceCode);
+				return ExtractEntitiesFromFile(dbContextFilePath, File.ReadAllText(dbContextFilePath));
+			},
+			null);
 
-			var entitiesJson = JsonSerializer.Serialize(entities, _jsonSerializerOptions);
-			var documentGuid = Guid.NewGuid().ToString();
-			var htmlContent = ModularHtmlTemplate.Generate(entitiesJson, documentGuid, null);
-
-			return new SchemaAnalysisResult
-			{
-				Success = true,
-				HtmlContent = htmlContent,
-				EntitiesFound = entities.Count,
-				DocumentGuid = documentGuid,
-				Entities = entities
-			};
-		}
-		catch (Exception ex)
-		{
-			return new SchemaAnalysisResult
-			{
-				Success = false,
-				ErrorMessage = ex.Message,
-				EntitiesFound = 0
-			};
-		}
-	}
+	/// <summary>
+	/// Analyzes DbContext source code together with an explicit collection of entity source files.
+	/// </summary>
+	/// <param name="dbContextContent">The DbContext source code.</param>
+	/// <param name="dbContextFileName">The DbContext source file name.</param>
+	/// <param name="entityFileContents">Entity source code keyed by file name.</param>
+	/// <returns>The schema analysis result.</returns>
+	public static SchemaAnalysisResult AnalyzeDbContextWithEntityFiles(
+		string dbContextContent,
+		string dbContextFileName,
+		Dictionary<string, string> entityFileContents) =>
+		AnalyzeDbContextWithEntityFiles(dbContextContent, dbContextFileName, entityFileContents, null);
 
 	/// <summary>
 	/// Analyzes DbContext source code together with an explicit collection of entity source files.
@@ -121,22 +65,27 @@ public static partial class CoreSchemaAnalysisService
 		string dbContextContent,
 		string dbContextFileName,
 		Dictionary<string, string> entityFileContents,
-		string? documentGuid = null)
+		string? documentGuid) =>
+		RunAnalysis(
+			() =>
+			{
+				Console.WriteLine($"🔍 Analyzing DbContext with {entityFileContents.Count} entity files");
+				return ExtractEntitiesWithEntityFiles(dbContextContent, entityFileContents);
+			},
+			documentGuid);
+
+	private static SchemaAnalysisResult RunAnalysis(Func<Dictionary<string, EntityInfo>> extract, string? documentGuid)
 	{
 		try
 		{
-			Console.WriteLine($"🔍 Analyzing DbContext with {entityFileContents.Count} entity files");
-
-			var entities = ExtractEntitiesWithEntityFiles(dbContextContent, entityFileContents);
-
-			var entitiesJson = JsonSerializer.Serialize(entities, _jsonSerializerOptions);
+			var entities = extract();
 			var guid = documentGuid ?? Guid.NewGuid().ToString();
-			var htmlContent = ModularHtmlTemplate.Generate(entitiesJson, guid, null);
+			var entitiesJson = JsonSerializer.Serialize(entities, _jsonSerializerOptions);
 
 			return new SchemaAnalysisResult
 			{
 				Success = true,
-				HtmlContent = htmlContent,
+				HtmlContent = ModularHtmlTemplate.Generate(entitiesJson, guid, null),
 				EntitiesFound = entities.Count,
 				DocumentGuid = guid,
 				Entities = entities
@@ -153,758 +102,26 @@ public static partial class CoreSchemaAnalysisService
 		}
 	}
 
-	private static Dictionary<string, EntityInfo> ExtractEntitiesFromFile(string dbContextFilePath, string sourceCode)
+	private static Dictionary<string, EntityInfo> ExtractEntitiesFromContent(string dbContextContent, string fileName)
 	{
-		var entities = new Dictionary<string, EntityInfo>();
-
-		// Parse the source code
-		var tree = CSharpSyntaxTree.ParseText(sourceCode);
-		var root = tree.GetCompilationUnitRoot();
-
-		// Use the actual DbContext file directory for finding related files
-		var contextDirectory = Path.GetDirectoryName(dbContextFilePath);
-		Console.WriteLine($"🔍 Context directory: {contextDirectory}");
-
-		// Try to find the EF model snapshot first for accurate FK relationships
-		var migrationDirectory = Path.Combine(contextDirectory ?? "", "Migrations");
-		var snapshotPath = FindBestModelSnapshot(migrationDirectory);
-
-		var foreignKeyRelationships = new Dictionary<string, List<string>>();
-
-		if (snapshotPath != null && File.Exists(snapshotPath))
+		if (Path.IsPathRooted(fileName))
 		{
-			Console.WriteLine($"📋 Found EF Snapshot: {Path.GetFileName(snapshotPath)}");
-			foreignKeyRelationships = ExtractForeignKeysFromSnapshot(snapshotPath);
-			Console.WriteLine($"🔗 Extracted {foreignKeyRelationships.Sum(kvp => kvp.Value.Count)} foreign key relationships");
-		}
-		else
-		{
-			Console.WriteLine("⚠️ No EF Model Snapshot found - using heuristic FK detection");
+			return ExtractEntitiesFromFile(fileName, dbContextContent);
 		}
 
-		// Find DbContext class
-		var dbContextClass = root.DescendantNodes()
-			.OfType<ClassDeclarationSyntax>()
-			.FirstOrDefault(c => c.BaseList?.Types.Any(t => t.ToString().Contains("DbContext")) == true)
-			?? throw new InvalidOperationException("No DbContext class found in the file.");
-
-		// Extract DbSet properties to find entity types
-		var dbSetProperties = dbContextClass.Members
-			.OfType<PropertyDeclarationSyntax>()
-			.Where(p => p.Type.ToString().StartsWith("DbSet<", StringComparison.OrdinalIgnoreCase))
-			.ToList();
-
-		Console.WriteLine($"🔍 Found {dbSetProperties.Count} DbSet properties");
-
-		foreach (var dbSetProperty in dbSetProperties)
-		{
-			var entityTypeName = ExtractEntityTypeName(dbSetProperty.Type.ToString());
-			if (entityTypeName != null)
-			{
-				Console.WriteLine($"📝 Discovered entity: {entityTypeName}");
-				var entityInfo = new EntityInfo
-				{
-					Type = entityTypeName,
-					Properties = []
-				};
-
-				entities[entityTypeName] = entityInfo;
-			}
-		}
-
-		// Strategy 1: Look in the current file
-		var allClasses = root.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
-		Console.WriteLine($"📁 Found {allClasses.Count} classes in current file");
-
-		// Strategy 2: Look in Models subdirectory (if temp file is in a real directory structure)
-		var modelsDirectory = Path.Combine(contextDirectory ?? "", "Models");
-		var allModelClasses = new List<ClassDeclarationSyntax>();
-
-		if (Directory.Exists(modelsDirectory))
-		{
-			Console.WriteLine($"📁 Looking for entity models in: {modelsDirectory}");
-			var modelFiles = Directory.GetFiles(modelsDirectory, "*.cs");
-
-			foreach (var modelFile in modelFiles)
-			{
-				try
-				{
-					var modelSourceCode = File.ReadAllText(modelFile);
-					var modelTree = CSharpSyntaxTree.ParseText(modelSourceCode);
-					var modelRoot = modelTree.GetCompilationUnitRoot();
-					var modelClasses = modelRoot.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
-					allModelClasses.AddRange(modelClasses);
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine($"⚠️ Warning: Could not parse model file {Path.GetFileName(modelFile)}: {ex.Message}");
-				}
-			}
-
-			Console.WriteLine($"📊 Found {allModelClasses.Count} model classes in Models directory");
-		}
-
-		// Strategy 3: Enhanced search in related projects (simplified for Core library)
-		var solutionDirectory = FindSolutionDirectory(contextDirectory);
-		var additionalEntityClasses = new List<ClassDeclarationSyntax>();
-
-		if (solutionDirectory != null)
-		{
-			Console.WriteLine($"🔍 Solution directory: {solutionDirectory}");
-
-			// Target specific data projects by name
-			var targetDataProjects = new[]
-			{
-				"MagicSuite.Data",
-				"AlertMagic.Core",
-				"DataMagic.EfCore",
-				"ConnectMagic",
-				"DocMagic.Data"
-			};
-
-			foreach (var projectName in targetDataProjects)
-			{
-				var projectPath = Path.Combine(solutionDirectory, projectName);
-				if (Directory.Exists(projectPath))
-				{
-					Console.WriteLine($"🎯 Searching targeted project: {projectName}");
-					var foundCount = SearchProjectForEntities(projectPath, entities.Keys, additionalEntityClasses);
-					if (foundCount > 0)
-					{
-						Console.WriteLine($"   📊 Found {foundCount} entities in {projectName}");
-					}
-				}
-			}
-		}
-
-		// Combine all discovered classes
-		allClasses.AddRange(allModelClasses);
-		allClasses.AddRange(additionalEntityClasses);
-		Console.WriteLine($"📊 Total classes found: {allClasses.Count}");
-		Console.WriteLine($"📊 Unique class names: {allClasses.Select(c => c.Identifier.Text).Distinct().Count()}");
-
-		// Now extract properties and comments for each entity
-		foreach (var entityName in entities.Keys.ToList())
-		{
-			Console.WriteLine($"🔍 Processing entity: {entityName}");
-
-			// Check if we have FK data for this entity
-			if (foreignKeyRelationships.TryGetValue(entityName, out List<string>? value))
-			{
-				Console.WriteLine($"   ✅ Found FK data: {string.Join(", ", value)}");
-			}
-
-			var entityClass = allClasses.FirstOrDefault(c => c.Identifier.Text == entityName);
-			if (entityClass != null)
-			{
-				Console.WriteLine($"   ✅ Found entity class: {entityName}");
-
-				// Extract entity-level comment
-				var entityComment = ExtractEntityComment(entityClass);
-				if (!string.IsNullOrEmpty(entityComment))
-				{
-					entities[entityName].Comment = entityComment;
-					Console.WriteLine($"   💬 Entity comment: \"{entityComment}\"");
-				}
-
-				var properties = ExtractProperties(entityClass, entityName, foreignKeyRelationships);
-				entities[entityName].Properties = properties;
-
-				// Extract inheritance information
-				if (entityClass.BaseList?.Types.Count > 0)
-				{
-					var baseType = entityClass.BaseList.Types.First().ToString();
-					if (baseType != "object" && !baseType.Contains("DbContext") && !IsSystemBaseType(baseType))
-					{
-						entities[entityName].BaseType = baseType;
-
-						// Extract inherited properties
-						var baseClass = allClasses.FirstOrDefault(c => c.Identifier.Text == baseType);
-						if (baseClass != null)
-						{
-							Console.WriteLine($"   📄 Found base class: {baseType}");
-							var inheritedProperties = ExtractProperties(baseClass, baseType, foreignKeyRelationships);
-							entities[entityName].InheritedProperties = inheritedProperties;
-						}
-						else
-						{
-							Console.WriteLine($"   ⚠️ Base class {baseType} not found in discovered classes");
-						}
-					}
-				}
-			}
-			else
-			{
-				Console.WriteLine($"   ❌ Could not find entity class for {entityName}");
-
-				// Try to create a more complete fallback entity based on FK information
-				var properties = new List<PropertyInfo>
-				{
-					new()
-					{
-						Name = "Id",
-						Type = "int",
-						IsKey = true,
-						IsForeignKey = false
-					}
-				};
-
-				// Add FK properties we know about
-				if (foreignKeyRelationships.TryGetValue(entityName, out var fkProperties))
-				{
-					foreach (var fkProp in fkProperties)
-					{
-						if (fkProp != "Id") // Don't duplicate the Id property
-						{
-							properties.Add(new PropertyInfo
-							{
-								Name = fkProp,
-								Type = "int",
-								IsKey = false,
-								IsForeignKey = true
-							});
-						}
-					}
-				}
-
-				// Add common properties for entities
-				if (!properties.Any(p => p.Name.Contains("Name")))
-				{
-					properties.Add(new PropertyInfo
-					{
-						Name = "Name",
-						Type = "string",
-						IsKey = false,
-						IsForeignKey = false
-					});
-				}
-
-				entities[entityName].Properties = properties;
-				Console.WriteLine($"   🔧 Created enhanced fallback entity with {properties.Count} properties");
-			}
-		}
-
-		Console.WriteLine($"✅ Entity discovery complete. Found {entities.Count} entities with properties.");
-		return entities;
-	}
-
-	private static Dictionary<string, EntityInfo> ExtractEntitiesWithEntityFiles(
-		string dbContextContent,
-		Dictionary<string, string> entityFileContents)
-	{
-		var entities = new Dictionary<string, EntityInfo>();
-
-		// Parse the DbContext
-		var tree = CSharpSyntaxTree.ParseText(dbContextContent);
-		var root = tree.GetCompilationUnitRoot();
-
-		// Find DbContext class
-		var dbContextClass = root.DescendantNodes()
-			.OfType<ClassDeclarationSyntax>()
-			.FirstOrDefault(c => c.BaseList?.Types.Any(t => t.ToString().Contains("DbContext")) == true)
-			?? throw new InvalidOperationException("No DbContext class found in the file.");
-
-		// Extract DbSet properties to find entity types
-		var dbSetProperties = dbContextClass.Members
-			.OfType<PropertyDeclarationSyntax>()
-			.Where(p => p.Type.ToString().StartsWith("DbSet<", StringComparison.OrdinalIgnoreCase))
-			.ToList();
-
-		Console.WriteLine($"🔍 Found {dbSetProperties.Count} DbSet properties");
-
-		foreach (var dbSetProperty in dbSetProperties)
-		{
-			var entityTypeName = ExtractEntityTypeName(dbSetProperty.Type.ToString());
-			if (entityTypeName != null)
-			{
-				Console.WriteLine($"📝 Discovered entity: {entityTypeName}");
-				entities[entityTypeName] = new EntityInfo
-				{
-					Type = entityTypeName,
-					Properties = []
-				};
-			}
-		}
-
-		// Parse all entity files
-		var allClasses = new List<ClassDeclarationSyntax>();
-
-		foreach (var kvp in entityFileContents)
-		{
-			try
-			{
-				var entityTree = CSharpSyntaxTree.ParseText(kvp.Value);
-				var entityRoot = entityTree.GetCompilationUnitRoot();
-				var classes = entityRoot.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
-				allClasses.AddRange(classes);
-				Console.WriteLine($"   📄 Parsed {kvp.Key}: {classes.Count} class(es)");
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"   ⚠️ Error parsing {kvp.Key}: {ex.Message}");
-			}
-		}
-
-		Console.WriteLine($"📊 Total classes parsed: {allClasses.Count}");
-
-		// Try to extract FK relationships from EF migration (won't work for GitHub, use heuristics)
-		var foreignKeyRelationships = new Dictionary<string, List<string>>();
-
-		// Process each entity
-		foreach (var entityName in entities.Keys.ToList())
-		{
-			Console.WriteLine($"🔍 Processing entity: {entityName}");
-
-			var entityClass = allClasses.FirstOrDefault(c => c.Identifier.Text == entityName);
-			if (entityClass != null)
-			{
-				Console.WriteLine($"   ✅ Found entity class: {entityName}");
-
-				// Extract entity-level comment
-				var entityComment = ExtractEntityComment(entityClass);
-				if (!string.IsNullOrEmpty(entityComment))
-				{
-					entities[entityName].Comment = entityComment;
-					Console.WriteLine($"   💬 Entity comment: \"{entityComment}\"");
-				}
-
-				var properties = ExtractProperties(entityClass, entityName, foreignKeyRelationships);
-				entities[entityName].Properties = properties;
-
-				// Extract inheritance information
-				if (entityClass.BaseList?.Types.Count > 0)
-				{
-					var baseType = entityClass.BaseList.Types.First().ToString();
-					if (baseType != "object" && !baseType.Contains("DbContext") && !IsSystemBaseType(baseType))
-					{
-						entities[entityName].BaseType = baseType;
-
-						// Extract inherited properties
-						var baseClass = allClasses.FirstOrDefault(c => c.Identifier.Text == baseType);
-						if (baseClass != null)
-						{
-							Console.WriteLine($"   📄 Found base class: {baseType}");
-							var inheritedProperties = ExtractProperties(baseClass, baseType, foreignKeyRelationships);
-							entities[entityName].InheritedProperties = inheritedProperties;
-						}
-						else
-						{
-							Console.WriteLine($"   ⚠️ Base class {baseType} not found");
-						}
-					}
-				}
-			}
-			else
-			{
-				Console.WriteLine($"   ❌ Entity class not found: {entityName}");
-
-				// Create minimal fallback
-				entities[entityName].Properties =
-				[
-					new() { Name = "Id", Type = "int", IsKey = true, IsForeignKey = false },
-					new() { Name = "Name", Type = "string", IsKey = false, IsForeignKey = false }
-				];
-				Console.WriteLine($"   🔧 Created fallback entity with 2 properties");
-			}
-		}
-
-		Console.WriteLine($"✅ Analysis complete. Found {entities.Count} entities");
-		return entities;
-	}
-
-	private static int SearchProjectForEntities(string projectPath, IEnumerable<string> targetEntityNames, List<ClassDeclarationSyntax> foundClasses)
-	{
-		var foundCount = 0;
-		var targetSet = new HashSet<string>(targetEntityNames);
-
+		// Without a real path the source goes through a temporary file
+		var tempPath = Path.GetTempFileName();
 		try
 		{
-			// Search for CS files recursively but limit depth to avoid performance issues
-			var csFiles = Directory.GetFiles(projectPath, "*.cs", SearchOption.AllDirectories)
-				.Where(f => !f.Contains("\\obj\\") && !f.Contains("\\bin\\")) // Skip build artifacts
-				.Take(200); // Reasonable limit
-
-			foreach (var csFile in csFiles)
+			File.WriteAllText(tempPath, dbContextContent);
+			return ExtractEntitiesFromFile(tempPath, dbContextContent);
+		}
+		finally
+		{
+			if (File.Exists(tempPath))
 			{
-				try
-				{
-					var fileName = Path.GetFileNameWithoutExtension(csFile);
-
-					// Only process files that might be our entities
-					if (targetSet.Contains(fileName))
-					{
-						var sourceCode = File.ReadAllText(csFile);
-						var tree = CSharpSyntaxTree.ParseText(sourceCode);
-						var rootNode = tree.GetCompilationUnitRoot();
-						var classes = rootNode.DescendantNodes().OfType<ClassDeclarationSyntax>().ToList();
-
-						foreach (var classDecl in classes)
-						{
-							if (targetSet.Contains(classDecl.Identifier.Text))
-							{
-								foundClasses.Add(classDecl);
-								foundCount++;
-								Console.WriteLine($"   ✅ Found {classDecl.Identifier.Text} in {Path.GetRelativePath(projectPath, csFile)}");
-							}
-						}
-					}
-				}
-				catch (Exception)
-				{
-					// Silently skip files that can't be parsed
-				}
+				File.Delete(tempPath);
 			}
 		}
-		catch (Exception ex)
-		{
-			Console.WriteLine($"   ⚠️ Error searching project: {ex.Message}");
-		}
-
-		return foundCount;
-	}
-
-	private static string? FindSolutionDirectory(string? startDirectory)
-	{
-		if (string.IsNullOrEmpty(startDirectory))
-		{
-			return null;
-		}
-
-		var currentDirectory = new DirectoryInfo(startDirectory);
-
-		while (currentDirectory != null)
-		{
-			// Look for .sln files
-			if (currentDirectory.GetFiles("*.sln").Length > 0)
-			{
-				return currentDirectory.FullName;
-			}
-
-			currentDirectory = currentDirectory.Parent;
-		}
-
-		return null;
-	}
-
-	private static bool IsSystemBaseType(string baseType)
-	{
-		var systemBaseTypes = new HashSet<string>
-		{
-			"object", "Object", "System.Object",
-			"ValueType", "System.ValueType",
-			"Enum", "System.Enum",
-			"Delegate", "System.Delegate",
-			"MulticastDelegate", "System.MulticastDelegate"
-		};
-
-		return systemBaseTypes.Contains(baseType);
-	}
-
-	private static Dictionary<string, List<string>> ExtractForeignKeysFromSnapshot(string snapshotPath)
-	{
-		var foreignKeys = new Dictionary<string, List<string>>();
-
-		try
-		{
-			var snapshotContent = File.ReadAllText(snapshotPath);
-			var tree = CSharpSyntaxTree.ParseText(snapshotContent);
-			var root = tree.GetCompilationUnitRoot();
-
-			// Find the BuildModel method
-			var buildModelMethod = root.DescendantNodes()
-				.OfType<MethodDeclarationSyntax>()
-				.FirstOrDefault(m => m.Identifier.Text == "BuildModel");
-
-			if (buildModelMethod != null)
-			{
-				// Look for HasOne relationship configurations using string matching
-				var lines = snapshotContent.Split('\n');
-				string? currentEntity = null;
-
-				for (int i = 0; i < lines.Length; i++)
-				{
-					var line = lines[i].Trim();
-
-					// Detect when we're starting a new entity relationship configuration
-					if (line.Contains("modelBuilder.Entity(") && line.Contains(", b =>"))
-					{
-						// Extract entity name from modelBuilder.Entity("DataMagic.EfCore.Models.EntityNameModel", b =>
-						var match = Regex.Match(line, @"Entity\(""[^""]*\.([^""\.]+)""");
-						if (match.Success)
-						{
-							currentEntity = match.Groups[1].Value;
-							Console.WriteLine($"🏗️ Processing EF entity: {currentEntity}");
-						}
-					}
-
-					// Look for HasForeignKey within the relationship chain
-					if (currentEntity != null && line.Contains(".HasForeignKey(") && line.Contains('\"'))
-					{
-						// Extract foreign key property name
-						var fkMatch = HasForeignKeyRegex().Match(line);
-						if (fkMatch.Success)
-						{
-							var foreignKeyProperty = fkMatch.Groups[1].Value;
-
-							if (!foreignKeys.TryGetValue(currentEntity, out var value))
-							{
-								value = [];
-								foreignKeys[currentEntity] = value;
-							}
-
-							value.Add(foreignKeyProperty);
-
-							Console.WriteLine($"FK: {currentEntity}.{foreignKeyProperty}");
-						}
-					}
-				}
-			}
-
-			Console.WriteLine($"📋 EF Snapshot Summary:");
-			Console.WriteLine($"   Total entities with FKs: {foreignKeys.Count}");
-			foreach (var kvp in foreignKeys)
-			{
-				Console.WriteLine($"   {kvp.Key}: {string.Join(", ", kvp.Value)}");
-			}
-		}
-		catch (Exception ex)
-		{
-			Console.WriteLine($"⚠️ Warning: Could not parse EF snapshot: {ex.Message}");
-		}
-
-		return foreignKeys;
-	}
-
-	private static List<PropertyInfo> ExtractProperties(ClassDeclarationSyntax entityClass, string entityName, Dictionary<string, List<string>> foreignKeyRelationships)
-	{
-		var properties = new List<PropertyInfo>();
-		var entityForeignKeys = foreignKeyRelationships.GetValueOrDefault(entityName, []);
-
-		Console.WriteLine($"🔍 Extracting properties for {entityName}, FK count: {entityForeignKeys.Count}");
-		if (entityForeignKeys.Count > 0)
-		{
-			Console.WriteLine($"   FK properties: {string.Join(", ", entityForeignKeys)}");
-		}
-
-		// FIXED: Include ALL properties with getters - auto-implemented, expression-bodied, explicit, init-only, required, etc.
-		var propertyDeclarations = entityClass.Members
-			.OfType<PropertyDeclarationSyntax>()
-			.Where(p => 
-				// Has explicit accessor list with a getter or init
-				(p.AccessorList?.Accessors.Any(a => 
-					a.Kind() == SyntaxKind.GetAccessorDeclaration || 
-					a.Kind() == SyntaxKind.InitAccessorDeclaration) == true) ||
-				// OR is an expression-bodied property (no accessor list)
-				p.ExpressionBody != null
-			);
-
-		foreach (var property in propertyDeclarations)
-		{
-			var propertyName = property.Identifier.Text;
-			var propertyType = property.Type.ToString();
-
-			// FIXED: DO NOT remove the nullable marker - preserve it for JavaScript analysis
-			propertyType = propertyType.Trim(); // Only trim whitespace, keep '?'
-
-			// Check if this property is a foreign key (from EF snapshot OR heuristic detection)
-			var isForeignKey = entityForeignKeys.Contains(propertyName) || IsHeuristicForeignKey(propertyName, propertyType);
-
-			// Extract comment from [Comment] attribute or XML documentation
-			var comment = ExtractPropertyComment(property);
-
-			// Extract max length from [MaxLength]/[StringLength] attributes (MS-21560)
-			var maxLength = ExtractPropertyMaxLength(property);
-
-			var propertyInfo = new PropertyInfo
-			{
-				Name = propertyName,
-				Type = propertyType, // Now includes '?' if nullable
-				IsKey = IsKeyProperty(propertyName, entityName),
-				IsForeignKey = isForeignKey,
-				Comment = comment,
-				MaxLength = maxLength
-			};
-
-			var commentInfo = string.IsNullOrEmpty(comment) ? "" : $", Comment: \"{comment}\"";
-			Console.WriteLine($"   Property: {propertyName} ({propertyType}) - Key: {propertyInfo.IsKey}, FK: {propertyInfo.IsForeignKey}{commentInfo}");
-			properties.Add(propertyInfo);
-		}
-
-		Console.WriteLine($"✅ Extracted {properties.Count} properties for {entityName}");
-		return properties;
-	}
-
-	private static string? ExtractPropertyComment(PropertyDeclarationSyntax property)
-	{
-		// Priority 1: Check for [Comment("...")] attribute (EF Core)
-		var commentAttribute = property.AttributeLists
-			.SelectMany(al => al.Attributes)
-			.FirstOrDefault(a => a.Name.ToString() == "Comment" || a.Name.ToString().EndsWith(".Comment"));
-
-		if (commentAttribute?.ArgumentList?.Arguments.Count > 0)
-		{
-			var argument = commentAttribute.ArgumentList.Arguments[0];
-			if (argument.Expression is LiteralExpressionSyntax literal)
-			{
-				// Remove quotes from string literal
-				var commentText = literal.Token.ValueText;
-				return string.IsNullOrWhiteSpace(commentText) ? null : commentText;
-			}
-		}
-
-		// Priority 2: Check for XML documentation comment (/// <summary>)
-		var triviaList = property.GetLeadingTrivia();
-		var documentationComment = triviaList
-			.Where(t => t.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) ||
-						t.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia))
-			.FirstOrDefault();
-
-		if (documentationComment != default)
-		{
-			var xml = documentationComment.ToString();
-
-			// Extract text from <summary> tags
-			var summaryMatch = Regex.Match(xml, @"<summary>\s*(.+?)\s*</summary>", RegexOptions.Singleline);
-			if (summaryMatch.Success)
-			{
-				var summaryText = summaryMatch.Groups[1].Value
-					.Replace("///", "")
-					.Trim();
-
-				// Clean up extra whitespace
-				summaryText = Regex.Replace(summaryText, @"\s+", " ");
-
-				return string.IsNullOrWhiteSpace(summaryText) ? null : summaryText;
-			}
-		}
-
-		return null;
-	}
-
-	private static int? ExtractPropertyMaxLength(PropertyDeclarationSyntax property)
-	{
-		// [MaxLength(n)] takes a single length argument; [StringLength(n)] takes the maximum length
-		// as its first positional argument. Both are honoured by EF Core for the column length.
-		var lengthAttribute = property.AttributeLists
-			.SelectMany(al => al.Attributes)
-			.FirstOrDefault(a =>
-			{
-				var name = a.Name.ToString();
-				return name is "MaxLength" or "StringLength"
-					|| name.EndsWith(".MaxLength", StringComparison.Ordinal)
-					|| name.EndsWith(".StringLength", StringComparison.Ordinal);
-			});
-
-		var firstArgument = lengthAttribute?.ArgumentList?.Arguments.FirstOrDefault();
-		if (firstArgument?.Expression is LiteralExpressionSyntax literal
-			&& literal.IsKind(SyntaxKind.NumericLiteralExpression)
-			&& int.TryParse(literal.Token.ValueText, out var length)
-			&& length > 0)
-		{
-			return length;
-		}
-
-		return null;
-	}
-
-	private static bool IsHeuristicForeignKey(string propertyName, string propertyType)
-	{
-		// Heuristic FK detection for when no EF snapshot is available
-		return propertyName.EndsWith("Id", StringComparison.OrdinalIgnoreCase) &&
-			   !propertyName.Equals("Id", StringComparison.OrdinalIgnoreCase) // Not the primary key "Id"
-			   && (propertyType.Contains("int") || propertyType.Contains("Guid")); // FK types
-	}
-
-	private static bool IsKeyProperty(string propertyName, string entityName) =>
-		// Standard EF key conventions
-		propertyName.Equals("Id", StringComparison.OrdinalIgnoreCase) ||
-			   propertyName.Equals($"{entityName}Id", StringComparison.OrdinalIgnoreCase);
-
-	private static string? ExtractEntityTypeName(string dbSetType)
-	{
-		// Extract entity type from DbSet<EntityType>
-		var match = Regex.Match(dbSetType, @"DbSet<(.+?)>");
-		return match.Success ? match.Groups[1].Value : null;
-	}
-
-	// Add helper method to find the best EF model snapshot
-	private static string? FindBestModelSnapshot(string migrationDirectory)
-	{
-		if (!Directory.Exists(migrationDirectory))
-		{
-			Console.WriteLine($"📁 Migration directory not found: {migrationDirectory}");
-			return null;
-		}
-
-		// Look for snapshots in subdirectories first (preferred for provider-specific migrations)
-		var subDirectories = Directory.GetDirectories(migrationDirectory);
-		foreach (var subDir in subDirectories)
-		{
-			var snapshots = Directory.GetFiles(subDir, "*ModelSnapshot.cs");
-			if (snapshots.Length > 0)
-			{
-				Console.WriteLine($"📋 Found snapshot in subdirectory: {Path.GetFileName(subDir)}");
-				return snapshots[0]; // Use the first one found
-			}
-		}
-
-		// Fallback to root migration directory
-		var rootSnapshots = Directory.GetFiles(migrationDirectory, "*ModelSnapshot.cs");
-		if (rootSnapshots.Length > 0)
-		{
-			Console.WriteLine($"📋 Found snapshot in root migration directory");
-			return rootSnapshots[0];
-		}
-
-		return null;
-	}
-
-	[GeneratedRegex(@"\.HasForeignKey\(""([^""]+)""\)")]
-	private static partial Regex HasForeignKeyRegex();
-
-	private static string? ExtractEntityComment(ClassDeclarationSyntax entityClass)
-	{
-		// Priority 1: Check for [Comment("...")] attribute (EF Core)
-		var commentAttribute = entityClass.AttributeLists
-			.SelectMany(al => al.Attributes)
-			.FirstOrDefault(a => a.Name.ToString() == "Comment" || a.Name.ToString().EndsWith(".Comment"));
-
-		if (commentAttribute?.ArgumentList?.Arguments.Count > 0)
-		{
-			var argument = commentAttribute.ArgumentList.Arguments[0];
-			if (argument.Expression is LiteralExpressionSyntax literal)
-			{
-				var commentText = literal.Token.ValueText;
-				return string.IsNullOrWhiteSpace(commentText) ? null : commentText;
-			}
-		}
-
-		// Priority 2: Check for XML documentation comment (/// <summary>)
-		var triviaList = entityClass.GetLeadingTrivia();
-		var documentationComment = triviaList
-			.Where(t => t.IsKind(SyntaxKind.SingleLineDocumentationCommentTrivia) ||
-						t.IsKind(SyntaxKind.MultiLineDocumentationCommentTrivia))
-			.FirstOrDefault();
-
-		if (documentationComment != default)
-		{
-			var xml = documentationComment.ToString();
-
-			// Extract text from <summary> tags
-			var summaryMatch = Regex.Match(xml, @"<summary>\s*(.+?)\s*</summary>", RegexOptions.Singleline);
-			if (summaryMatch.Success)
-			{
-				var summaryText = summaryMatch.Groups[1].Value
-					.Replace("///", "")
-					.Trim();
-
-				// Clean up extra whitespace
-				summaryText = Regex.Replace(summaryText, @"\s+", " ");
-
-				return string.IsNullOrWhiteSpace(summaryText) ? null : summaryText;
-			}
-		}
-
-		return null;
 	}
 }
