@@ -1,69 +1,75 @@
 // Table Grouping Rules Management
 
-// Open the table grouping dialog
-function openTableGroupingDialog() {
-	// Automatically remove unused rules before populating UI
-	autoRemoveUnusedRules();
-
-	populateRulesUI();
-	analyzeUnusedRules(); // Analyze again to show any remaining issues
-	document.getElementById("grouping-modal-overlay").style.display = "block";
-	document.getElementById("grouping-modal").style.display = "block";
+function createElement(tag, className, text) {
+	const element = document.createElement(tag);
+	if (className) {
+		element.className = className;
+	}
+	if (text !== undefined) {
+		element.textContent = text;
+	}
+	return element;
 }
 
-// Close the table grouping dialog
+function createIconButton(className, title, iconClass, label, onClick) {
+	const button = createElement("button", className);
+	button.title = title;
+	button.appendChild(createElement("i", iconClass));
+	if (label) {
+		button.appendChild(document.createTextNode(` ${label}`));
+	}
+	button.addEventListener("click", onClick);
+	return button;
+}
+
+function setModalVisibility(ids, display) {
+	ids.forEach((id) => {
+		document.getElementById(id).style.display = display;
+	});
+}
+
+const GROUPING_MODAL_IDS = ["grouping-modal-overlay", "grouping-modal"];
+const ICON_PICKER_IDS = ["icon-picker-overlay", "icon-picker-modal"];
+
+// Open the table grouping dialog
+function openTableGroupingDialog() {
+	autoRemoveUnusedRules();
+	populateRulesUI();
+	analyzeUnusedRules();
+	setModalVisibility(GROUPING_MODAL_IDS, "block");
+}
+
 function closeTableGroupingDialog() {
-	document.getElementById("grouping-modal-overlay").style.display = "none";
-	document.getElementById("grouping-modal").style.display = "none";
+	setModalVisibility(GROUPING_MODAL_IDS, "none");
+}
+
+// Returns the entity names matched by a rule, or null when its pattern is invalid
+function findRuleMatches(rule, entityNames) {
+	try {
+		const regex = compileRulePattern(rule.pattern);
+		return entityNames.filter((name) => regex.test(name));
+	} catch (e) {
+		return null;
+	}
 }
 
 // Automatically remove unused rules without confirmation
 function autoRemoveUnusedRules() {
 	const entityNames = Object.keys(entities);
-	const rulesToKeep = [];
-	let removedCount = 0;
-
-	tableGroupingRules.forEach((rule, index) => {
-		// Always keep the default catch-all rule (usually last)
+	const rulesToKeep = tableGroupingRules.filter((rule) => {
 		if (rule.pattern === ".*") {
-			rulesToKeep.push(rule);
-			return;
+			return true;
 		}
-
-		try {
-			const regex = new RegExp(rule.pattern, "i");
-			const matches = entityNames.filter((name) => regex.test(name));
-
-			if (matches.length === 0) {
-				// Rule doesn't match anything - skip it (don't add to rulesToKeep)
-				removedCount++;
-				console.log(
-					`??? Auto-removed unused rule: "${rule.name}" (pattern: ${rule.pattern})`,
-				);
-			} else {
-				// Rule matches at least one table - keep it
-				rulesToKeep.push(rule);
-			}
-		} catch (e) {
-			// Invalid regex - remove it
-			removedCount++;
-			console.warn(
-				`??? Auto-removed invalid rule "${rule.name}": ${e.message}`,
-			);
-		}
+		const matches = findRuleMatches(rule, entityNames);
+		return matches !== null && matches.length > 0;
 	});
 
+	const removedCount = tableGroupingRules.length - rulesToKeep.length;
 	if (removedCount > 0) {
 		tableGroupingRules = rulesToKeep;
 		saveTableGroupingRulesToStorage();
-		console.log(
-			`? Auto-removed ${removedCount} unused rule(s). ${tableGroupingRules.length} rules remain.`,
-		);
-	} else {
-		console.log(
-			`? All ${tableGroupingRules.length} rules are in use - no cleanup needed`,
-		);
 	}
+	console.log("Auto-removed unused rules:", removedCount);
 }
 
 // Analyze which rules don't match any tables (for informational purposes only)
@@ -72,101 +78,110 @@ function analyzeUnusedRules() {
 	const unusedRules = [];
 
 	tableGroupingRules.forEach((rule, index) => {
-		// Skip the default catch-all rule (usually last)
 		if (rule.pattern === ".*") {
 			return;
 		}
-
-		try {
-			const regex = new RegExp(rule.pattern, "i");
-			const matches = entityNames.filter((name) => regex.test(name));
-
-			if (matches.length === 0) {
-				unusedRules.push({
-					index: index,
-					rule: rule,
-					name: rule.name,
-					pattern: rule.pattern,
-				});
-			}
-		} catch (e) {
-			console.warn(
-				`Invalid regex pattern in rule "${rule.name}": ${rule.pattern}`,
-				e,
-			);
+		const matches = findRuleMatches(rule, entityNames);
+		if (matches !== null && matches.length === 0) {
+			unusedRules.push({
+				index: index,
+				rule: rule,
+				name: rule.name,
+				pattern: rule.pattern,
+			});
 		}
 	});
 
-	// Only show notification if there are STILL unused rules after auto-cleanup
-	// (This should rarely happen, but good to have for edge cases)
 	if (unusedRules.length > 0) {
-		console.log(
-			`?? Found ${unusedRules.length} unused rules after auto-cleanup (edge case):`,
-		);
-		unusedRules.forEach((item) => {
-			console.log(`   - "${item.name}" (pattern: ${item.pattern})`);
-		});
 		showUnusedRulesNotification(unusedRules);
 	} else {
-		console.log("? All rules match at least one table");
 		closeUnusedRulesNotification();
 	}
 
 	return unusedRules;
 }
 
-// Show notification about unused rules (only for edge cases now)
-function showUnusedRulesNotification(unusedRules) {
-	// Check if notification element already exists
+function getOrCreateUnusedRulesNotification() {
 	let notification = document.getElementById("unused-rules-notification");
 	if (!notification) {
-		notification = document.createElement("div");
+		notification = createElement("div", "unused-rules-notification");
 		notification.id = "unused-rules-notification";
-		notification.className = "unused-rules-notification";
-
-		// Insert after modal description
 		const modalBody = document.querySelector("#grouping-modal .modal-body");
 		const description = modalBody.querySelector(".modal-description");
 		description.insertAdjacentElement("afterend", notification);
 	}
+	return notification;
+}
 
-	// Build notification content
-	const rulesList = unusedRules
-		.map(
-			(item) =>
-				`<li>
-			<strong>${item.name}</strong> 
-			<span class="rule-pattern-badge">${item.pattern}</span>
-			<button class="btn-delete-unused" onclick="deleteRule(${item.index})" title="Delete this rule">
-				<i class="fas fa-trash"></i> Delete
-			</button>
-		</li>`,
-		)
-		.join("");
+function createUnusedRuleItem(item) {
+	const li = createElement("li");
+	li.appendChild(createElement("strong", "", item.name));
+	li.appendChild(document.createTextNode(" "));
+	li.appendChild(createElement("span", "rule-pattern-badge", item.pattern));
+	li.appendChild(
+		createIconButton(
+			"btn-delete-unused",
+			"Delete this rule",
+			"fas fa-trash",
+			"Delete",
+			() => deleteRule(item.index),
+		),
+	);
+	return li;
+}
 
-	notification.innerHTML = `
-		<div class="notification-header">
-			<i class="fas fa-info-circle"></i>
-			<strong>Unused Rules Detected (${unusedRules.length})</strong>
-			<button class="btn-close-notification" onclick="closeUnusedRulesNotification()">
-				<i class="fas fa-times"></i>
-			</button>
-		</div>
-		<div class="notification-body">
-			<p>These rules don't match any tables. They were kept because they might be for future use:</p>
-			<ul class="unused-rules-list">
-				${rulesList}
-			</ul>
-			<button class="btn-remove-all-unused" onclick="removeAllUnusedRules()">
-				<i class="fas fa-trash-alt"></i> Remove All Unused Rules
-			</button>
-		</div>
-	`;
+function createNotificationHeader(count) {
+	const header = createElement("div", "notification-header");
+	header.appendChild(createElement("i", "fas fa-info-circle"));
+	header.appendChild(
+		createElement("strong", "", `Unused Rules Detected (${count})`),
+	);
+	header.appendChild(
+		createIconButton(
+			"btn-close-notification",
+			"",
+			"fas fa-times",
+			"",
+			closeUnusedRulesNotification,
+		),
+	);
+	return header;
+}
 
+function createNotificationBody(unusedRules) {
+	const body = createElement("div", "notification-body");
+	body.appendChild(
+		createElement(
+			"p",
+			"",
+			"These rules don't match any tables. They were kept because they might be for future use:",
+		),
+	);
+	const list = createElement("ul", "unused-rules-list");
+	unusedRules.forEach((item) => list.appendChild(createUnusedRuleItem(item)));
+	body.appendChild(list);
+	body.appendChild(
+		createIconButton(
+			"btn-remove-all-unused",
+			"",
+			"fas fa-trash-alt",
+			"Remove All Unused Rules",
+			removeAllUnusedRules,
+		),
+	);
+	return body;
+}
+
+// Show notification about unused rules (only for edge cases now)
+function showUnusedRulesNotification(unusedRules) {
+	const notification = getOrCreateUnusedRulesNotification();
+	notification.replaceChildren(
+		createNotificationHeader(unusedRules.length),
+		createNotificationBody(unusedRules),
+	);
 	notification.style.display = "block";
 }
 
-// Close the unused rules notification
 function closeUnusedRulesNotification() {
 	const notification = document.getElementById("unused-rules-notification");
 	if (notification) {
@@ -183,7 +198,7 @@ function removeAllUnusedRules() {
 		return;
 	}
 
-	// Sort indices in descending order to avoid index shifting issues
+	// Descending order avoids index shifting while splicing
 	const indicesToRemove = unusedRules
 		.map((item) => item.index)
 		.sort((a, b) => b - a);
@@ -192,155 +207,190 @@ function removeAllUnusedRules() {
 		tableGroupingRules.splice(index, 1);
 	});
 
-	console.log(`? Manually removed ${indicesToRemove.length} unused rules`);
-
-	// Refresh the UI
 	populateRulesUI();
 	closeUnusedRulesNotification();
 
 	alert(`Successfully removed ${indicesToRemove.length} unused rule(s)!`);
 }
 
-// Populate the rules UI
 function populateRulesUI() {
 	const container = document.getElementById("rules-container");
-	container.innerHTML = "";
+	container.replaceChildren();
 
 	tableGroupingRules.forEach((rule, index) => {
-		const ruleElement = createRuleElement(rule, index);
-		container.appendChild(ruleElement);
+		container.appendChild(createRuleElement(rule, index));
 	});
 
-	// Initialize sortable for drag-and-drop reordering
 	initializeSortable();
 }
 
-// Create a single rule element
-function createRuleElement(rule, index) {
-	const div = document.createElement("div");
-	div.className = "rule-item";
-	div.dataset.index = index;
-	div.setAttribute("draggable", "true"); // Make the element draggable
+function createRuleInput(type, className, value, onChange) {
+	const input = createElement("input", className);
+	input.type = type;
+	input.value = value;
+	input.addEventListener("change", () => onChange(input.value));
+	return input;
+}
 
-	div.innerHTML = `
-		<div class="rule-drag-handle" title="Drag to reorder">
-			<i class="fas fa-grip-vertical"></i>
-		</div>
-		<div class="rule-content">
-			<div class="rule-row">
-				<input type="checkbox" 
-					   id="rule-enabled-${index}" 
-					   ${rule.enabled ? "checked" : ""} 
-					   onchange="toggleRuleEnabled(${index})"
-					   class="rule-checkbox">
-				<input type="text" 
-					   value="${rule.name}" 
-					   placeholder="Rule Name" 
-					   onchange="updateRuleName(${index}, this.value)"
-					   class="rule-name-input">
-				<button class="btn-icon-picker" onclick="openIconPicker(${index})" title="Select Icon">
-					<i class="${rule.icon}"></i>
-				</button>
-				<input type="color" 
-					   value="${rule.color}" 
-					   onchange="updateRuleColor(${index}, this.value)"
-					   class="rule-color-input"
-					   title="Choose Color">
-				<button class="btn-delete-rule" onclick="deleteRule(${index})" title="Delete Rule">
-					<i class="fas fa-trash"></i>
-				</button>
-			</div>
-			<div class="rule-row">
-				<input type="text" 
-					   value="${rule.pattern}" 
-					   placeholder="Regex Pattern (e.g., User|Customer|Person)" 
-					   onchange="updateRulePattern(${index}, this.value)"
-					   class="rule-pattern-input">
-				<button class="btn-test-pattern" onclick="testPattern(${index})" title="Test Pattern">
-					<i class="fas fa-flask"></i> Test
-				</button>
-			</div>
-			<div class="rule-matches" id="rule-matches-${index}"></div>
-		</div>
-	`;
+function createRuleHeaderRow(rule, index) {
+	const row = createElement("div", "rule-row");
+
+	const checkbox = createElement("input", "rule-checkbox");
+	checkbox.type = "checkbox";
+	checkbox.id = `rule-enabled-${index}`;
+	checkbox.checked = Boolean(rule.enabled);
+	checkbox.addEventListener("change", () => toggleRuleEnabled(index));
+	row.appendChild(checkbox);
+
+	const nameInput = createRuleInput("text", "rule-name-input", rule.name, (v) =>
+		updateRuleName(index, v),
+	);
+	nameInput.placeholder = "Rule Name";
+	row.appendChild(nameInput);
+
+	row.appendChild(
+		createIconButton(
+			"btn-icon-picker",
+			"Select Icon",
+			String(rule.icon),
+			"",
+			() => openIconPicker(index),
+		),
+	);
+
+	const colorInput = createRuleInput("color", "rule-color-input", rule.color, (v) =>
+		updateRuleColor(index, v),
+	);
+	colorInput.title = "Choose Color";
+	row.appendChild(colorInput);
+
+	row.appendChild(
+		createIconButton(
+			"btn-delete-rule",
+			"Delete Rule",
+			"fas fa-trash",
+			"",
+			() => deleteRule(index),
+		),
+	);
+	return row;
+}
+
+function createRulePatternRow(rule, index) {
+	const row = createElement("div", "rule-row");
+	const patternInput = createRuleInput(
+		"text",
+		"rule-pattern-input",
+		rule.pattern,
+		(v) => updateRulePattern(index, v),
+	);
+	patternInput.placeholder = "Regex Pattern (e.g., User|Customer|Person)";
+	row.appendChild(patternInput);
+	row.appendChild(
+		createIconButton(
+			"btn-test-pattern",
+			"Test Pattern",
+			"fas fa-flask",
+			"Test",
+			() => testPattern(index),
+		),
+	);
+	return row;
+}
+
+function createRuleElement(rule, index) {
+	const div = createElement("div", "rule-item");
+	div.dataset.index = index;
+	div.setAttribute("draggable", "true");
+
+	const handle = createElement("div", "rule-drag-handle");
+	handle.title = "Drag to reorder";
+	handle.appendChild(createElement("i", "fas fa-grip-vertical"));
+	div.appendChild(handle);
+
+	const content = createElement("div", "rule-content");
+	content.appendChild(createRuleHeaderRow(rule, index));
+	content.appendChild(createRulePatternRow(rule, index));
+	const matches = createElement("div", "rule-matches");
+	matches.id = `rule-matches-${index}`;
+	content.appendChild(matches);
+	div.appendChild(content);
 
 	return div;
 }
 
-// Initialize drag-and-drop sorting using HTML5 Drag and Drop API
+function moveDraggedElement(draggedElement, item, event) {
+	const bounding = item.getBoundingClientRect();
+	const offset = event.clientY - bounding.top;
+	const before = offset > bounding.height / 2 ? item.nextSibling : item;
+	item.parentNode.insertBefore(draggedElement, before);
+}
+
+function attachDragHandlers(item, getDragged, setDragged) {
+	item.addEventListener("dragstart", (e) => {
+		setDragged(item);
+		item.classList.add("dragging");
+		e.dataTransfer.effectAllowed = "move";
+		e.dataTransfer.setData("text/plain", item.dataset.index);
+	});
+
+	item.addEventListener("dragend", () => {
+		item.classList.remove("dragging");
+	});
+
+	item.addEventListener("dragover", (e) => {
+		e.preventDefault();
+		e.dataTransfer.dropEffect = "move";
+		const dragged = getDragged();
+		if (dragged && dragged !== item) {
+			moveDraggedElement(dragged, item, e);
+		}
+	});
+
+	item.addEventListener("drop", (e) => {
+		e.preventDefault();
+		e.stopPropagation();
+	});
+}
+
+// Drag-and-drop sorting using the HTML5 Drag and Drop API
 function initializeSortable() {
 	const container = document.getElementById("rules-container");
 	let draggedElement = null;
 
 	container.querySelectorAll(".rule-item").forEach((item) => {
-		// Drag start - store the dragged element
-		item.addEventListener("dragstart", (e) => {
-			draggedElement = item;
-			item.classList.add("dragging");
-			e.dataTransfer.effectAllowed = "move";
-			e.dataTransfer.setData("text/html", item.innerHTML);
-		});
-
-		// Drag end - clean up
-		item.addEventListener("dragend", (e) => {
-			item.classList.remove("dragging");
-		});
-
-		// Drag over - allow dropping
-		item.addEventListener("dragover", (e) => {
-			e.preventDefault();
-			e.dataTransfer.dropEffect = "move";
-
-			if (draggedElement && draggedElement !== item) {
-				const bounding = item.getBoundingClientRect();
-				const offset = e.clientY - bounding.top;
-
-				// Insert before or after based on mouse position
-				if (offset > bounding.height / 2) {
-					item.parentNode.insertBefore(
-						draggedElement,
-						item.nextSibling,
-					);
-				} else {
-					item.parentNode.insertBefore(draggedElement, item);
-				}
-			}
-		});
-
-		// Drop - finalize the drop
-		item.addEventListener("drop", (e) => {
-			e.preventDefault();
-			e.stopPropagation();
-		});
+		attachDragHandlers(
+			item,
+			() => draggedElement,
+			(element) => {
+				draggedElement = element;
+			},
+		);
 	});
 
-	// Also handle drag over the container itself
 	container.addEventListener("dragover", (e) => {
 		e.preventDefault();
 		e.dataTransfer.dropEffect = "move";
 	});
 }
 
-// Rule CRUD operations
 function addNewRule() {
-	const newRule = {
+	tableGroupingRules.push({
 		name: "New Rule",
 		pattern: ".*",
 		icon: "fa-database",
 		color: "#3b82f6",
 		enabled: true,
-	};
-
-	tableGroupingRules.push(newRule);
+	});
 	populateRulesUI();
-	analyzeUnusedRules(); // Re-analyze after adding
+	analyzeUnusedRules();
 }
 
 function deleteRule(index) {
 	if (confirm(`Delete rule "${tableGroupingRules[index].name}"?`)) {
 		tableGroupingRules.splice(index, 1);
 		populateRulesUI();
-		analyzeUnusedRules(); // Re-analyze after deleting
+		analyzeUnusedRules();
 	}
 }
 
@@ -360,29 +410,36 @@ function updateRuleColor(index, value) {
 	tableGroupingRules[index].color = value;
 }
 
+function showTestResult(container, className, text) {
+	container.replaceChildren(createElement("div", className, text));
+}
+
+function describeMatches(matches) {
+	const shown = matches.slice(0, 10).join(", ");
+	const extra =
+		matches.length > 10 ? ` ... and ${matches.length - 10} more` : "";
+	return `Matches ${matches.length} table(s): ${shown}${extra}`;
+}
+
 function testPattern(index) {
 	const rule = tableGroupingRules[index];
 	const matchesContainer = document.getElementById(`rule-matches-${index}`);
+	const matches = findRuleMatches(rule, Object.keys(entities));
 
-	try {
-		const regex = new RegExp(rule.pattern, "i");
-		const matches = Object.keys(entities).filter((name) =>
-			regex.test(name),
+	if (matches === null) {
+		showTestResult(matchesContainer, "test-result-error", "Invalid regex");
+	} else if (matches.length === 0) {
+		showTestResult(
+			matchesContainer,
+			"test-result-none",
+			"No tables match this pattern",
 		);
-
-		if (matches.length === 0) {
-			matchesContainer.innerHTML =
-				'<div class="test-result-none">?? No tables match this pattern</div>';
-		} else {
-			matchesContainer.innerHTML = `
-				<div class="test-result-success">
-					<strong>? Matches ${matches.length} table(s):</strong>
-					${matches.slice(0, 10).join(", ")}${matches.length > 10 ? ` ... and ${matches.length - 10} more` : ""}
-				</div>
-			`;
-		}
-	} catch (e) {
-		matchesContainer.innerHTML = `<div class="test-result-error">? Invalid regex: ${e.message}</div>`;
+	} else {
+		showTestResult(
+			matchesContainer,
+			"test-result-success",
+			describeMatches(matches),
+		);
 	}
 }
 
@@ -394,17 +451,13 @@ function resetToDefaultRules() {
 	) {
 		tableGroupingRules = [...DEFAULT_TABLE_GROUPING_RULES];
 		saveTableGroupingRulesToStorage();
-
-		// Auto-remove unused defaults immediately
 		autoRemoveUnusedRules();
-
 		populateRulesUI();
-		analyzeUnusedRules(); // Re-analyze after reset
+		analyzeUnusedRules();
 	}
 }
 
 function saveTableGroupingRules() {
-	// Reorder rules based on current DOM order
 	const container = document.getElementById("rules-container");
 	const orderedRules = [];
 
@@ -415,12 +468,8 @@ function saveTableGroupingRules() {
 
 	tableGroupingRules = orderedRules;
 	saveTableGroupingRulesToStorage();
-
-	// Regenerate schema with new rules
 	generateSchema();
-
 	closeTableGroupingDialog();
-
 	alert("Table grouping rules saved successfully!");
 }
 
@@ -428,24 +477,21 @@ function saveTableGroupingRules() {
 function openIconPicker(ruleIndex) {
 	currentEditingRuleIndex = ruleIndex;
 	populateIconPicker();
-	document.getElementById("icon-picker-overlay").style.display = "block";
-	document.getElementById("icon-picker-modal").style.display = "block";
+	setModalVisibility(ICON_PICKER_IDS, "block");
 }
 
 function closeIconPicker() {
 	currentEditingRuleIndex = null;
-	document.getElementById("icon-picker-overlay").style.display = "none";
-	document.getElementById("icon-picker-modal").style.display = "none";
+	setModalVisibility(ICON_PICKER_IDS, "none");
 }
 
 function populateIconPicker() {
 	const grid = document.getElementById("icon-grid");
-	grid.innerHTML = "";
+	grid.replaceChildren();
 
 	AVAILABLE_ICONS.forEach((icon) => {
-		const iconElement = document.createElement("div");
-		iconElement.className = "icon-item";
-		iconElement.innerHTML = `<i class="${icon}"></i>`;
+		const iconElement = createElement("div", "icon-item");
+		iconElement.appendChild(createElement("i", String(icon)));
 		iconElement.onclick = () => selectIcon(icon);
 		grid.appendChild(iconElement);
 	});
@@ -453,16 +499,13 @@ function populateIconPicker() {
 
 function filterIcons(searchTerm) {
 	const grid = document.getElementById("icon-grid");
-	const items = grid.querySelectorAll(".icon-item");
 	const term = searchTerm.toLowerCase();
 
-	items.forEach((item) => {
+	grid.querySelectorAll(".icon-item").forEach((item) => {
 		const iconClass = item.querySelector("i").className;
-		if (iconClass.toLowerCase().includes(term)) {
-			item.style.display = "block";
-		} else {
-			item.style.display = "none";
-		}
+		item.style.display = iconClass.toLowerCase().includes(term)
+			? "block"
+			: "none";
 	});
 }
 
@@ -470,7 +513,7 @@ function selectIcon(iconClass) {
 	if (currentEditingRuleIndex !== null) {
 		tableGroupingRules[currentEditingRuleIndex].icon = iconClass;
 		populateRulesUI();
-		analyzeUnusedRules(); // Re-analyze after icon change
+		analyzeUnusedRules();
 	}
 	closeIconPicker();
 }

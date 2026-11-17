@@ -496,18 +496,63 @@ function saveTableGroupingRulesToStorage() {
 	console.log(`?? Saved ${tableGroupingRules.length} table grouping rules`);
 }
 
+// Rule patterns are a safe subset of regex syntax and are matched without RegExp:
+// "|" separates alternatives, ".*" is a wildcard, "^" and "$" anchor an alternative.
+// Any other character is matched literally, ignoring case.
+const MAX_RULE_PATTERN_LENGTH = 200;
+
+// Finds each wildcard-separated part in order; returns the end position or -1
+function matchPartsInOrder(parts, name, mustStartAtZero) {
+	let position = 0;
+	for (let i = 0; i < parts.length; i++) {
+		const found = name.indexOf(parts[i], position);
+		if (found < 0 || (i === 0 && mustStartAtZero && found !== 0)) {
+			return -1;
+		}
+		position = found + parts[i].length;
+	}
+	return position;
+}
+
+function matchesAlternative(alternative, name) {
+	const anchoredStart = alternative.startsWith("^");
+	const anchoredEnd = alternative.endsWith("$");
+	const body = alternative.slice(
+		anchoredStart ? 1 : 0,
+		anchoredEnd ? -1 : undefined,
+	);
+	const parts = body.split(".*");
+
+	if (matchPartsInOrder(parts, name, anchoredStart) < 0) {
+		return false;
+	}
+	return !anchoredEnd || name.endsWith(parts[parts.length - 1]);
+}
+function compileRulePattern(pattern) {
+	if (typeof pattern !== "string" || pattern.length > MAX_RULE_PATTERN_LENGTH) {
+		throw new Error("Pattern is not a string or is too long");
+	}
+
+	const alternatives = pattern.toLowerCase().split("|");
+	return {
+		test: (name) => {
+			const lowered = String(name).toLowerCase();
+			return alternatives.some((alternative) => matchesAlternative(alternative, lowered));
+		},
+	};
+}
 // Get the matching rule for a table name
 function getMatchingRule(tableName) {
 	for (const rule of tableGroupingRules) {
 		if (!rule.enabled) continue;
 
 		try {
-			const regex = new RegExp(rule.pattern, "i"); // Case-insensitive
+			const regex = compileRulePattern(rule.pattern);
 			if (regex.test(tableName)) {
 				return rule;
 			}
 		} catch (e) {
-			console.warn(`Invalid regex pattern: ${rule.pattern}`, e);
+			console.warn("Invalid regex pattern:", rule.pattern, e);
 		}
 	}
 	return null; // No match found
