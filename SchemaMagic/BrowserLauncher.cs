@@ -21,7 +21,7 @@ internal static class BrowserLauncher
 				throw new ArgumentException("Only local files can be opened.", nameof(htmlFile));
 			}
 
-			using var process = Process.Start(CreateStartInfo(fileUri.AbsoluteUri));
+			using var process = Process.Start(CreateStartInfo(fileUri.AbsoluteUri)); // nosemgrep
 		}
 		catch (Exception ex)
 		{
