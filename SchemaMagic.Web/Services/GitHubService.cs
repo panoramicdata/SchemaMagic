@@ -37,23 +37,19 @@ public class GitHubService
 			var found = string.IsNullOrEmpty(accessToken) ? null : await TryCodeSearchAsync(owner, name);
 			return found ?? await FallbackTreeSearch(owner, name);
 		}
-		catch (RateLimitExceededException)
-		{
-			throw new InvalidOperationException(RateLimitMessage);
-		}
-		catch (AuthorizationException)
-		{
-			throw new InvalidOperationException("Access denied. This appears to be a private repository. Please provide a valid Personal Access Token with repository read permissions.");
-		}
-		catch (Exception ex) when (ex.Message.Contains("API rate limit exceeded"))
-		{
-			throw new InvalidOperationException(RateLimitMessage);
-		}
 		catch (Exception ex) when (ex is not InvalidOperationException)
 		{
-			throw new InvalidOperationException($"Error accessing GitHub repository: {ex.Message}");
+			throw new InvalidOperationException(DescribeAccessFailure(ex));
 		}
 	}
+
+	private static string DescribeAccessFailure(Exception ex) => ex switch
+	{
+		RateLimitExceededException => RateLimitMessage,
+		AuthorizationException => "Access denied. This appears to be a private repository. Please provide a valid Personal Access Token with repository read permissions.",
+		_ when ex.Message.Contains("API rate limit exceeded") => RateLimitMessage,
+		_ => $"Error accessing GitHub repository: {ex.Message}"
+	};
 
 	public async Task<string> GetFileContentAsync(string owner, string repo, string path)
 	{

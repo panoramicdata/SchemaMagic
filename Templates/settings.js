@@ -37,13 +37,29 @@ function saveViewState() {
 	localStorage.setItem(STORAGE_KEYS.viewBox, JSON.stringify(viewState));
 }
 
+const DEFAULT_VIEW_SETTINGS = {
+	showRelationships: true,
+	showNavigationProperties: false,
+	showInheritedProperties: true,
+	fullHeightMode: false,
+	snapToGrid: true,
+	legendVisible: true,
+};
+
 function applySavedViewSettings(settings) {
-	showRelationships = settings.showRelationships ?? true;
-	showNavigationProperties = settings.showNavigationProperties ?? false;
-	showInheritedProperties = settings.showInheritedProperties ?? true;
-	fullHeightMode = settings.fullHeightMode ?? false;
-	snapToGrid = settings.snapToGrid ?? true;
-	legendVisible = settings.legendVisible ?? true;
+	const merged = { ...DEFAULT_VIEW_SETTINGS };
+	Object.keys(merged).forEach((key) => {
+		merged[key] = settings[key] ?? merged[key];
+	});
+
+	({
+		showRelationships,
+		showNavigationProperties,
+		showInheritedProperties,
+		fullHeightMode,
+		snapToGrid,
+		legendVisible,
+	} = merged);
 
 	const legend = document.getElementById("legend");
 	if (legend) {

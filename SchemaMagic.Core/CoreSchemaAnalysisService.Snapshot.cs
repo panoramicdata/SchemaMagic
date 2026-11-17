@@ -76,32 +76,40 @@ public static partial class CoreSchemaAnalysisService
 		foreach (var rawLine in snapshotContent.Split('\n'))
 		{
 			var line = rawLine.Trim();
+			currentEntity = ReadSnapshotEntity(line) ?? currentEntity;
 
-			if (line.Contains("modelBuilder.Entity(") && line.Contains(", b =>"))
+			if (currentEntity is not null && line.Contains(".HasForeignKey("))
 			{
-				var entityMatch = SnapshotEntityRegex().Match(line);
-				if (entityMatch.Success)
-				{
-					currentEntity = entityMatch.Groups[1].Value;
-				}
-			}
-
-			if (currentEntity is null || !line.Contains(".HasForeignKey("))
-			{
-				continue;
-			}
-
-			var foreignKeyMatch = HasForeignKeyRegex().Match(line);
-			if (foreignKeyMatch.Success)
-			{
-				if (!foreignKeys.TryGetValue(currentEntity, out var entityForeignKeys))
-				{
-					entityForeignKeys = [];
-					foreignKeys[currentEntity] = entityForeignKeys;
-				}
-
-				entityForeignKeys.Add(foreignKeyMatch.Groups[1].Value);
+				AddSnapshotForeignKey(line, currentEntity, foreignKeys);
 			}
 		}
+	}
+
+	private static string? ReadSnapshotEntity(string line)
+	{
+		if (!line.Contains("modelBuilder.Entity(") || !line.Contains(", b =>"))
+		{
+			return null;
+		}
+
+		var entityMatch = SnapshotEntityRegex().Match(line);
+		return entityMatch.Success ? entityMatch.Groups[1].Value : null;
+	}
+
+	private static void AddSnapshotForeignKey(string line, string entity, Dictionary<string, List<string>> foreignKeys)
+	{
+		var foreignKeyMatch = HasForeignKeyRegex().Match(line);
+		if (!foreignKeyMatch.Success)
+		{
+			return;
+		}
+
+		if (!foreignKeys.TryGetValue(entity, out var entityForeignKeys))
+		{
+			entityForeignKeys = [];
+			foreignKeys[entity] = entityForeignKeys;
+		}
+
+		entityForeignKeys.Add(foreignKeyMatch.Groups[1].Value);
 	}
 }
