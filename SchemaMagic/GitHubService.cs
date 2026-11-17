@@ -1,19 +1,23 @@
 using Octokit;
+using SchemaMagic.Core;
 using System.Text;
-using Microsoft.CodeAnalysis.CSharp;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using System.Text.RegularExpressions;
 
 namespace SchemaMagic;
 
 public class GitHubService
 {
+	private const int MaxFilesToScan = 500;
+
 	private readonly GitHubClient _gitHubClient;
 
-	public GitHubService(string? accessToken = null)
+	public GitHubService() : this(null)
+	{
+	}
+
+	public GitHubService(string? accessToken)
 	{
 		_gitHubClient = new GitHubClient(new ProductHeaderValue("SchemaMagic-CLI"));
-		
+
 		if (!string.IsNullOrEmpty(accessToken))
 		{
 			_gitHubClient.Credentials = new Credentials(accessToken);
@@ -22,68 +26,12 @@ public class GitHubService
 
 	public async Task<RepositoryAnalysisResult> AnalyzeRepositoryAsync(string repoUrl)
 	{
-		var (owner, name) = ParseGitHubUrl(repoUrl) ?? throw new ArgumentException("Invalid GitHub repository URL");
+		var (owner, name) = GitHubSourceHelpers.ParseRepositoryUrl(repoUrl)
+			?? throw new ArgumentException("Invalid GitHub repository URL");
 
 		try
 		{
-			Console.WriteLine($"?? Accessing repository: {owner}/{name}");
-			
-			var repository = await _gitHubClient.Repository.Get(owner, name);
-			Console.WriteLine($"? Repository accessed (Private: {repository.Private})");
-			
-			var defaultBranch = repository.DefaultBranch;
-			Console.WriteLine($"?? Default branch: {defaultBranch}");
-			
-			// Get the tree recursively
-			var tree = await _gitHubClient.Git.Tree.GetRecursive(owner, name, defaultBranch);
-			Console.WriteLine($"?? Repository has {tree.Tree.Count} files");
-			
-			// Find DbContext files
-			var dbContextFiles = await FindDbContextFilesAsync(owner, name, tree);
-			
-			if (dbContextFiles.Count == 0)
-			{
-				return new RepositoryAnalysisResult
-				{
-					Repository = $"{owner}/{name}",
-					DbContextFiles = [],
-					EntityFiles = new Dictionary<string, string>()
-				};
-			}
-
-			Console.WriteLine($"? Found {dbContextFiles.Count} DbContext file(s)");
-
-			// For each DbContext, find related entity files
-			var allEntityFiles = new Dictionary<string, string>();
-			
-			foreach (var dbContextFile in dbContextFiles)
-			{
-				Console.WriteLine($"\n?? Analyzing DbContext: {dbContextFile.FileName}");
-				
-				// Parse DbContext to extract entity names
-				var entityNames = ExtractEntityNamesFromDbContext(dbContextFile.Content);
-				Console.WriteLine($"   ?? Found {entityNames.Count} entity types in DbContext");
-
-				// Find entity model files
-				var entityFiles = await FindEntityFilesAsync(owner, name, tree, entityNames);
-				Console.WriteLine($"   ? Found {entityFiles.Count} entity class files");
-
-				// Merge into overall collection
-				foreach (var kvp in entityFiles)
-				{
-					if (!allEntityFiles.ContainsKey(kvp.Key))
-					{
-						allEntityFiles[kvp.Key] = kvp.Value;
-					}
-				}
-			}
-
-			return new RepositoryAnalysisResult
-			{
-				Repository = $"{owner}/{name}",
-				DbContextFiles = dbContextFiles,
-				EntityFiles = allEntityFiles
-			};
+			return await AnalyzeAsync(owner, name);
 		}
 		catch (NotFoundException)
 		{
@@ -99,41 +47,62 @@ public class GitHubService
 		}
 	}
 
+	// Kept for backward compatibility
+	public async Task<List<DbContextFileInfo>> FindDbContextFilesAsync(string repoUrl)
+	{
+		var result = await AnalyzeRepositoryAsync(repoUrl);
+		return result.DbContextFiles;
+	}
+
+	private async Task<RepositoryAnalysisResult> AnalyzeAsync(string owner, string name)
+	{
+		Console.WriteLine($"🔍 Accessing repository: {owner}/{name}");
+		var repository = await _gitHubClient.Repository.Get(owner, name);
+		var tree = await _gitHubClient.Git.Tree.GetRecursive(owner, name, repository.DefaultBranch);
+		Console.WriteLine($"📁 Default branch {repository.DefaultBranch} has {tree.Tree.Count} files");
+
+		var result = new RepositoryAnalysisResult
+		{
+			Repository = $"{owner}/{name}",
+			DbContextFiles = await FindDbContextFilesAsync(owner, name, tree)
+		};
+
+		foreach (var dbContextFile in result.DbContextFiles)
+		{
+			var entityNames = GitHubSourceHelpers.ExtractEntityNames(dbContextFile.Content);
+			Console.WriteLine($"🔍 {dbContextFile.FileName}: {entityNames.Count} entity types");
+
+			var entityFiles = await FindEntityFilesAsync(owner, name, tree, entityNames);
+			foreach (var (entityName, content) in entityFiles)
+			{
+				result.EntityFiles.TryAdd(entityName, content);
+			}
+		}
+
+		return result;
+	}
+
 	private async Task<List<DbContextFileInfo>> FindDbContextFilesAsync(string owner, string repo, TreeResponse tree)
 	{
 		var dbContextFiles = new List<DbContextFileInfo>();
-
-		// Filter for .cs files that might contain DbContext
-		var csFiles = tree.Tree
-			.Where(item => item.Type == TreeType.Blob)
-			.Where(item => item.Path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
-			.Where(item => item.Path.Contains("DbContext", StringComparison.OrdinalIgnoreCase) ||
-						   item.Path.Contains("Context", StringComparison.OrdinalIgnoreCase))
+		var candidates = tree.Tree
+			.Where(item => item.Type == TreeType.Blob && GitHubSourceHelpers.IsDbContextCandidatePath(item.Path))
 			.ToList();
-		
-		Console.WriteLine($"?? Found {csFiles.Count} potential DbContext files");
-		
-		foreach (var file in csFiles)
+
+		Console.WriteLine($"📁 Found {candidates.Count} potential DbContext files");
+
+		foreach (var file in candidates)
 		{
-			try
+			var content = await TryGetFileContentAsync(owner, repo, file.Path);
+			if (content is not null && GitHubSourceHelpers.IsDbContextFile(content))
 			{
-				var content = await GetFileContentAsync(owner, repo, file.Path);
-				
-				if (IsDbContextFile(content))
+				dbContextFiles.Add(new DbContextFileInfo
 				{
-					Console.WriteLine($"   ? Valid DbContext: {file.Path}");
-					dbContextFiles.Add(new DbContextFileInfo
-					{
-						FileName = Path.GetFileName(file.Path),
-						FilePath = file.Path,
-						Content = content,
-						Repository = $"{owner}/{repo}"
-					});
-				}
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"   ?? Error reading {file.Path}: {ex.Message}");
+					FileName = Path.GetFileName(file.Path),
+					FilePath = file.Path,
+					Content = content,
+					Repository = $"{owner}/{repo}"
+				});
 			}
 		}
 
@@ -141,192 +110,103 @@ public class GitHubService
 	}
 
 	private async Task<Dictionary<string, string>> FindEntityFilesAsync(
-		string owner, 
-		string repo, 
+		string owner,
+		string repo,
 		TreeResponse tree,
 		List<string> entityNames)
 	{
-		var entityFiles = new Dictionary<string, string>();
-		var entitySet = new HashSet<string>(entityNames);
-
-		Console.WriteLine($"   ?? Searching for {entityNames.Count} entities: {string.Join(", ", entityNames.Take(5))}{(entityNames.Count > 5 ? "..." : "")}");
-
-		// Strategy 1: Look for files with matching names (exact match)
-		var potentialEntityFiles = tree.Tree
-			.Where(item => item.Type == TreeType.Blob)
-			.Where(item => item.Path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
-			.Where(item =>
-			{
-				var fileName = Path.GetFileNameWithoutExtension(item.Path);
-				return entitySet.Contains(fileName);
-			})
+		var sourceFiles = tree.Tree
+			.Where(item => item.Type == TreeType.Blob && item.Path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
 			.ToList();
 
-		Console.WriteLine($"   ?? Found {potentialEntityFiles.Count} files with exact name matches");
+		var entityFiles = await FindEntityFilesByNameAsync(owner, repo, sourceFiles, entityNames);
 
-		foreach (var file in potentialEntityFiles)
-		{
-			try
-			{
-				var content = await GetFileContentAsync(owner, repo, file.Path);
-				var fileName = Path.GetFileNameWithoutExtension(file.Path);
-				
-				// Verify it's actually a class definition for our entity
-				if (ContainsClassDefinition(content, fileName))
-				{
-					entityFiles[fileName] = content;
-					Console.WriteLine($"      ? {fileName}: {file.Path}");
-				}
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"      ?? Error reading {file.Path}: {ex.Message}");
-			}
-		}
-
-		// Strategy 2: Search ALL .cs files in the repository for matching class definitions
-		// This is more expensive but necessary when entity files don't match the expected naming pattern
 		if (entityFiles.Count < entityNames.Count)
 		{
-			Console.WriteLine($"   ?? {entityNames.Count - entityFiles.Count} entities still missing, searching all .cs files...");
-			
-			var remainingEntities = entityNames.Where(e => !entityFiles.ContainsKey(e)).ToHashSet();
-			
-			// Get all .cs files, prioritizing common entity directories
-			var allCsFiles = tree.Tree
-				.Where(item => item.Type == TreeType.Blob)
-				.Where(item => item.Path.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
-				.Where(item => !item.Path.Contains("/bin/") && !item.Path.Contains("/obj/"))
-				.OrderBy(item =>
-				{
-					// Prioritize files in common entity directories
-					var path = item.Path.ToLower();
-					var priorityDirectories = new[] { "/models/", "/entities/", "/domain/", "/data/" };
-					var priority = Array.FindIndex(priorityDirectories, directory => path.Contains(directory));
-					return priority < 0 ? priorityDirectories.Length : priority;
-				})
-				.ThenBy(item => item.Path)
-				.Take(500) // Limit to prevent too many API calls
-				.ToList();
-
-			Console.WriteLine($"   ?? Scanning {allCsFiles.Count} .cs files for entity class definitions");
-
-			var foundCount = 0;
-			foreach (var file in allCsFiles)
-			{
-				// Stop if we found all entities
-				if (remainingEntities.Count == 0)
-				{
-					break;
-				}
-
-				try
-				{
-					var content = await GetFileContentAsync(owner, repo, file.Path);
-					
-					// Check if this file contains any of our remaining entity classes
-					foreach (var entityName in remainingEntities.ToList())
-					{
-						if (ContainsClassDefinition(content, entityName))
-						{
-							entityFiles[entityName] = content;
-							remainingEntities.Remove(entityName);
-							foundCount++;
-							Console.WriteLine($"      ? Found {entityName} in {file.Path}");
-						}
-					}
-				}
-				catch (Exception ex)
-				{
-					// Silently skip files that cause errors (rate limits, etc.)
-					if (ex.Message.Contains("rate limit", StringComparison.OrdinalIgnoreCase))
-					{
-						Console.WriteLine($"      ?? GitHub API rate limit reached. Consider providing --github-token");
-						break;
-					}
-				}
-			}
-
-			if (foundCount > 0)
-			{
-				Console.WriteLine($"   ? Broad search found {foundCount} additional entities");
-			}
-
-			if (remainingEntities.Count > 0)
-			{
-				Console.WriteLine($"   ?? Still missing {remainingEntities.Count} entities: {string.Join(", ", remainingEntities.Take(5))}{(remainingEntities.Count > 5 ? "..." : "")}");
-			}
+			var remaining = entityNames.Where(e => !entityFiles.ContainsKey(e)).ToHashSet();
+			await SearchSourceFilesForEntitiesAsync(owner, repo, sourceFiles, remaining, entityFiles);
 		}
 
-		Console.WriteLine($"   ?? Total: Found {entityFiles.Count}/{entityNames.Count} entity files");
+		Console.WriteLine($"   📊 Found {entityFiles.Count}/{entityNames.Count} entity files");
 		return entityFiles;
 	}
 
-	private List<string> ExtractEntityNamesFromDbContext(string dbContextContent)
+	// Strategy 1: files named exactly like the entity
+	private async Task<Dictionary<string, string>> FindEntityFilesByNameAsync(
+		string owner,
+		string repo,
+		List<TreeItem> sourceFiles,
+		List<string> entityNames)
 	{
-		var entityNames = new List<string>();
-		
+		var entityFiles = new Dictionary<string, string>();
+		var entitySet = entityNames.ToHashSet();
+
+		foreach (var file in sourceFiles.Where(f => entitySet.Contains(Path.GetFileNameWithoutExtension(f.Path))))
+		{
+			var className = Path.GetFileNameWithoutExtension(file.Path);
+			var content = await TryGetFileContentAsync(owner, repo, file.Path);
+			if (content is not null && GitHubSourceHelpers.ContainsClassDefinition(content, className))
+			{
+				entityFiles[className] = content;
+			}
+		}
+
+		return entityFiles;
+	}
+
+	// Strategy 2: scan source files for class definitions, likeliest folders first
+	private async Task SearchSourceFilesForEntitiesAsync(
+		string owner,
+		string repo,
+		List<TreeItem> sourceFiles,
+		HashSet<string> remaining,
+		Dictionary<string, string> entityFiles)
+	{
+		var filesToScan = sourceFiles
+			.Where(item => !item.Path.Contains("/bin/") && !item.Path.Contains("/obj/"))
+			.OrderBy(item => GitHubSourceHelpers.EntityDirectoryPriority(item.Path))
+			.ThenBy(item => item.Path)
+			.Take(MaxFilesToScan);
+
+		Console.WriteLine($"   🔍 {remaining.Count} entities still missing, scanning source files");
+
 		try
 		{
-			var tree = CSharpSyntaxTree.ParseText(dbContextContent);
-			var root = tree.GetCompilationUnitRoot();
-
-			// Find DbContext class
-			var dbContextClass = root.DescendantNodes()
-				.OfType<ClassDeclarationSyntax>()
-				.FirstOrDefault(c => c.BaseList?.Types.Any(t => t.ToString().Contains("DbContext")) == true);
-
-			if (dbContextClass != null)
+			foreach (var file in filesToScan.TakeWhile(_ => remaining.Count > 0))
 			{
-				// Extract DbSet properties
-				var dbSetProperties = dbContextClass.Members
-					.OfType<PropertyDeclarationSyntax>()
-					.Where(p => p.Type.ToString().StartsWith("DbSet<", StringComparison.OrdinalIgnoreCase))
-					.ToList();
-
-				foreach (var dbSetProperty in dbSetProperties)
+				var content = await TryGetFileContentAsync(owner, repo, file.Path);
+				if (content is not null)
 				{
-					var match = Regex.Match(dbSetProperty.Type.ToString(), @"DbSet<(.+?)>");
-					if (match.Success)
-					{
-						var entityName = match.Groups[1].Value.Trim();
-						entityNames.Add(entityName);
-					}
+					MoveFoundEntities(content, remaining, entityFiles);
 				}
 			}
 		}
-		catch (Exception ex)
+		catch (RateLimitExceededException)
 		{
-			Console.WriteLine($"   ?? Error parsing DbContext: {ex.Message}");
+			Console.WriteLine("   ⚠️ GitHub API rate limit reached. Consider providing --github-token");
 		}
-
-		return entityNames;
 	}
 
-	private bool ContainsClassDefinition(string content, string className)
+	private static void MoveFoundEntities(string content, HashSet<string> remaining, Dictionary<string, string> entityFiles)
+	{
+		foreach (var entityName in remaining.Where(e => GitHubSourceHelpers.ContainsClassDefinition(content, e)).ToList())
+		{
+			entityFiles[entityName] = content;
+			remaining.Remove(entityName);
+		}
+	}
+
+	private async Task<string?> TryGetFileContentAsync(string owner, string repo, string path)
 	{
 		try
 		{
-			var tree = CSharpSyntaxTree.ParseText(content);
-			var root = tree.GetCompilationUnitRoot();
-
-			var classDecl = root.DescendantNodes()
-				.OfType<ClassDeclarationSyntax>()
-				.FirstOrDefault(c => c.Identifier.Text == className);
-
-			return classDecl != null;
+			return await GetFileContentAsync(owner, repo, path);
 		}
-		catch
+		catch (Exception ex) when (ex is not RateLimitExceededException)
 		{
-			return false;
+			Console.WriteLine($"   ⚠️ Error reading {path}: {ex.Message}");
+			return null;
 		}
-	}
-
-	// Keep backward compatibility
-	public async Task<List<DbContextFileInfo>> FindDbContextFilesAsync(string repoUrl)
-	{
-		var result = await AnalyzeRepositoryAsync(repoUrl);
-		return result.DbContextFiles;
 	}
 
 	private async Task<string> GetFileContentAsync(string owner, string repo, string path)
@@ -336,44 +216,12 @@ public class GitHubService
 
 		if (content?.Type == ContentType.File)
 		{
-			return content.EncodedContent != null
+			return content.EncodedContent is not null
 				? Encoding.UTF8.GetString(Convert.FromBase64String(content.EncodedContent))
 				: content.Content ?? string.Empty;
 		}
 
 		return string.Empty;
-	}
-
-	private static (string Owner, string Name)? ParseGitHubUrl(string url)
-	{
-		try
-		{
-			var uri = new Uri(url);
-			if (uri.Host != "github.com")
-			{
-				return null;
-			}
-
-			var segments = uri.AbsolutePath.Trim('/').Split('/');
-			if (segments.Length >= 2)
-			{
-				return (segments[0], segments[1]);
-			}
-		}
-		catch
-		{
-			return null;
-		}
-
-		return null;
-	}
-
-	private static bool IsDbContextFile(string content)
-	{
-		return content.Contains("DbContext", StringComparison.OrdinalIgnoreCase) &&
-			   (content.Contains("class", StringComparison.OrdinalIgnoreCase) || 
-			    content.Contains("public", StringComparison.OrdinalIgnoreCase)) &&
-			   content.Contains("DbSet", StringComparison.OrdinalIgnoreCase);
 	}
 }
 
@@ -389,5 +237,5 @@ public class RepositoryAnalysisResult
 {
 	public string Repository { get; set; } = string.Empty;
 	public List<DbContextFileInfo> DbContextFiles { get; set; } = [];
-	public Dictionary<string, string> EntityFiles { get; set; } = new();
+	public Dictionary<string, string> EntityFiles { get; set; } = [];
 }

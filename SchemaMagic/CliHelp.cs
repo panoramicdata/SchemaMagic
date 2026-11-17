@@ -1,4 +1,4 @@
-﻿namespace SchemaMagic;
+namespace SchemaMagic;
 
 internal static class CliHelp
 {

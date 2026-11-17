@@ -474,7 +474,7 @@ function loadTableGroupingRules() {
 		try {
 			tableGroupingRules = JSON.parse(storedRules);
 			console.log(
-				`?? Loaded ${tableGroupingRules.length} table grouping rules`,
+				"Loaded table grouping rules:", tableGroupingRules.length,
 			);
 		} catch (e) {
 			console.warn("Failed to parse stored rules, using defaults", e);
@@ -483,7 +483,7 @@ function loadTableGroupingRules() {
 	} else {
 		tableGroupingRules = [...DEFAULT_TABLE_GROUPING_RULES];
 		console.log(
-			`?? Initialized with ${tableGroupingRules.length} default rules`,
+			"Initialized default table grouping rules:", tableGroupingRules.length,
 		);
 	}
 }
@@ -493,7 +493,7 @@ function saveTableGroupingRulesToStorage() {
 		STORAGE_KEYS.tableGroupingRules,
 		JSON.stringify(tableGroupingRules),
 	);
-	console.log(`?? Saved ${tableGroupingRules.length} table grouping rules`);
+	console.log("Saved table grouping rules:", tableGroupingRules.length);
 }
 
 // Rule patterns are a safe subset of regex syntax and are matched without RegExp:

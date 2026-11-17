@@ -1,155 +1,119 @@
 // Schema generation and table positioning
-function generateSchema() {
-	console.log("??? Starting schema generation...");
-	const svg = document.getElementById("schema-svg");
-
-	if (!svg) {
-		console.error("? SVG element not found!");
-		return;
-	}
-
-	// Remember current selection
-	const currentSelection = selectedTable;
-
-	// Remove existing content but keep selection overlays (they're part of table groups)
-	const existingContent = svg.querySelectorAll(
-		".table-group, .relationship-line",
-	);
-	console.log(`?? Removing ${existingContent.length} existing elements`);
-	existingContent.forEach((el) => el.remove());
-
-	if (typeof entities === "undefined") {
-		console.error("? Entities not defined!");
-		return;
-	}
-
-	const entityCount = Object.keys(entities).length;
-	console.log(
-		"Processing entities:", entityCount,
-		Object.keys(entities),
-	);
-
-	const tablePositions = calculateTablePositions();
-	console.log("?? Table positions calculated:", tablePositions);
-
+function generateTables(svg, tablePositions) {
 	let tablesGenerated = 0;
 	Object.keys(entities).forEach((entityName) => {
 		try {
-			const entity = entities[entityName];
 			const position = tablePositions[entityName];
-
 			if (!position) {
-				console.warn(`?? No position found for entity: ${entityName}`);
+				console.warn("No position found for entity:", entityName);
 				return;
 			}
 
-			generateTable(svg, entity, position.x, position.y);
+			generateTable(svg, entities[entityName], position.x, position.y);
 			tablesGenerated++;
-			console.log(
-				"Generated table for", entityName, "at", position.x, position.y,
-			);
 		} catch (e) {
 			console.error("Failed to generate table for", entityName, e);
 		}
 	});
+	return tablesGenerated;
+}
 
-	console.log(`?? Successfully generated ${tablesGenerated} tables`);
+function generateSchema() {
+	const svg = document.getElementById("schema-svg");
+	if (!svg) {
+		console.error("SVG element not found!");
+		return;
+	}
+	if (typeof entities === "undefined") {
+		console.error("Entities not defined!");
+		return;
+	}
+
+	const currentSelection = selectedTable;
+
+	// Selection overlays are part of the table groups, so they are removed with them
+	svg
+		.querySelectorAll(".table-group, .relationship-line")
+		.forEach((el) => el.remove());
+
+	const tablesGenerated = generateTables(svg, calculateTablePositions());
+	console.log("Generated tables:", tablesGenerated);
 
 	if (showRelationships) {
 		try {
 			generateRelationships(svg);
-			console.log("?? Relationships generated");
 		} catch (e) {
-			console.error("? Failed to generate relationships:", e);
+			console.error("Failed to generate relationships:", e);
 		}
 	}
 
-	// Restore selection if it was previously set
 	if (currentSelection) {
 		selectTable(currentSelection);
 	}
 
 	updateButtonStates();
-	console.log("? Schema generation completed");
 }
 
 function calculateTablePositions() {
-	// Always use the smart layered layout by default (auto-layout unless saved positions exist)
+	// The smart layered layout is the default; saved positions are honoured by it
 	if (typeof calculateSmartTablePositions === "function") {
 		return calculateSmartTablePositions();
 	}
-
-	// Fallback to basic grid layout if force-directed not available
 	return calculateBasicGridLayout();
 }
 
-function calculateBasicGridLayout() {
-	// Try to load saved positions first
-	let savedPositions = null;
+function snapPoint(x, y) {
+	if (!snapToGrid) {
+		return { x, y };
+	}
+	return { x: Math.round(x / 20) * 20, y: Math.round(y / 20) * 20 };
+}
+
+function loadSavedPositions() {
 	try {
 		const saved = localStorage.getItem(STORAGE_KEYS.tablePositions);
-		if (saved) {
-			savedPositions = JSON.parse(saved);
-		}
+		return saved ? JSON.parse(saved) : null;
 	} catch (e) {
 		console.warn("Failed to load saved positions:", e);
+		return null;
 	}
+}
 
+function layoutFromSavedPositions(entityNames, savedPositions) {
 	const positions = {};
+	entityNames.forEach((entityName) => {
+		const saved = savedPositions[entityName];
+		// New entities get a default position
+		positions[entityName] = saved ? snapPoint(saved.x, saved.y) : snapPoint(200, 200);
+	});
+	return positions;
+}
+
+function layoutCenteredGrid(entityNames) {
+	const positions = {};
+	const cols = Math.ceil(Math.sqrt(entityNames.length));
+	const baseSpacing = 500;
+	const totalWidth = cols * baseSpacing;
+	const totalHeight = Math.ceil(entityNames.length / cols) * baseSpacing;
+	const startX = (CANVAS_WIDTH - totalWidth) / 2;
+	const startY = (CANVAS_HEIGHT - totalHeight) / 2;
+
+	entityNames.forEach((entityName, index) => {
+		const row = Math.floor(index / cols);
+		const col = index % cols;
+		positions[entityName] = snapPoint(
+			startX + col * baseSpacing + (row % 2) * 250,
+			startY + row * baseSpacing,
+		);
+	});
+	return positions;
+}
+
+function calculateBasicGridLayout() {
+	const savedPositions = loadSavedPositions();
 	const entityNames = Object.keys(entities);
 
-	if (savedPositions) {
-		// Use saved positions if available, but snap to grid if enabled
-		entityNames.forEach((entityName) => {
-			if (savedPositions[entityName]) {
-				let x = savedPositions[entityName].x;
-				let y = savedPositions[entityName].y;
-
-				// Snap to grid if enabled
-				if (snapToGrid) {
-					x = Math.round(x / 20) * 20;
-					y = Math.round(y / 20) * 20;
-				}
-
-				positions[entityName] = { x, y };
-			} else {
-				// Default position for new entities, snapped to grid
-				let x = 200;
-				let y = 200;
-				if (snapToGrid) {
-					x = Math.round(x / 20) * 20;
-					y = Math.round(y / 20) * 20;
-				}
-				positions[entityName] = { x, y };
-			}
-		});
-	} else {
-		// Calculate centered grid layout
-		const cols = Math.ceil(Math.sqrt(entityNames.length));
-		const baseSpacing = 500;
-		const totalWidth = cols * baseSpacing;
-		const totalHeight = Math.ceil(entityNames.length / cols) * baseSpacing;
-
-		// Center the grid in the canvas
-		const startX = (CANVAS_WIDTH - totalWidth) / 2;
-		const startY = (CANVAS_HEIGHT - totalHeight) / 2;
-
-		entityNames.forEach((entityName, index) => {
-			const row = Math.floor(index / cols);
-			const col = index % cols;
-
-			let x = startX + col * baseSpacing + (row % 2) * 250;
-			let y = startY + row * baseSpacing;
-
-			// Snap to grid if enabled
-			if (snapToGrid) {
-				x = Math.round(x / 20) * 20;
-				y = Math.round(y / 20) * 20;
-			}
-
-			positions[entityName] = { x, y };
-		});
-	}
-
-	return positions;
+	return savedPositions
+		? layoutFromSavedPositions(entityNames, savedPositions)
+		: layoutCenteredGrid(entityNames);
 }

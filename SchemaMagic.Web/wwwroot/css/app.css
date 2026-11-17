@@ -190,7 +190,7 @@ main {
 
 /* Feature Cards - Dark Mode Fix */
 .bg-white {
-    background-color: #ffffff !important;
+    background-color: #fff !important;
 }
 
 [data-bs-theme="dark"] .bg-white {
@@ -309,7 +309,7 @@ main {
     border-radius: 12px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    background-color: var(--bs-card-bg, #ffffff);
+    background-color: var(--bs-card-bg, #fff);
 }
 
 [data-bs-theme="dark"] .card {
@@ -447,7 +447,7 @@ main {
     color: #dee2e6;
 }
 
-.loading-progress-text:after {
+.loading-progress-text::after {
     content: var(--blazor-load-percentage-text, "Loading");
 }
 
@@ -523,6 +523,7 @@ code {
         opacity: 0;
         transform: translateY(10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);

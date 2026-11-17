@@ -281,6 +281,7 @@ body {
 		stroke-width: 10;
 		opacity: 1;
 	}
+
 	50% {
 		stroke-width: 14;
 		opacity: 0.8;
@@ -304,16 +305,6 @@ body {
 	}
 }
 
-.table-group.selected .table-header {
-	fill: #764ba2; /* Purple header when selected */
-}
-
-@media (prefers-color-scheme: dark) {
-	.table-group.selected .table-header {
-		fill: #a78bfa;
-	}
-}
-
 /* All headers now use blue style */
 .table-header {
 	fill: #0ea5e9; /* Blue header like inherited style */
@@ -324,6 +315,17 @@ body {
 		fill: #3b82f6;
 	}
 }
+
+.table-group.selected .table-header {
+	fill: #764ba2; /* Purple header when selected */
+}
+
+@media (prefers-color-scheme: dark) {
+	.table-group.selected .table-header {
+		fill: #a78bfa;
+	}
+}
+
 
 .table-title {
 	fill: white;
@@ -533,7 +535,7 @@ body {
 	font-size: 15px;
 	font-weight: bold;
 	font-family: 'Segoe UI', sans-serif;
-	fill: #000000; /* Changed from white to black for better contrast */
+	fill: #000;
 	dominant-baseline: central;
 	text-anchor: middle;
 }
@@ -682,8 +684,6 @@ body {
 	stroke: #2563eb;
 	stroke-width: 8;
 	fill: none;
-	/* Removed opacity to ensure consistent color with crow's foot notation */
-	/* No transition - lines update immediately */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -712,7 +712,6 @@ body {
 	stroke: #d1d5db;
 	stroke-width: 8; /* Consistent thickness even when dimmed */
 	opacity: 0.3;
-	/* No transition here either */
 }
 
 @media (prefers-color-scheme: dark) {
@@ -788,7 +787,6 @@ body {
 
 /* Modal Dialog */
 .modal-dialog {
-	display: none;
 	position: fixed;
 	top: 50%;
 	left: 50%;
@@ -1294,6 +1292,7 @@ body {
 		opacity: 0;
 		transform: translateY(-10px);
 	}
+
 	to {
 		opacity: 1;
 		transform: translateY(0);

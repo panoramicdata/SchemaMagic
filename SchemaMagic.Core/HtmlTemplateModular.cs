@@ -1,6 +1,7 @@
-﻿using System.Reflection;
-using System.Text;
 using System.Collections.Concurrent;
+using System.Reflection;
+using System.Text;
+using System.Text.Json;
 
 namespace SchemaMagic.Core;
 
@@ -9,7 +10,42 @@ namespace SchemaMagic.Core;
 /// </summary>
 public static class ModularHtmlTemplate
 {
+	private const string DefaultStylesHeader = "/* ========== DEFAULT STYLES ========== */";
+	private const string CustomStylesHeader = "/* ========== CUSTOM OVERRIDES ========== */";
+
 	private static readonly ConcurrentDictionary<string, string> _templateCache = [];
+
+	private static readonly string[] _javaScriptFiles =
+	[
+		"variables.js",
+		"event-listeners.js",
+		"pan-zoom.js",
+		"settings.js",
+		"layout-metrics.js",
+		"force-directed-layout.js",
+		"schema-generation.js",
+		"table-generation.js",
+		"property-utilities.js",
+		"table-interaction.js",
+		"relationships.js",
+		"table-grouping.js",
+		"controls.js"
+	];
+
+	/// <summary>
+	/// Generates a schema document with a generated identifier and the default styles.
+	/// </summary>
+	/// <param name="entitiesJson">The serialized entity metadata.</param>
+	/// <returns>The generated HTML document.</returns>
+	public static string Generate(string entitiesJson) => Generate(entitiesJson, null, null);
+
+	/// <summary>
+	/// Generates a schema document with the default styles.
+	/// </summary>
+	/// <param name="entitiesJson">The serialized entity metadata.</param>
+	/// <param name="documentGuid">An optional identifier used to scope document state.</param>
+	/// <returns>The generated HTML document.</returns>
+	public static string Generate(string entitiesJson, string? documentGuid) => Generate(entitiesJson, documentGuid, null);
 
 	/// <summary>
 	/// Generates a schema document, optionally applying CSS from a file.
@@ -18,21 +54,8 @@ public static class ModularHtmlTemplate
 	/// <param name="documentGuid">An optional identifier used to scope document state.</param>
 	/// <param name="customCssPath">An optional path to a CSS file whose rules override the defaults.</param>
 	/// <returns>The generated HTML document.</returns>
-	public static string Generate(string entitiesJson, string? documentGuid = null, string? customCssPath = null)
-	{
-		// Generate a new GUID if none provided
-		var guid = documentGuid ?? Guid.NewGuid().ToString();
-
-		var html = LoadTemplate("template.html");
-		var css = GetMergedCss(customCssPath);
-		var javascript = CombineJavaScriptFiles(entitiesJson, guid);
-
-		// Replace placeholders
-		html = html.Replace("<!-- CSS STYLES -->", $"<style>\n{css}\n</style>");
-		html = html.Replace("<!-- JAVASCRIPT CONTENT -->", javascript);
-
-		return html;
-	}
+	public static string Generate(string entitiesJson, string? documentGuid, string? customCssPath) =>
+		Render(entitiesJson, documentGuid ?? Guid.NewGuid().ToString(), GetMergedCss(customCssPath));
 
 	/// <summary>
 	/// Generates a schema document with CSS overrides supplied as text.
@@ -41,26 +64,37 @@ public static class ModularHtmlTemplate
 	/// <param name="documentGuid">The identifier used to scope document state.</param>
 	/// <param name="customCss">Optional CSS rules that override the defaults.</param>
 	/// <returns>The generated HTML document.</returns>
-	public static string GenerateWithCustomCss(string entitiesJson, string documentGuid, string? customCss)
-	{
-		var html = LoadTemplate("template.html");
-		var css = string.IsNullOrEmpty(customCss) ? GetDefaultCss() : GetMergedCssFromString(customCss);
-		var javascript = CombineJavaScriptFiles(entitiesJson, documentGuid);
-
-		// Replace placeholders
-		html = html.Replace("<!-- CSS STYLES -->", $"<style>\n{css}\n</style>");
-		html = html.Replace("<!-- JAVASCRIPT CONTENT -->", javascript);
-
-		return html;
-	}
+	public static string GenerateWithCustomCss(string entitiesJson, string documentGuid, string? customCss) =>
+		Render(
+			entitiesJson,
+			documentGuid,
+			string.IsNullOrEmpty(customCss) ? GetDefaultCss() : MergeCss(GetDefaultCss(), customCss, null));
 
 	/// <summary>
 	/// Gets the default stylesheet embedded in the library.
 	/// </summary>
 	/// <returns>The default CSS content.</returns>
-	public static string GetDefaultCss()
+	public static string GetDefaultCss() => LoadTemplate("styles.css");
+
+	private static string Render(string entitiesJson, string documentGuid, string css) =>
+		LoadTemplate("template.html")
+			.Replace("<!-- CSS STYLES -->", $"<style>\n{css}\n</style>")
+			.Replace("<!-- JAVASCRIPT CONTENT -->", CombineJavaScriptFiles(entitiesJson, documentGuid));
+
+	private static string MergeCss(string defaultCss, string customCss, string? sourceName)
 	{
-		return LoadTemplate("styles.css");
+		var mergedCss = new StringBuilder();
+		mergedCss.AppendLine(DefaultStylesHeader);
+		mergedCss.AppendLine(defaultCss);
+		mergedCss.AppendLine();
+		mergedCss.AppendLine(CustomStylesHeader);
+		if (sourceName is not null)
+		{
+			mergedCss.AppendLine($"/* Loaded from: {sourceName} */");
+		}
+
+		mergedCss.AppendLine(customCss);
+		return mergedCss.ToString();
 	}
 
 	private static string GetMergedCss(string? customCssPath)
@@ -74,173 +108,68 @@ public static class ModularHtmlTemplate
 
 		try
 		{
-			var customCss = File.ReadAllText(customCssPath);
-			var mergedCss = new StringBuilder();
-
-			// Start with default styles
-			mergedCss.AppendLine("/* ========== DEFAULT STYLES ========== */");
-			mergedCss.AppendLine(defaultCss);
-			mergedCss.AppendLine();
-
-			// Add custom overrides
-			mergedCss.AppendLine("/* ========== CUSTOM OVERRIDES ========== */");
-			mergedCss.AppendLine($"/* Loaded from: {Path.GetFileName(customCssPath)} */");
-			mergedCss.AppendLine(customCss);
-
-			Console.WriteLine($"🎨 CSS merged successfully:");
-			Console.WriteLine($"   Default styles: {defaultCss.Length:N0} characters");
-			Console.WriteLine($"   Custom styles: {customCss.Length:N0} characters");
-			Console.WriteLine($"   Total merged: {mergedCss.Length:N0} characters");
-
-			return mergedCss.ToString();
+			return MergeCss(defaultCss, File.ReadAllText(customCssPath), Path.GetFileName(customCssPath));
 		}
 		catch (Exception ex)
 		{
 			Console.WriteLine($"⚠️ Warning: Could not load custom CSS file '{customCssPath}': {ex.Message}");
-			Console.WriteLine($"🔄 Falling back to default styles");
+			Console.WriteLine("🔄 Falling back to default styles");
 			return defaultCss;
 		}
 	}
 
-	private static string GetMergedCssFromString(string customCss)
+	private static string CombineJavaScriptFiles(string entitiesJson, string documentGuid)
 	{
-		var defaultCss = GetDefaultCss();
-		var mergedCss = new StringBuilder();
+		// The GUID is emitted as a JSON string literal so it can never end the literal early
+		var guidLiteral = JsonSerializer.Serialize(documentGuid);
 
-		// Start with default styles
-		mergedCss.AppendLine("/* ========== DEFAULT STYLES ========== */");
-		mergedCss.AppendLine(defaultCss);
-		mergedCss.AppendLine();
-
-		// Add custom overrides
-		mergedCss.AppendLine("/* ========== CUSTOM OVERRIDES ========== */");
-		mergedCss.AppendLine(customCss);
-
-		return mergedCss.ToString();
+		return string.Join("\n\n", _javaScriptFiles.Select(LoadTemplate))
+			.Replace("ENTITIES_JSON_PLACEHOLDER", entitiesJson)
+			.Replace("\"DOCUMENT_GUID_PLACEHOLDER\"", guidLiteral);
 	}
 
-	private static string CombineJavaScriptFiles(string entitiesJson, string documentGuid, Dictionary<string, object>? embeddedState = null)
+	private static string LoadTemplate(string fileName) =>
+		_templateCache.GetOrAdd(fileName, LoadTemplateUncached);
+
+	private static string LoadTemplateUncached(string fileName)
 	{
-		var jsFiles = new[]
-		{
-			"variables.js",
-			"event-listeners.js",
-			"pan-zoom.js",
-			"settings.js",
-			"force-directed-layout.js",
-			"schema-generation.js",
-			"table-generation.js",
-			"property-utilities.js",
-			"table-interaction.js",
-			"relationships.js",
-			"table-grouping.js",  // Add table grouping controls
-			"controls.js"
-		};
-
-		var combinedJs = string.Join("\n\n", jsFiles.Select(LoadTemplate));
-
-		// Replace the entities JSON placeholder
-		combinedJs = combinedJs.Replace("ENTITIES_JSON_PLACEHOLDER", entitiesJson);
-
-		// Replace the document GUID placeholder  
-		combinedJs = combinedJs.Replace("DOCUMENT_GUID_PLACEHOLDER", documentGuid);
-
-		// If we have embedded state (for download), inject it
-		if (embeddedState != null)
-		{
-			var stateScript = GenerateEmbeddedStateScript(embeddedState, documentGuid);
-			combinedJs += "\n\n" + stateScript;
-		}
-
-		return combinedJs;
-	}
-
-	private static string GenerateEmbeddedStateScript(Dictionary<string, object> state, string documentGuid)
-	{
-		var script = @"
-// Embedded state for downloaded document
-// This acts as a proxy for localStorage to preserve user customizations
-(function() {
-	const embeddedState = " + System.Text.Json.JsonSerializer.Serialize(state) + @";
-	const originalGuid = '" + documentGuid + @"';
-
-	// Override localStorage for this document's keys
-	const originalGetItem = localStorage.getItem.bind(localStorage);
-	const originalSetItem = localStorage.setItem.bind(localStorage);
-
-	localStorage.getItem = function(key) {
-		// Check if this is one of our document-specific keys
-		if (key.startsWith(`schemaMagic_${originalGuid}_`)) {
-			const keyType = key.replace(`schemaMagic_${originalGuid}_`, '');
-			return embeddedState[keyType] || null;
-		}
-		return originalGetItem(key);
-	};
-
-	localStorage.setItem = function(key, value) {
-		// Allow normal localStorage operation for the new document GUID
-		originalSetItem(key, value);
-	};
-
-	console.log('📦 Downloaded document with embedded state from original document');
-})();";
-
-		return script;
-	}
-
-	private static string LoadTemplate(string fileName)
-	{
-		if (_templateCache.TryGetValue(fileName, out var cached))
-		{
-			return cached;
-		}
-
-		// Try to load from embedded resources first (works in Blazor WASM)
 		var assembly = Assembly.GetExecutingAssembly();
-		var resourceName = $"SchemaMagic.Core.Templates.{fileName}";
 
-		Console.WriteLine($"🔍 Looking for embedded resource: {resourceName}");
-
-		using var stream = assembly.GetManifestResourceStream(resourceName);
-		if (stream != null)
+		// Embedded resources work in Blazor WASM; the file system is the command-line fallback
+		using var stream = assembly.GetManifestResourceStream($"SchemaMagic.Core.Templates.{fileName}");
+		if (stream is not null)
 		{
 			using var reader = new StreamReader(stream);
-			var template = reader.ReadToEnd();
-			_templateCache[fileName] = template;
-			Console.WriteLine($"✅ Loaded from embedded resource: {fileName} ({template.Length} chars)");
-			return template;
+			return reader.ReadToEnd();
 		}
 
-		// Fallback to file system (for command-line tool)
-		Console.WriteLine($"⚠️ Embedded resource not found, trying file system...");
-
-		// Try various file system paths
-		var pathsToTry = new[]
+		var content = TryReadTemplateFromFileSystem(assembly, fileName);
+		if (content is not null)
 		{
-			Path.Combine(Directory.GetCurrentDirectory(), "Templates", fileName),
-			Path.Combine(Directory.GetCurrentDirectory(), "templates", fileName),
-			Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) ?? "", "..", "..", "..", "..", "Templates", fileName),
-			Path.Combine("..", "Templates", fileName)
-		};
-
-		foreach (var path in pathsToTry)
-		{
-			if (File.Exists(path))
-			{
-				var content = File.ReadAllText(path);
-				_templateCache[fileName] = content;
-				Console.WriteLine($"✅ Loaded from file system: {path}");
-				return content;
-			}
+			return content;
 		}
 
-		// List all embedded resources to help debug
 		Console.WriteLine("📋 Available embedded resources:");
-		foreach (var res in assembly.GetManifestResourceNames())
+		foreach (var resourceName in assembly.GetManifestResourceNames())
 		{
-			Console.WriteLine($"   - {res}");
+			Console.WriteLine($"   - {resourceName}");
 		}
 
 		throw new FileNotFoundException($"Template file not found: {fileName} (searched embedded resources and file system)");
+	}
+
+	private static string? TryReadTemplateFromFileSystem(Assembly assembly, string fileName)
+	{
+		var assemblyDirectory = Path.GetDirectoryName(assembly.Location) ?? "";
+		string[] pathsToTry =
+		[
+			Path.Combine(Directory.GetCurrentDirectory(), "Templates", fileName),
+			Path.Combine(Directory.GetCurrentDirectory(), "templates", fileName),
+			Path.Combine(assemblyDirectory, "..", "..", "..", "..", "Templates", fileName),
+			Path.Combine("..", "Templates", fileName)
+		];
+
+		var path = pathsToTry.FirstOrDefault(File.Exists);
+		return path is null ? null : File.ReadAllText(path);
 	}
 }
