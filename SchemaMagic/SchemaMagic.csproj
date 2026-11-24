@@ -22,7 +22,6 @@
     <RepositoryUrl>https://github.com/panoramicdata/SchemaMagic</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageReleaseNotes>Enhanced GitHub integration, improved dark mode, automated versioning with Nerdbank.GitVersioning</PackageReleaseNotes>
-    <Copyright>© 2025 Panoramic Data Limited</Copyright>
     <!-- Assembly Configuration -->
     <AssemblyTitle>SchemaMagic</AssemblyTitle>
     <AssemblyDescription>Interactive HTML+SVG Database Schema Visualizer for Entity Framework Core</AssemblyDescription>

@@ -12,7 +12,6 @@
     <Company>Panoramic Data Limited</Company>
     <Product>SchemaMagic Core</Product>
     <Description>Core library for SchemaMagic - Entity Framework Core Schema Analysis Engine</Description>
-    <Copyright>© 2025 Panoramic Data Limited</Copyright>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/panoramicdata/SchemaMagic</RepositoryUrl>
     <PackageProjectUrl>https://github.com/panoramicdata/SchemaMagic</PackageProjectUrl>
