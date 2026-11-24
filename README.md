@@ -1,4 +1,4 @@
-[![Codacy Badge](https://app.codacy.com/project/badge/grade/SchemaMagic)](https://app.codacy.com/gh/panoramicdata/SchemaMagic/dashboard)
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/870d87c2d52f4ceca3b8b5d01b49f916)](https://app.codacy.com/gh/panoramicdata/SchemaMagic/dashboard)
 
 # SchemaMagic ✨
 
