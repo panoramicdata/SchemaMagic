@@ -1,5 +1,13 @@
 # Agent instructions
 
+## Glossary
+
+- NET: .NET, Microsoft's developer platform; this is a product name.
+- EF: Entity Framework.
+- FK: foreign key.
+- GUID: globally unique identifier.
+- PAT: personal access token.
+
 ## Identity
 
 You are a careful, security-conscious contributor to this repository.
@@ -53,14 +61,14 @@ SchemaMagic is a .NET 11.0 command-line tool that analyzes Entity Framework Core
    - ? Found EF Migration snapshot with accurate foreign key relationships  
    - ? Generated: `Output/TenantDbContext-Schema.html` (245KB)
    - ? Detected inheritance hierarchies and navigation properties
-   - ? Entities include: DeviceModel, NetworkModel, OrganizationModel, WebHookEventModel, etc.
+   - ? Entities include: DeviceModel, NetworkModel, OrganizationModel and WebHookEventModel.
 
 5. **CodeContext**: `dotnet run -- "C:\Users\david\Projects\Magic Suite\MagicSuite.Data.Repositories.EfCore\CodeContext.cs"`
    - ? Successfully processed **108 entities** - large-scale schema
    - ? Found EF Migration snapshot with extensive foreign key data
    - ? Generated: `Output/CodeContext-Schema.html` (246KB)
    - ? Handled complex multi-project entity discovery
-   - ? Entities include: Tenant, Role, Permission, Metric, Alert, Dashboard, etc.
+   - ? Entities include: Tenant, Role, Permission, Metric, Alert and Dashboard.
 
 #### Final Output Directory Structure
 ```
@@ -125,7 +133,7 @@ dotnet run -- --output-default-css my-styles.css
 dotnet run -- MyDbContext.cs --css-file my-styles.css
 
  # Preserve layout state with specific GUID
-dotnet run -- MyDbContext.cs --guid "12345678-1234-1234-1234-123456789abc"
+dotnet run -- MyDbContext.cs --guid "<guid>"
 ```
 
 #### Production Examples (Magic Suite)
@@ -168,7 +176,7 @@ dotnet run -- "C:\Path\To\MagicSuite.Data\Repositories.EfCore\CodeContext.cs"
 - **Sophisticated CSS**: Property type colors, relationship lines, interactive styling
 
 #### Output Behavior
-- **Output Directory**: Always creates `Output/` subdirectory relative to DbContext
+- **Output Directory**: Creates an `Output/` subdirectory relative to DbContext
 - **File Naming**: Follows pattern `{DbContextName}-Schema.html`
 - **State Persistence**: Each file has unique GUID for localStorage isolation
 - **Browser Integration**: Automatically opens generated HTML in default browser
@@ -300,7 +308,11 @@ Successfully tested against Magic Suite production schemas:
 
 ---
 
-This project successfully demonstrates interactive Entity Framework schema visualization with a clean command-line interface and robust HTML output generation. The test runs confirm all core functionality works as expected with proper error handling and user feedback. **Production validation with Magic Suite's 135 total entities across two DbContexts proves the tool's enterprise readiness.**
+This project successfully demonstrates interactive Entity Framework schema visualization with a clean command-line interface and robust HTML output generation.
+
+The test runs confirm all core functionality works as expected with proper error handling and user feedback.
+
+**Production validation with Magic Suite's 135 total entities across two DbContexts proves the tool's enterprise readiness.**
 
 ## PanoramicData staff
 
